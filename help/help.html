@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Help</title>
+<style type="text/css">
+	body {
+	font-family:Tahoma, Geneva, sans-serif;
+	font-size:medium;
+	}
+	div.list_with_header p {
+		margin-bottom:0;
+	}
+	div.list_with_header ol, ul {
+		margin-left:1em;
+		margin-top:0;
+	}
+	div.supported_readers_table {
+		margin-left: 15%;
+		margin-right: 15%;
+	}
+	div.topic p {
+	text-indent:1em;
+	}
+	h2 {
+		font-family:Tahoma, Geneva, sans-serif;
+        text-align: center;
+        font-weight: normal;
+	}
+	h3 {
+		font-family:Tahoma, Geneva, sans-serif;
+        text-align: left;
+        font-weight: normal;
+	}
+	ol.toc {
+	}
+	p.image {
+		text-align:center;
+	}
+	p.table_caption {
+		font-size:80%;
+		margin-top:0;
+		text-align:right;
+	}
+	table.supported_readers {
+		border-collapse:collapse;
+		margin-bottom:0;
+		width:100%;
+	}
+	table.supported_readers tbody.gray {
+		background-color:#EAEAEA;
+	}
+	table.supported_readers td.reader {
+		padding:0 1em 0 1em;
+		text-align:left;
+	}
+	table.supported_readers td.supported {
+		text-align:center;
+	}
+	table.supported_reader tr.reader {
+		border-top:1px black;
+	}
+</style>
+</head>
+
+<body>
+<p class="image"><img src="images/annotations_icon.png" alt="" width="64" height="64" /></p>
+<h2>The Annotations plugin for calibre</h2>
+<div class="toc">
+  <h3><a name="toc" id="toc"></a>Table of Contents</h3>
+<ol class="toc">
+<li><a href="#overview">Overview</a></li>
+<li><a href="#supported_readers">Supported readers</a></li>
+<li><a href="#creating_a_custom_column">Creating a custom column for Annotations</a></li>
+<li><a href="#metadata_matching">Metadata matching: How the plugin decides which book will receive annotations</a></li>
+<li><a href="#styling_annotations">Styling annotations</a></li>
+<li><a href="#finding_annotations">Finding annotations</a></li>
+<li><a href="#support">Annotations plugin support</a></li>
+</ol>
+<hr />
+</div>
+
+<div class="topic">
+<h3><a name="overview" id="overview"></a>1. <a href="#toc">Overview</a></h3>
+<p>The Annotations plugin imports annotations from supported readers to calibre.</p>
+  <div class="list_with_header">
+	  <p>Features:</p>
+      <ul>
+  			<li>Imported annotations are added to <strong>Comments</strong> or a custom column.</li>
+  			<li>Annotations appearance is configurable.</li>
+  			<li>Annotations may be searched by reader, style, content or date range.</li>
+		</ul>
+	</div>
+  <hr />
+</div>
+
+<!--div class="topic">
+<h3><a name="supported_readers" id="supported_readers"></a><a href="#toc">2. Supported readers</a></h3>
+<div class="supported_readers_table">
+<table class="supported_readers">
+	<col width="33%" />
+    <col width="33%" />
+    <col width="33%" />
+    <tr style="border-bottom:1px solid black">
+    	<th>&nbsp;</th>
+    	<th>Platform</th>
+    	<th>Exporting</th>
+    	<th>Fetching</th>
+    </tr>
+	<tbody><tr class="reader">
+    	<td class="reader"><a href="https://itunes.apple.com/us/app/bluefire-reader/id394275498?mt=8" title="Bluefire Reader in iTunes" target="_blank">Bluefire Reader</a></td>
+    	<td class="supported">iOS</td>
+    	<td class="supported">&#x2713;</td>
+    	<td class="supported">&nbsp;</td>
+  	</tr></tbody>  
+	<tbody class="gray"><tr>
+    	<td class="reader"><a href="https://itunes.apple.com/us/app/goodreader-for-ipad/id363448914?mt=8" title="GoodReader in iTunes" target="_blank">GoodReader</a></td>
+    	<td class="supported">iOS</td>
+    	<td class="supported">&#x2713;</td>
+    	<td class="supported">&nbsp;</td>
+    </tr></tbody>  
+	<tbody><tr>
+    	<td class="reader"><a href="https://itunes.apple.com/us/app/ibooks/id364709193?mt=8" title="iBooks in iTunes" target="_blank">iBooks</a></td>
+    	<td class="supported">iOS</td>
+    	<td class="supported">&nbsp;</td>
+    	<td class="supported">&#x2713;&sup1;</td>
+    </tr></tbody>  
+	<tbody class="gray"><tr>
+    	<td class="reader"><a href="https://itunes.apple.com/us/app/kindle-read-books-ebooks-magazines/id302584613?mt=8" title="Kindle for iOS in iTunes" target="_blank">Kindle for iOS</a></td>
+    	<td class="supported">iOS</td>
+    	<td class="supported">&nbsp;</td>
+    	<td class="supported">&#x2713;&sup1;</td>
+    </tr></tbody>
+	<tbody><tr>
+    	<td class="reader"><a href="http://www.amazon.com/dp/B007HCCNJU/ref=sa_menu_kdptq" title="Kindle readers on Amazon" target="_blank">Kindle</a></td>
+    	<td class="supported">hardware</td>
+    	<td class="supported">&nbsp;</td>
+    	<td class="supported">&#x2713;&nbsp;</td>
+    </tr></tbody>  
+	<tbody class="gray"><tr>
+    	<td class="reader"><a href="https://itunes.apple.com/us/app/marvin-ebooks-+-intelligence/id577374971?mt=8" title="Marvin in iTunes" target="_blank">Marvin</a></td>
+    	<td class="supported">iOS</td>
+    	<td class="supported">&#x2713;</td>
+    	<td class="supported">&#x2713;&sup1;</td>
+    </tr></tbody>  
+	<tbody><tr style="border-bottom:1px solid black;">
+    	<td class="reader"><a href="https://itunes.apple.com/us/app/stanza/id284956128?mt=8" title="Stanza in iTunes" target="_blank">Stanza</a></td>
+    	<td class="supported">iOS</td>
+    	<td class="supported">&nbsp;</td>
+    	<td class="supported">&#x2713;&sup1;</td>
+    </tr></tbody>
+</table>
+<p class="table_caption">&sup1;requires iExplorer<br />
+  (OS X, Windows only)</p>
+</div>
+<p>Supported readers may support either or both methods of adding annotations to calibre:</p>
+<ul>
+  <li><strong>Exporting</strong>: The reader application is able to export annotations, typically via email or iTunes File Sharing. The exported annotation content is parsed and added to calibre by selecting <strong>Import Annotations from…</strong> in the Annotations plugin dropdown menu, or dragging an annotations file to the Annotations plugin.</li>
+  <li><strong>Fetching</strong>: When a supported reader device is connected to calibre, annotations are fetched directly from the reader. For iOS readers, fetching requires installation of third-party application iExplorer, plus the Apple iDevice plugin. USB devices do not require any additional software beyond calibre. The fetched annotation content is parsed and added to calibre by selecting <strong>Fetch Annotations from</strong> when a device with supported readers is connected.</li>
+</ul>
+<hr />
+</div-->
+
+<div class="topic">
+<h3><a name="supported_readers" id="supported_readers"></a>2. <a href="#toc">Supported readers</a></h3>
+<div class="supported_readers_table">
+<table class="supported_readers">
+	<col width="20%" />
+    <col width="20%" />
+    <col width="20%" />
+    <col width="25%" />
+    <col width="25%" />
+    
+    <tr style="border-bottom:1px solid black">
+    	<th>&nbsp;</th>
+    	<th>Platform</th>
+        <th>Collect News clippings</th>
+    	<th>Exporting</th>
+    	<th>Fetching</th>
+    </tr>
+	<tbody><tr>
+    	<td class="reader"><a href="https://itunes.apple.com/us/app/goodreader-for-ipad/id363448914?mt=8" title="GoodReader in iTunes" target="_blank">GoodReader</a></td>
+    	<td class="supported">iOS</td>
+		<td class="supported">&nbsp;</td>        
+    	<td class="supported">&#x2713;</td>
+    	<td class="supported">&nbsp;</td>
+    </tr></tbody>  
+	<tbody class="gray">
+    <tr>
+    	<td class="reader"><a href="http://www.amazon.com/dp/B007HCCNJU/ref=sa_menu_kdptq" title="Kindle readers on Amazon" target="_blank">Kindle</a></td>
+    	<td class="supported">hardware</td>
+	    <td class="supported">&#x2713;</td>
+		<td class="supported">&nbsp;</td>        
+    	<td class="supported">&#x2713;&nbsp;</td>
+    </tr>
+    </tbody>
+        
+	<tbody>
+    <tr style="border-bottom:1px solid black;">
+    	<td class="reader"><a href="https://itunes.apple.com/us/app/marvin-ebooks-+-intelligence/id577374971?mt=8" title="Marvin in iTunes" target="_blank">Marvin</a></td>
+    	<td class="supported">iOS</td>
+		<td class="supported">&#x2713;</td>        
+    	<td class="supported">&#x2713;</td>
+    	<td class="supported">&#x2713;&sup1;</td>
+    </tr>
+    </tbody>  
+</table>
+<p class="table_caption">&sup1;requires iExplorer<br />
+  (OS X, Windows only)</p>
+</div>
+<p><strong>Collect News clippings</strong>: Annotations made to periodicals generated by calibre may be collected to a single book. This feature can be enabled in the configuration dialog.</p>
+<p>Supported readers may support either or both methods of adding annotations to calibre:</p>
+<ul>
+  <li><strong>Exporting</strong>: The reader is able to export annotations, typically via email or iTunes File Sharing. The exported annotation content is parsed and added to calibre by selecting <strong>Import Annotations from…</strong> in the Annotations plugin dropdown menu, or by dragging an annotations file to the Annotations plugin icon. Additional instructions for exporting annotations from individual readers may be found by clicking the down arrow on the Annotations plugin menu, selecting <strong>Import annotations from…</strong> to open the import dialog, then clicking <strong>Help</strong>.</li>
+  <li><strong>Fetching</strong>: When a supported reader device is connected to calibre, annotations may be fetched directly from the reader. For iOS readers, fetching requires installation of a third-party application <a href="http://www.macroplant.com/iexplorer" title="Macroplant iExplorer" target="_blank">iExplorer</a>, plus the <a href="#" title="Apple iDevice plugin" target="_blank">Apple iDevice interface plugin</a>. USB devices do not require any additional software beyond calibre. Fetched annotation content is parsed and added to calibre by selecting <strong>Fetch Annotations from…</strong> when a supported device is connected.</li>
+</ul>
+<hr />
+</div>
+
+<div class="topic">
+<h3><a name="creating_a_custom_column" id="creating_a_custom_column"></a>3. <a href="#toc">Creating a custom column for Annotations</a></h3>
+<p>By default, the Annotations plugin will append annotations to existing content in the <strong>Comments</strong> column. It is recommended that you create a custom column for Annotations. </p>
+<div class="list_with_header">
+	<p>To create a custom column to store annotations, follow these steps in calibre:</p>
+	<ol>
+  		<li>In <strong>Preferences</strong>, click on <strong>Interface|Add your own columns</strong>.</li>
+  		<li>Click <strong>Add custom column</strong>.</li>
+  		<li>For <strong>Lookup name</strong>, type <tt>annotations</tt>.</li>
+  		<li>For <strong>Column heading</strong>, type <tt>Annotations</tt>.</li>
+  		<li>For <strong>Column type</strong>, select <tt>Long text, like comments, not shown in the tag browser</tt> (you can use any <strong>Lookup name</strong> and <strong>Column heading</strong>, but the <strong>Column type</strong> must be <tt>Long text</tt>).</li>
+  		<li>Accept all changes, then exit and restart calibre.</li>
+  		<li>After restarting calibre, click the Annotations plugin icon to display the <strong>Customize Annotations</strong> dialog. </li>
+  		<li>Under <strong>Annotation options</strong>, select <tt>Annotations</tt> as the destination for imported annotations.</li>
+	</ol>
+</div>
+<hr />
+</div>
+
+<div class="topic">
+<h3><a name="metadata_matching" id="metadata_matching"></a>4. <a href="#toc">Metadata matching: How the plugin decides which book will receive annotations</a></h3>
+<p class="image"><img src="images/import_annotations.png"/></p>
+<p>After the incoming annotations have been analyzed, the <strong>Import Annotations</strong> dialog is displayed with a summary of available annotations. You may preview  annotations from a specific book by selecting it and clicking <strong>Preview</strong>, or double-clicking the book.</p>
+<p>Annotated books are scanned for their <strong>Title</strong>, <strong>Author</strong> and <strong>UUID</strong> metadata.</p>
+<p>Books whose metadata  matches a book in your library are displayed with a green background. When these annotations are imported, they will be added to the corresponding book without any  further interaction.</p>
+<p>Books with a partial metadata match are displayed with a yellow background. When these annotations are imported, you will be shown a summary of the matching and mismatching metadata, and prompted to confirm the likely destination, as shown in the dialog below.</p>
+<p class="image"><img src="images/mismatched_metadata.png"/></p>
+<p>Books with no matching metadata are displayed with a red background. When these annotations are imported, they will be added to the currently selected book in calibre after confirmation.</p>
+<hr />
+</div>
+
+<div class="topic">
+<h3><a name="styling_annotations" id="styling_annotations"></a>5. <a href="#toc">Styling Annotations</a></h3>
+<p>You can control the appearance of imported annotations in the <strong>Modify appearance</strong> dialog.</p>
+<p class="image"><img src="images/modify_appearance.png" /></p>
+<p>An annotation is composed of three elements - <strong>Timestamp</strong>, <strong>Text</strong> and <strong>Note</strong>. To change the display order of these elements, select the element in the Annotation elements section, then use the up or down arrows to move it. A live preview is displayed as you make changes.</p>
+<p>To include a horizontal rule between annotations, enable the checkbox in the <strong>Options</strong> section.</p>
+<p>The <strong>Timestamp format</strong> is configurable. For a list of available formats, click the help button to the right of  <strong>Timestamp format</strong>.</p>
+<p>After clicking <strong>OK</strong>, you will be prompted to update  existing annotations to the new  settings.</p>
+<hr />
+</div>
+
+<div class="topic">
+<h3><a name="finding_annotations" id="finding_annotations"></a>6. <a href="#toc">Finding Annotations</a></h3>
+<p>You can find annotations previously imported to calibre using the <strong>Find Annotations</strong> dialog.</p>
+<p class="image"><img src="images/find_annotations.png" /></p>
+<hr />
+</div>
+
+<div class="topic">
+<h3><a name="support" id="support"></a>7. <a href="#toc">Support</a></h3>
+<p>For more information on the Annotations plugin, visit <a href="http://www.mobileread.com/forums/showthread.php?t=205062" target="_blank">calibre's Plugins forum</a>.</p>
+</div>
+
+</body>
+</html>

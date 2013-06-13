@@ -1,0 +1,128 @@
+*** Notes for developing code to support additional devices ***
+
+8 March 2013
+Greg Riker
+griker@hotmail.com
+
+Table of Contents
+1. OVERVIEW
+2. DEVELOPING SUPPORT FOR A NEW DEVICE OR READER APP
+3. ADDING A NEW DEVICE/READER APP TO THE PLUGIN
+4. MODIFYING AN EXISTING DEVICE/READER APP
+5. DEVELOPER MODE
+6. PROGRAM FLOW
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. OVERVIEW
+The Annotations plugin is designed for extensibility. Classes supporting reader apps and devices are contained in individual files loaded at runtime.
+
+The plugin architecture provides two methods of adding annotations to calibre:
+
+ • Fetching annotations from a connected USB device.
+ • Importing annotations from an app which exports annotations, typically by email or through iTunes.
+
+The file reader_app_support.py contains classes which your code subclasses:
+ • A USB reader device (Kindle, SONY, etc) subclasses USBReader().
+ • An iOS reader application (iBooks, Marvin, Kindle for iOS) subclasses iOSReaderApp()
+ • A reader application which exports annotations (Bluefire Reader, GoodReader) subclasses ExportingReader()
+
+Note that some reader apps may support both methods of annotations (Marvin). Apps supporting both methods may be declared as subclasses of USBReader or iOSReaderApp.
+
+Within your class, two variables declare which methods are supported:
+ • SUPPORTS_EXPORTING: This class declares a method, parse_exported_highlights(), which parses text or files supplied by the user.
+
+ • SUPPORTS_FETCHING: This class declares two methods, get_installed_books() and get_active_annotations(), which probe the connected device for the information.
+
+Your class may declare both variables to be true if the reader is capable of both fetching and exporting.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+2. DEVELOPING SUPPORT FOR A NEW DEVICE OR READER APP
+ • Save a copy of the appropriate sample class included in the plugin, 'SampleExportingApp.py' or 'SampleFetchingClass.py' to your machine. Rename the copy appropriately, e.g. 'MyAnnotationsClass.py'.
+ • After installing the Annotations plugin to your installation of calibre, go to the calibre configuration directory. From within calibre, you can open this directory from  Preferences|Advanced|Miscellaneous|Open calibre configuration directory.
+ • Exit calibre.
+ • Within the calibre configuration directory, open plugins/annotations.json.
+ • Locate the property 'additional_readers'.
+ • Change "path/to/your/reader_class.py" to point to the copy of the sample class you created on your machine.
+ • Save annotations.json.
+
+Your class will be dynamically imported when calibre launches.
+
+Run calibre in debug mode to see diagnostic messages.
+ >calibre-debug -g
+
+If your code cannot be imported, calibre will exit, with the problem reported to the console. When your class loads successfully, you see its name listed during calibre initialization.
+
+To begin developing your code, locate SUPPORTS_EXPORTING or SUPPORTS_FETCHING, change that variable to True. Your class will now be enabled.
+
+After editing your class, save the changes and restart calibre.
+
+Refer to readers/Marvin.py or readers/GoodReader.py for functional working code.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+3. ADDING A NEW DEVICE/READER APP TO THE RELEASED PLUGIN
+Once you have developed and debugged a new reader app class, send it to me at the email address at the top of this file and I will evaluate it for inclusion with the plugin.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+4. MODIFYING AN EXISTING DEVICE/READER APP
+To make modifications to an existing reader app class:
+ • Exit calibre.
+ • Copy the reader app class source file from the readers/ folder to your desktop.
+ • Within the calibre configuration directory, open plugins/annotations.json.
+ • Locate the property 'additional_readers'.
+ • Change "path/to/your/reader_class.py" to point to the copy on your desktop.
+When the plugin loads, it will now use the reader app class definition on your desktop
+instead of the built-in copy.
+
+If you make improvements, send your revisions to me and I will evaluate them for
+inclusion with the plugin.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+5. DEVELOPER MODE
+Within annotations.json is an entry 'developer_mode'. Setting this variable to 'true' enables an additional menu item in the plugin dropdown menu, 'Remove all annotations'. This command can be useful while developing your class.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+6. PROGRAM FLOW
+action.py contains the InterfaceAction subclass implementation.
+
+action:genesis() is called when calibre launches. genesis() sets up logging, creates an opts object which is used to access global properties throughout the plugin, instantiates the annotatations sqlite database, initializes the .json prefs file, loads any external reader classes specified in the prefs file, then inflates the help file.
+
+InterfaceAction overrides:
+ • initialization_complete() listens for device_changed signals at action:_on_device_connection_changed(), so that we are notified when a device recognized by calibre is connected.
+ • library_changed() is called whenever the user changes libraries.
+ • shutting_down() is called when calibre is about to exit, giving the plugin a chance to unmount the iDevice and save the log.
+ • accept_enter_event(), accept_drag_move_event() and drop_event() support drag & drop methods.
+
+After genesis() executes, the plugin is ready to respond to user input. There are three user-initiated paths to importing annotations:
+ 1. User drags a .MRV, .MRVI or .TXT file to the plugin icon. If the dropped file has the proper mime content, drop_event() fires do_drop_event(), which passes the dropped file to each of the installed reader classes until it is successfully parsed, or informs the user that no installed class could parse the file.
+
+ 2. User invokes the dropdown menu item 'Fetch annotations from <connected device>' (when a supported device is connected).
+
+ 3. User invokes the dropdown menu item 'Import annotations from <reader class>'.
+
+There are two approaches to processing annotations - Fetching and Importing. Fetching means probing a connected device to discover annotation content, usually stored in one or more sqlite databases, or some proprietary format. Importing means parsing a file containing a proprietary annotations description.
+
+Both Fetching and Importing result in storing the annotations to annotations.db, a sqlite database created and managed by the plugin.
+
+Fetching classes instantiate AnnotatedBooksDialog() from action:fetch_device_annotations()
+Importing classes instantiate AnnotatedBooksDialog() from action:present_annotated_books()
+
+Each reader class stores annotations to annotations.db using a standardized schema. After the annotations are processed, the user is shown a summary by instantiating annotated_books:AnnotatedBooksDialog(). This class displays all available annotations, color-coded by metadata quality. The user can preview individual book's annotations, and enable or disable individual books for importation.
+
+
+annotated_books:fetch_selected_annotations() builds a list of selected books.
+
+Once the user approves the import list, action:process_selected_books() automatically adds annotations from the selected books to the associated library book if the metadata matches completely. For incomplete matches, a confirmation dialog is shown with the plugin's best guess for the receiving book in the library.
+
+Additional plugin functionality
+-------------------------------
+Find annotations (dropdown menu)
+find_annotations:FindAnnotationsDialog()
+
+Modify appearance (configuration dialog)
+appearance:AnnotationsAppearance()

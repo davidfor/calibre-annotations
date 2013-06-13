@@ -1,0 +1,14 @@
+Thanks to kovidgoyal, chaley and kiwidude for their generous assistance and support.
+
+Special thanks to Kristian Guillaumier for Marvin, a most excellent iOS reader application, which inspired the completion of this plugin.
+
+Version history:
+1.1.0 [15 March 2013]
+ • Add News clipping feature
+ • Add support for GoodReader
+ • Add support for hardware Kindle
+1.0.1 [11 March 2013]
+ • Fixed rare crash condition after opening Preview dialog
+1.0.0 [11 March 2013]
+ • Initial release for Linux, OS X and Windows.
+ • Support for Marvin, an iOS reader application.

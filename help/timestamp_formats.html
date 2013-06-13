@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Timestamp formats</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<style type="text/css">
+        h3 {
+			font-family:Tahoma, Geneva, sans-serif;
+            text-align: center;
+            font-weight: normal;
+            }
+		td.string {
+			font-family:"Lucida Console", Monaco, monospace;
+			font-size:small;
+		}
+		td.description {
+			font-family:"Lucida Console", Monaco, monospace;
+			font-size:small;
+		}
+		td.sample {
+			font-family:"Lucida Console", Monaco, monospace;
+			font-size:small;
+		}
+        th {
+			font-family:Tahoma, Geneva, sans-serif;
+			font-size:small;
+        }
+    </style>
+</head>
+<body>
+<h3><a id="module_description"></a>Time and Date formats</h3><table class="overview" width="100%" border="1" cellspacing="2px" cellpadding="2px">
+  <tr>
+    <th scope="col">string</th>
+    <th scope="col">Description</th>
+    <th scope="col">Example</th>
+  </tr>
+  <tr>
+    <td class="string">%A</td>
+    <td class="description">Full weekday name</td>
+    <td class="sample">Thursday</td>
+  </tr>
+  <tr>
+    <td class="string">%a</td>
+    <td class="description">Abbreviated weekday name</td>
+    <td class="sample">Thu</td>
+  </tr>
+  <tr>
+    <td class="string">%B</td>
+    <td class="description">Full month name</td>
+    <td class="sample">September</td>
+  </tr>
+  <tr>
+    <td class="string">%b</td>
+    <td class="description">Abbreviated month name</td>
+    <td class="sample">Sep</td>
+  </tr>
+  <tr>
+    <td class="string">%C</td>
+    <td class="description">Century (year divided by 100)</td>
+    <td class="sample">20</td>
+  </tr>
+  <tr>
+    <td class="string">%c</td>
+    <td class="description">Local representation of time and date</td>
+    <td class="sample">Thu Sep 25 22:32:00 2012</td>
+  </tr>
+  <tr>
+    <td class="string">%D</td>
+    <td class="description">Equivalent to %m/%d/%y</td>
+    <td class="sample">09/25/12</td>
+  </tr>
+  <tr>
+    <td class="string">%d</td>
+    <td class="description">Day of the month as a decimal number (01-31)</td>
+    <td class="sample">25</td>
+  </tr>
+  <tr>
+    <td class="string">%e</td>
+    <td class="description">Day of the month as a decimal number (1-31)</td>
+    <td class="sample">25</td>
+  </tr>
+  <tr>
+    <td class="string">%F</td>
+    <td class="description">Equivalent to %Y-%m-%d</td>
+    <td class="sample">2012-09-25</td>
+  </tr>
+  <tr>
+    <td class="string">%g</td>
+    <td class="description">Same as %G, but as a decimal number with century (00-99)</td>
+    <td class="sample">12</td>
+  </tr>
+  <tr>
+    <td class="string">%H</td>
+    <td class="description">Hour (24-hour clock) as a decimal number (00-23)</td>
+    <td class="sample">22</td>
+  </tr>
+  <tr>
+    <td class="string">%h</td>
+    <td class="description">Equivalent to %b</td>
+    <td class="sample">Sep</td>
+  </tr>
+  <tr>
+    <td class="string">%I</td>
+    <td class="description">Hour (12-hour clock) as a decimal number (01-12)</td>
+    <td class="sample">10</td>
+  </tr>
+  <tr>
+    <td class="string">%k</td>
+    <td class="description">Hour (24-hour clock) as a decimal number (0-23); single digits are preceded by a blank</td>
+    <td class="sample">22</td>
+  </tr>
+  <tr>
+    <td class="string">%l</td>
+    <td class="description">Hour (12-hour clock) as a decimal number (1-12); single digits are preceded by a blank</td>
+    <td class="sample">10</td>
+  </tr>
+  <tr>
+    <td class="string">%M</td>
+    <td class="description">Minute as a decimal number (00-59)</td>
+    <td class="sample">32</td>
+  </tr>
+  <tr>
+    <td class="string">%m</td>
+    <td class="description">Month as a decimal number (01-12)</td>
+    <td class="sample">09</td>
+  </tr>
+  <tr>
+    <td class="string">%p</td>
+    <td class="description">AM or PM</td>
+    <td class="sample">pm</td>
+  </tr>
+  <tr>
+    <td class="string">%R</td>
+    <td class="description">Equivalent to %H:%M</td>
+    <td class="sample">22:32</td>
+  </tr>
+  <tr>
+    <td class="string">%r</td>
+    <td class="description">Equivalent to %I:%M:%S %p</td>
+    <td class="sample">10:32:00 pm</td>
+  </tr>
+  <tr>
+    <td class="string">%S</td>
+    <td class="description">Seconds as a decimal number (00-60)</td>
+    <td class="sample">00</td>
+  </tr>
+  <tr>
+    <td class="string">%T</td>
+    <td class="description">Equivalent to %H:%M:%S</td>
+    <td class="sample">22:32:00</td>
+  </tr>
+  <tr>
+    <td class="string">%v</td>
+    <td class="description">Equivalent to %e-%b-%Y</td>
+    <td class="sample">25-Sep-2012</td>
+  </tr>
+  <tr>
+    <td class="string">%X</td>
+    <td class="description">Local representation of time</td>
+    <td class="sample">22:32:00</td>
+  </tr>
+  <tr>
+    <td class="string">%x</td>
+    <td class="description">Local representation of date</td>
+    <td class="sample">09/25/12</td>
+  </tr>
+  <tr>
+    <td class="string">%Y</td>
+    <td class="description">Year with century as a decimal number</td>
+    <td class="sample">2012</td>
+  </tr>
+  <tr>
+    <td class="string">%y</td>
+    <td class="description">Year without century as a decimal number</td>
+    <td class="sample">12</td>
+  </tr>
+</table>
+</body>
+</html>
