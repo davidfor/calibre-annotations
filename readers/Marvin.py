@@ -27,6 +27,7 @@ class MarvinReaderApp(iOSReaderApp):
     # Reader-specific characteristics
     annotations_subpath = '/Library/mainDb.sqlite'
     app_name = 'Marvin'
+    app_aliases = [b'com.appstafarian.Marvin', b'com.appstafarian.MarvinIP']
     books_subpath = '/Library/mainDb.sqlite'
     HIGHLIGHT_COLORS = ['Pink', 'Yellow', 'Blue', 'Green', 'Purple']
 

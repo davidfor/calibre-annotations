@@ -366,11 +366,13 @@ class iOSReaderApp(ReaderApp):
     """
     # Reader-specific characteristics defined in subclass
     app_folder = None
-    app_id = None
+    app_id = None               # Populated by action:get_annotated_books_in_ios_reader()
+    app_aliases = []            # All supported bundle identifiers
     app_name = '<placeholder>'
     books_subpath = None
     HIGHLIGHT_COLORS = []
     metadata_subpath = None
+    reader_app_aliases = None
     reader_app_classes = None
     temp_dir = None
 
@@ -401,6 +403,19 @@ class iOSReaderApp(ReaderApp):
                 known_reader_app_classes[c.app_name] = c
             iOSReaderApp.reader_app_classes = known_reader_app_classes
         return iOSReaderApp.reader_app_classes
+
+    @staticmethod
+    def get_reader_app_aliases():
+        """
+        Utility method to return app_aliases of subclasses
+        {app_name:cls}
+        """
+        if iOSReaderApp.reader_app_aliases is None:
+            reader_app_aliases = {}
+            for c in iOSReaderApp._iter_subclasses(iOSReaderApp):
+                reader_app_aliases[c.app_name] = c.app_aliases
+            iOSReaderApp.reader_app_aliases = reader_app_aliases
+        return iOSReaderApp.reader_app_aliases
 
     @staticmethod
     def get_sqlite_app_classes(by_name=False):

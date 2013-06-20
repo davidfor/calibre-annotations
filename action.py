@@ -432,7 +432,7 @@ class AnnotationsAction(InterfaceAction):
 
             # Instantiate reader_app_class
             ra = reader_app_class(self)
-            ra.app_id = self.ios.installed_apps[reader_app]['app_id']
+            ra.app_id = self.installed_app_aliases[reader_app][0]
             self.opts.pb.show()
             ra.open()
             ra.get_installed_books()
@@ -914,12 +914,9 @@ class AnnotationsAction(InterfaceAction):
             self.connected_device = self.gui.device_manager.device
             self.log_location(self.connected_device.gui_name)
 
-            # Scan for installed reader apps
+            # If iDevice, scan for installed reader apps
             if getattr(self.connected_device, 'VENDOR_ID', 0) == [0x05ac]:
-                known_reader_apps = iOSReaderApp.get_reader_app_classes()
-                self.ios.connect_idevice()
-                self.ios.get_installed_apps(applist=known_reader_apps.keys())
-                self.ios.disconnect_idevice()
+                self.installed_app_aliases = iOSReaderApp.get_reader_app_aliases()
             else:
                 USBReader.get_usb_reader_classes()
         else:
@@ -1086,8 +1083,8 @@ class AnnotationsAction(InterfaceAction):
                                                   'Fetch annotations from…')
                     self.add_sub_menu.setToolTip('Fetch annotations from iOS reader apps')
 
-                    if self.ios.installed_apps:
-                        for an in self.ios.installed_apps:
+                    if self.installed_app_aliases:
+                        for an in self.installed_app_aliases:
                             ln = re.sub(' ', '_', an.lower())
 
                             if an == "Kindle":

@@ -27,6 +27,7 @@ class iBooksReaderApp(iOSReaderApp):
     # Reader-specific characteristics
     annotations_subpath = '/Documents/storeFiles/AEAnnotation_*.sqlite'
     app_name = 'iBooks'
+    app_aliases = [b'com.apple.iBooks']
     books_subpath = '/Documents/BKLibrary_database/iBooks_*.sqlite'
     EPUBCFI_REGEX = r'epubcfi\(\/(?P<spine_loc>\d+)\/(?P<spine_index>\d+).*!\/(?P<interior>[\[\]\w\/]+),.*?:(?P<start>\d+),.*?:(?P<end>\d+)\)$'
     HIGHLIGHT_COLORS = ['Underline', 'Green', 'Blue', 'Yellow', 'Pink', 'Purple']
