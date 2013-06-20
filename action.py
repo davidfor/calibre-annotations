@@ -432,7 +432,7 @@ class AnnotationsAction(InterfaceAction):
 
             # Instantiate reader_app_class
             ra = reader_app_class(self)
-            ra.app_id = self.installed_app_aliases[reader_app][0]
+            ra.app_id = self.installed_app_aliases[reader_app]
             self.opts.pb.show()
             ra.open()
             ra.get_installed_books()
@@ -916,7 +916,7 @@ class AnnotationsAction(InterfaceAction):
 
             # If iDevice, scan for installed reader apps
             if getattr(self.connected_device, 'VENDOR_ID', 0) == [0x05ac]:
-                self.installed_app_aliases = iOSReaderApp.get_reader_app_aliases()
+                self.installed_app_aliases = iOSReaderApp.get_reader_app_aliases(self)
             else:
                 USBReader.get_usb_reader_classes()
         else:

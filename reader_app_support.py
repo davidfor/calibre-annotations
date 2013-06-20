@@ -405,15 +405,21 @@ class iOSReaderApp(ReaderApp):
         return iOSReaderApp.reader_app_classes
 
     @staticmethod
-    def get_reader_app_aliases():
+    def get_reader_app_aliases(parent):
         """
-        Utility method to return app_aliases of subclasses
-        {app_name:cls}
+        Utility method to return installed app_id of subclasses
+        {app_name: app_id}
         """
         if iOSReaderApp.reader_app_aliases is None:
             reader_app_aliases = {}
             for c in iOSReaderApp._iter_subclasses(iOSReaderApp):
-                reader_app_aliases[c.app_name] = c.app_aliases
+                app_id = None
+                for _app_id in c.app_aliases:
+                    if parent.ios.mount_ios_app(app_id=_app_id):
+                        app_id = _app_id
+                        parent.ios.disconnect_idevice()
+                        break
+                reader_app_aliases[c.app_name] = app_id
             iOSReaderApp.reader_app_aliases = reader_app_aliases
         return iOSReaderApp.reader_app_aliases
 
