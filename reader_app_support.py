@@ -407,8 +407,9 @@ class iOSReaderApp(ReaderApp):
     @staticmethod
     def get_reader_app_aliases(parent):
         """
-        Utility method to return installed app_id of subclasses
-        {app_name: app_id}
+        Utility method to return installed app_ids of subclasses.
+        The first installed bundle identifier is used.
+        {app_name: bundle identifer}
         """
         if iOSReaderApp.reader_app_aliases is None:
             reader_app_aliases = {}
@@ -418,6 +419,7 @@ class iOSReaderApp(ReaderApp):
                         reader_app_aliases[c.app_name] = app_id
                         parent.ios.disconnect_idevice()
                         break
+
             iOSReaderApp.reader_app_aliases = reader_app_aliases
         return iOSReaderApp.reader_app_aliases
 
