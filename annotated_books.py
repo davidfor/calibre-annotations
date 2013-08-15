@@ -22,7 +22,7 @@ from calibre_plugins.annotations.common_utils import (
     BookStruct, HelpView, SizePersistedDialog,
     get_clippings_cid)
 
-import calibre_plugins.annotations.config as cfg
+from calibre_plugins.annotations.config import plugin_prefs
 from calibre_plugins.annotations.reader_app_support import ReaderApp
 
 
@@ -156,8 +156,6 @@ class AnnotatedBooksDialog(QDialog):
     def __init__(self, parent, book_list, get_annotations_as_HTML, source):
         self.opts = parent.opts
         self.parent = parent
-        self.log = parent.opts.log
-        self.log_location = parent.opts.log_location
         self.get_annotations_as_HTML = get_annotations_as_HTML
         self.show_confidence_colors = self.opts.prefs.get('annotated_books_dialog_show_confidence_as_bg_color', True)
         self.source = source
@@ -170,7 +168,7 @@ class AnnotatedBooksDialog(QDialog):
         self.perfect_width = 0
 
         from calibre_plugins.annotations.appearance import default_timestamp
-        friendly_timestamp_format = cfg.plugin_prefs.get('appearance_timestamp_format', default_timestamp)
+        friendly_timestamp_format = plugin_prefs.get('appearance_timestamp_format', default_timestamp)
 
         # Are we collecting News clippings?
         collect_news_clippings = self.opts.prefs.get('cfg_news_clippings_checkbox', False)
@@ -442,7 +440,7 @@ class PreviewDialog(SizePersistedDialog):
     """
     def __init__(self, book_mi, annotations, parent=None):
         #QDialog.__init__(self, parent)
-        self.prefs = cfg.plugin_prefs
+        self.prefs = plugin_prefs
         super(PreviewDialog, self).__init__(parent, 'annotations_preview_dialog')
         self.pl = QVBoxLayout(self)
         self.setLayout(self.pl)

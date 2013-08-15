@@ -98,7 +98,7 @@ class SampleFetchingApp(USBReader):
                                 'highlight_text': ['An orphan annotation (no book)']
                                }
 
-        self.log("%s:get_active_annotations()" % self.app_name)
+        self._log("%s:get_active_annotations()" % self.app_name)
 
         self.opts.pb.set_label("Getting active annotations for %s" % self.app_name)
         self.opts.pb.set_value(0)
@@ -179,7 +179,7 @@ class SampleFetchingApp(USBReader):
                             'title': 'A Book With No Annotations',
                             'title_sort': 'Book With No Annotations, A'}
 
-        self.log("%s:get_installed_books()" % self.app_name)
+        self._log("%s:get_installed_books()" % self.app_name)
         self.installed_books = []
 
         # Don't change the template of books_db string

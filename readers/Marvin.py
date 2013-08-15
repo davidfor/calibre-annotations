@@ -134,7 +134,7 @@ class MarvinReaderApp(iOSReaderApp):
 
     def get_active_annotations(self):
 
-        self.log("%s:get_active_annotations()" % self.app_name)
+        self._log("%s:get_active_annotations()" % self.app_name)
 
         self.opts.pb.set_label("Getting active annotations for %s" % self.app_name)
         self.opts.pb.set_value(0)
@@ -147,7 +147,7 @@ class MarvinReaderApp(iOSReaderApp):
         books_db = self.generate_books_db_name(self.app_name_, self.ios.device_name)
 
         if self.opts.disable_caching or not self._cache_is_current(db_profile['stats'], cached_db):
-            self.log(" fetching annotations from %s on %s" % (self.app_name, self.ios.device_name))
+            self._log(" fetching annotations from %s on %s" % (self.app_name, self.ios.device_name))
 
             # Create the annotations table as needed
             self.create_annotations_table(cached_db)
@@ -220,9 +220,9 @@ class MarvinReaderApp(iOSReaderApp):
                     else:
                         interior = self._generate_interior_location_sort(row[b'StartXPath'])
                         if not interior:
-                            self.log("Marvin: unable to parse xpath:")
-                            self.log(row[b'StartXPath'])
-                            self.log(a_mi)
+                            self._log("Marvin: unable to parse xpath:")
+                            self._log(row[b'StartXPath'])
+                            self._log(a_mi)
                             continue
 
                         a_mi.location_sort = "%04d.%s.%04d" % (
@@ -241,14 +241,14 @@ class MarvinReaderApp(iOSReaderApp):
                 self.commit()
 
         else:
-            self.log(" retrieving cached annotations from %s" % cached_db)
+            self._log(" retrieving cached annotations from %s" % cached_db)
 
     def get_installed_books(self):
         """
         Fetch installed books from mainDb.sqlite or cached_db
         Populate self.tocs: {book_id: {toc_entries} ...}
         """
-        self.log("%s:get_installed_books()" % self.app_name)
+        self._log("%s:get_installed_books()" % self.app_name)
 
         self.opts.pb.set_label("Getting installed books from %s" % self.app_name)
         self.opts.pb.set_value(0)
@@ -260,7 +260,7 @@ class MarvinReaderApp(iOSReaderApp):
 
         if self.opts.disable_caching or not self._cache_is_current(db_profile['stats'], cached_db):
             # (Re)load installed books from device
-            self.log(" fetching installed books from %s on %s" % (self.app_name, self.ios.device_name))
+            self._log(" fetching installed books from %s on %s" % (self.app_name, self.ios.device_name))
 
             # Mount the ios container
             self.ios.mount_ios_app(app_id=self.app_id)
@@ -353,7 +353,7 @@ class MarvinReaderApp(iOSReaderApp):
 
         else:
             # Load installed books from cache
-            self.log(" retrieving cached books from %s" % cached_db)
+            self._log(" retrieving cached books from %s" % cached_db)
             installed_books = self._get_cached_books(cached_db)
 
         self.installed_books = installed_books
@@ -461,9 +461,9 @@ class MarvinReaderApp(iOSReaderApp):
                     else:
                         interior = self._generate_interior_location_sort(highlights[datetime]['startx'])
                         if not interior:
-                            self.log("Marvin: unable to parse xpath:")
-                            self.log(" %s" % highlights[datetime]['startx'])
-                            self.log(a_mi)
+                            self._log("Marvin: unable to parse xpath:")
+                            self._log(" %s" % highlights[datetime]['startx'])
+                            self._log(a_mi)
                             continue
 
                         a_mi.location_sort = "%04d.%s.%04d" % (
@@ -503,10 +503,10 @@ class MarvinReaderApp(iOSReaderApp):
             _process_individual_book(marvin)
         else:
             if log_failure:
-                self.log("Marvin:parse_exported_highlights()")
-                self.log(" unrecognized scope '%s' in imported Marvin highlights" % scope)
-                self.log(" --- Contents of imported highlights ---")
-                self.log(etree.tostring(marvin, pretty_print=True))
+                self._log("Marvin:parse_exported_highlights()")
+                self._log(" unrecognized scope '%s' in imported Marvin highlights" % scope)
+                self._log(" --- Contents of imported highlights ---")
+                self._log(etree.tostring(marvin, pretty_print=True))
             return False
         return True
 

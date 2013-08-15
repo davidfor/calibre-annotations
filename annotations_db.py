@@ -5,25 +5,56 @@ __license__ = 'GPL v3'
 __copyright__ = '2013, Greg Riker <griker@hotmail.com>'
 __docformat__ = 'restructuredtext en'
 
-import os, sqlite3
+import os, sqlite3, sys
 from datetime import datetime
 
+from calibre.devices.usbms.driver import debug_print
 from calibre.ebooks.BeautifulSoup import NavigableString
 from calibre_plugins.annotations.annotations import Annotation, Annotations
 from calibre_plugins.annotations.common_utils import AnnotationStruct
-
+from calibre_plugins.annotations.config import plugin_prefs
 
 class AnnotationsDB():
     """
     Handle I/O with SQLite db
     """
+    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
+
+    def _log(self, msg=None):
+        '''
+        Print msg to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        if msg:
+            debug_print(" %s" % str(msg))
+        else:
+            debug_print()
+
+    def _log_location(self, *args):
+        '''
+        Print location, args to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        arg1 = arg2 = ''
+
+        if len(args) > 0:
+            arg1 = str(args[0])
+        if len(args) > 1:
+            arg2 = str(args[1])
+
+        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
+                    func=sys._getframe(1).f_code.co_name,
+                    arg1=arg1, arg2=arg2))
+
     version = 1
 
     def __init__(self, opts, path):
         self.conn = None
         self.db_version = None
-        self.log = opts.log
-        self.log_location = opts.log_location
         self.opts = opts
         self.path = path
 
@@ -274,7 +305,7 @@ class AnnotationsDB():
         if not db_existed:
             self.set_user_version(self.version)
         self.db_version = self.get_user_version()
-        self.log_location("db_version: %s" % (self.db_version))
+        self._log_location("db_version: %s" % (self.db_version))
         self.create_timestamp_table()
         return self.conn
 
@@ -474,7 +505,7 @@ class AnnotationsDB():
         """
         rac: reader_app_class instance
         """
-        self.log_location()
+        self._log_location()
 
         cur = self.conn.cursor()
 
@@ -496,9 +527,9 @@ class AnnotationsDB():
             cur.execute(select)
             rows = cur.fetchall()
             if rows:
-                self.log.warning(" the following %d orphaned annotations would be removed:" % len(rows))
+                self._log(" !!! The following %d orphaned annotations would be removed: !!!" % len(rows))
             for row in rows:
-                self.log.warning("  book_id(%s):  %s" % (row['book_id'], row['highlight_text']))
+                self._log("  book_id(%s):  %s" % (row['book_id'], row['highlight_text']))
         else:
             delete = '''DELETE from {0}
                         WHERE book_id NOT IN ({1})
@@ -507,7 +538,7 @@ class AnnotationsDB():
             self.commit()
 
     def purge_widows(self, cached_db, preview):
-        self.log_location(cached_db)
+        self._log_location(cached_db)
         cur = self.conn.cursor()
         if preview:
             cur.execute('''SELECT * from {0}
@@ -516,9 +547,9 @@ class AnnotationsDB():
                         '''.format(cached_db))
             rows = cur.fetchall()
             if rows:
-                self.log.warning(" the following inactive books without annotations would be removed:")
+                self._log(" !!! the following inactive books without annotations would be removed: !!!")
             for row in rows:
-                self.log.warning("  '%s' by %s" % (row['title'], row['author']))
+                self._log("  '%s' by %s" % (row['title'], row['author']))
 
         else:
             self.conn.execute('''DELETE from {0}

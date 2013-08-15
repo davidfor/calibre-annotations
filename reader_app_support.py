@@ -25,7 +25,7 @@ from calibre.ptempfile import PersistentTemporaryDirectory
 from calibre.utils.zipfile import ZipFile
 
 from calibre.utils.config import JSONConfig
-prefs = JSONConfig('plugins/annotations')
+plugin_prefs = JSONConfig('plugins/annotations')
 
 
 class ClassNotImplementedException(Exception):
@@ -59,20 +59,51 @@ class ReaderApp(object):
 
     NSTimeIntervalSince1970 = 978307200.0
 
+    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
+
+    def _log(self, msg=None):
+        '''
+        Print msg to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        if msg:
+            debug_print(" %s" % str(msg))
+        else:
+            debug_print()
+
+    def _log_location(self, *args):
+        '''
+        Print location, args to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        arg1 = arg2 = ''
+
+        if len(args) > 0:
+            arg1 = str(args[0])
+        if len(args) > 1:
+            arg2 = str(args[1])
+
+        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
+                    func=sys._getframe(1).f_code.co_name,
+                    arg1=arg1, arg2=arg2))
+
 
     def __init__(self, parent):
         """
         Basic initialization
         """
-        self.log = parent.opts.log
-        self.log_location = parent.opts.log_location
-        self.log_invocation = parent.opts.log_invocation
         self.opts = parent.opts
         self.parent = parent
 
         # News clippings
-        self.collect_news_clippings = JSONConfig('plugins/annotations').get('cfg_news_clippings_checkbox', False)
-        self.news_clippings_destination = JSONConfig('plugins/annotations').get('cfg_news_clippings_lineEdit', None)
+        #self.collect_news_clippings = JSONConfig('plugins/annotations').get('cfg_news_clippings_checkbox', False)
+        self.collect_news_clippings = plugin_prefs.get('cfg_news_clippings_checkbox', False)
+        #self.news_clippings_destination = JSONConfig('plugins/annotations').get('cfg_news_clippings_lineEdit', None)
+        self.news_clippings_destination = plugin_prefs.get('cfg_news_clippings_lineEdit', None)
         self.news_clippings_cid = None
         if self.collect_news_clippings and self.news_clippings_destination:
             self.news_clippings_cid = self.get_clippings_cid(self.news_clippings_destination)
@@ -195,13 +226,13 @@ class ReaderApp(object):
         current_timestamp = unicode(datetime.fromtimestamp(os.path.getmtime(dependent_file)))
 
         if False and self.opts.verbose:
-            self.log_location(cached_timestamp > current_timestamp)
+            self._log_location(cached_timestamp > current_timestamp)
             if False:
                 if os.path.exists(dependent_file):
-                    self.log(" current_timestamp: %s" % repr(current_timestamp))
+                    self._log(" current_timestamp: %s" % repr(current_timestamp))
                 else:
-                    self.log(" '%s' does not exist" % dependent_file)
-                self.log("  cached_timestamp: %s" % repr(cached_timestamp))
+                    self._log(" '%s' does not exist" % dependent_file)
+                self._log("  cached_timestamp: %s" % repr(cached_timestamp))
 
         return cached_timestamp > current_timestamp
 
@@ -241,7 +272,7 @@ class ReaderApp(object):
                 ncx_file = manifest.find('.//*[@id="%s"]' % ncx_fs).get('href')
             with open(os.path.join(fpath, oebps, ncx_file)) as ncxf:
                 ncx_tree = etree.parse(ncxf)
-            #self.log(etree.tostring(ncx_tree, pretty_print=True))
+            #self._log(etree.tostring(ncx_tree, pretty_print=True))
 
         else:
             # Find the OPF file in the zipped ePub
@@ -262,9 +293,9 @@ class ReaderApp(object):
                     ncx_tree = etree.fromstring(zf.read(_ncx))
             except:
                 import traceback
-                self.log_location()
-                self.log(" unable to unzip '%s'" % fpath)
-                self.log(traceback.format_exc())
+                self._log_location()
+                self._log(" unable to unzip '%s'" % fpath)
+                self._log(traceback.format_exc())
                 return toc
 
         # fpath points to epub (zipped or unzipped dir)
@@ -314,10 +345,10 @@ class ReaderApp(object):
                     current_toc_entry = toc[section]
         except:
             import traceback
-            self.log_invocation("reader_app_support:_get_epub_toc()")
-            self.log("error parsing '%s'" % fpath)
-            self.log(traceback.format_exc())
-            self.log_invocation("end traceback")
+            self._log_location()
+            self._log("{:~^80}".format(" error parsing '%s' " % fpath))
+            self._log(traceback.format_exc())
+            self._log("{:~^80}".format(" end traceback "))
 
         return toc
 
@@ -460,13 +491,13 @@ class iOSReaderApp(ReaderApp):
         current_timestamp = unicode(datetime.fromtimestamp(unix_timestamp))
 
         if False:
-            self.log_location(cached_timestamp > current_timestamp)
+            self._log_location(cached_timestamp > current_timestamp)
             if True:
                 if self.ios.exists(dependent_file):
-                    self.log(" current_timestamp: %s" % repr(current_timestamp))
+                    self._log(" current_timestamp: %s" % repr(current_timestamp))
                 else:
-                    self.log(" '%s' does not exist" % dependent_file)
-                self.log("  cached_timestamp: %s" % repr(cached_timestamp))
+                    self._log(" '%s' does not exist" % dependent_file)
+                self._log("  cached_timestamp: %s" % repr(cached_timestamp))
 
         return cached_timestamp > current_timestamp
 
@@ -534,7 +565,7 @@ class iOSReaderApp(ReaderApp):
             fp = '/'.join([fpath, oebps, ncx_file])
             ncxf = cStringIO.StringIO(self.ios.read(fp))
             ncx_tree = etree.parse(ncxf)
-            #self.log(etree.tostring(ncx_tree, pretty_print=True))
+            #self._log(etree.tostring(ncx_tree, pretty_print=True))
 
         else:
             # Find the OPF file in the zipped ePub
@@ -555,9 +586,9 @@ class iOSReaderApp(ReaderApp):
                 ncx_tree = etree.fromstring(zf.read(_ncx))
             except:
                 import traceback
-                self.log_location()
-                self.log(" unable to unzip '%s'" % fpath)
-                self.log(traceback.format_exc())
+                self._log_location()
+                self._log(" unable to unzip '%s'" % fpath)
+                self._log(traceback.format_exc())
                 return toc
 
         # fpath points to epub (zipped or unzipped dir)
@@ -607,10 +638,10 @@ class iOSReaderApp(ReaderApp):
                     current_toc_entry = toc[section]
         except:
             import traceback
-            self.log_invocation("reader_app_support:_get_epub_toc()")
-            self.log("error parsing '%s'" % fpath)
-            self.log(traceback.format_exc())
-            self.log_invocation("end traceback")
+            self._log_location()
+            self._log("{:~^80}".format(" error parsing '%s' " % fpath))
+            self._log(traceback.format_exc())
+            self._log("{:~^80}".format(" end traceback "))
 
         return toc
 
@@ -636,7 +667,7 @@ class iOSReaderApp(ReaderApp):
         '''
         Copy remote_db_path from iOS to local storage as needed
         '''
-        self.log_location("app_id: '%s' remote_db_path: '%s'" % (app_id, remote_db_path))
+        self._log_location("app_id: '%s' remote_db_path: '%s'" % (app_id, remote_db_path))
 
         # Mount app_id
         self.ios.mount_ios_app(app_id=app_id)
@@ -674,7 +705,7 @@ class iOSReaderApp(ReaderApp):
                     self.ios.copy_from_idevice(remote_db_path, out)
                 local_db_path = out.name
         else:
-            self.log_location("'%s' not found" % remote_db_path)
+            self._log_location("'%s' not found" % remote_db_path)
             raise DatabaseNotFoundException
 
         # Dismount ios

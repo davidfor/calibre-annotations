@@ -38,7 +38,7 @@ class iBooksReaderApp(iOSReaderApp):
         """
         Fetch active iBooks annotations from AEAnnotation_*.sqlite
         """
-        self.log("%s:get_active_annotations()" % self.app_name)
+        self._log("%s:get_active_annotations()" % self.app_name)
 
         self.opts.pb.set_label("Getting active annotations for %s" % self.app_name)
         self.opts.pb.set_value(0)
@@ -51,7 +51,7 @@ class iBooksReaderApp(iOSReaderApp):
         books_db = self.generate_books_db_name(self.app_name_, self.ios.device_name)
 
         if self.opts.disable_caching or not self._cache_is_current(db_profile['stats'], cached_db):
-            self.log(" fetching annotations from %s on %s" % (self.app_name, self.ios.device_name))
+            self._log(" fetching annotations from %s on %s" % (self.app_name, self.ios.device_name))
 
             # Create the annotations table as needed
             self.create_annotations_table(cached_db)
@@ -132,13 +132,13 @@ class iBooksReaderApp(iOSReaderApp):
                 self.commit()
 
         else:
-            self.log(" retrieving cached annotations from %s" % cached_db)
+            self._log(" retrieving cached annotations from %s" % cached_db)
 
     def get_installed_books(self):
         """
         Fetch installed books from iBooks_*.sqlite or cache
         """
-        self.log("%s:get_installed_books()" % self.app_name)
+        self._log("%s:get_installed_books()" % self.app_name)
 
         self.opts.pb.set_label("Getting installed books from %s" % self.app_name)
         self.opts.pb.set_value(0)
@@ -151,7 +151,7 @@ class iBooksReaderApp(iOSReaderApp):
         # Test timestamp against cached value
         if self.opts.disable_caching or not self._cache_is_current(db_profile['stats'], cached_db):
             # (Re)load installed books from device
-            self.log(" fetching installed books from %s on %s" % (self.app_name, self.ios.device_name))
+            self._log(" fetching installed books from %s on %s" % (self.app_name, self.ios.device_name))
 
             # Mount the Media folder
             self.ios.mount_ios_media_folder()
@@ -230,7 +230,7 @@ class iBooksReaderApp(iOSReaderApp):
             installed_books = list(installed_books)
 
         else:
-            self.log(" retrieving cached books from %s" % cached_db)
+            self._log(" retrieving cached books from %s" % cached_db)
             installed_books = self._get_cached_books(cached_db)
 
         self.installed_books = installed_books
@@ -293,7 +293,7 @@ class iBooksReaderApp(iOSReaderApp):
         if self.ios.exists(container):
             f = cStringIO.StringIO(self.ios.read(container))
             tree = etree.parse(f).getroot()
-            #self.log(etree.tostring(tree, pretty_print=True))
+            #self._log(etree.tostring(tree, pretty_print=True))
             rootfiles = tree[0]
             rootfile = rootfiles[0]
             OPF_path = '/'.join([path, rootfile.get('full-path')])
@@ -325,8 +325,8 @@ class iBooksReaderApp(iOSReaderApp):
                     mi['genre'] = ', '.join(subjects)
 
         else:
-            self.log_location("unable to locate OPF file")
-            self.log("  title: '%s'" % title)
-            self.log("   path: %s" % path)
+            self._log_location("unable to locate OPF file")
+            self._log("  title: '%s'" % title)
+            self._log("   path: %s" % path)
 
         return mi

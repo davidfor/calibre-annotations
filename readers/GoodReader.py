@@ -212,10 +212,10 @@ class GoodReaderApp(ExportingReader):
                 line = gr_annotations[i]
         except:
             if log_failure:
-                self.log(" unable to parse GoodReader Annotation summary")
-                self.log_invocation("Imported Annotation summary")
-                self.log(raw)
-                self.log_invocation("end imported Annotations summary")
+                self._log(" unable to parse GoodReader Annotation summary")
+                self._log("{:~^80}".format(" Imported Annotation summary "))
+                self._log(raw)
+                self._log("{:~^80}".format(" end imported Annotations summary "))
                 import traceback
                 traceback.print_exc()
                 msg = ('Unable to parse Annotation summary from %s. ' % self.app_name +
@@ -225,7 +225,7 @@ class GoodReaderApp(ExportingReader):
                     msg,
                     show_copy_button=False,
                     parent=self.opts.gui).exec_()
-                self.log_location("WARNING: %s" % msg)
+                self._log_location("WARNING: %s" % msg)
             return False
 
         # Finalize book_mi
@@ -300,7 +300,7 @@ class GoodReaderApp(ExportingReader):
             annotation.ts_index = str(timestamp)
             return annotation
         else:
-            self.log("could not parse line:\n%s" % line)
+            self._log("could not parse line:\n%s" % line)
             return Struct()
 
     def _roman_to_int(self, input):

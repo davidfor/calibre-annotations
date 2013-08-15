@@ -8,7 +8,7 @@ __license__ = 'GPL v3'
 __copyright__ = '2013, Greg Riker <griker@hotmail.com>'
 __docformat__ = 'restructuredtext en'
 
-import imp, inspect, os, re, tempfile, threading, types, urlparse
+import imp, inspect, os, re, sys, tempfile, threading, types, urlparse
 
 from functools import partial
 from zipfile import ZipFile
@@ -18,9 +18,10 @@ from PyQt4.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QPixmap, QTime
 from calibre.constants import DEBUG, isosx, iswindows
 #from calibre_plugins.annotations.libimobiledevice import libiMobileDevice, libiMobileDeviceException
 from calibre.devices.idevice.libimobiledevice import libiMobileDevice
+from calibre.devices.usbms.driver import debug_print
 
 from calibre.ebooks.BeautifulSoup import BeautifulSoup
-from calibre.gui2 import open_url
+from calibre.gui2 import Application, open_url
 from calibre.gui2.device import device_signals
 from calibre.gui2.dialogs.message_box import MessageBox
 from calibre.gui2.actions import InterfaceAction
@@ -29,13 +30,15 @@ from calibre.utils.config import config_dir
 from calibre_plugins.annotations.annotated_books import AnnotatedBooksDialog
 from calibre_plugins.annotations.annotations import merge_annotations, merge_annotations_with_comments
 from calibre_plugins.annotations.annotations_db import AnnotationsDB
-import calibre_plugins.annotations.config as cfg
-from calibre_plugins.annotations.common_utils import (
-    DebugLog, ImportAnnotationsDialog, CoverMessageBox, HelpView, IndexLibrary,
-    Profiler, ProgressBar, Struct,
+
+from calibre_plugins.annotations.common_utils import (CompileUI,
+    CoverMessageBox, HelpView, ImportAnnotationsDialog, IndexLibrary,
+    ProgressBar, Struct,
     get_clippings_cid, get_icon, get_pixmap, get_resource_files,
     get_selected_book_mi, plugin_tmpdir,
     set_plugin_icon_resources, updateCalibreGUIView)
+#import calibre_plugins.annotations.config as cfg
+from calibre_plugins.annotations.config import plugin_prefs
 from calibre_plugins.annotations.find_annotations import FindAnnotationsDialog
 from calibre_plugins.annotations.message_box_ui import COVER_ICON_SIZE
 from calibre_plugins.annotations.reader_app_support import *
@@ -74,6 +77,38 @@ class AnnotationsAction(InterfaceAction):
 
     plugin_device_connection_changed = pyqtSignal(object)
 
+    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
+
+    def _log(self, msg=None):
+        '''
+        Print msg to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        if msg:
+            debug_print(" %s" % str(msg))
+        else:
+            debug_print()
+
+    def _log_location(self, *args):
+        '''
+        Print location, args to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        arg1 = arg2 = ''
+
+        if len(args) > 0:
+            arg1 = str(args[0])
+        if len(args) > 1:
+            arg2 = str(args[1])
+
+        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
+                    func=sys._getframe(1).f_code.co_name,
+                    arg1=arg1, arg2=arg2))
+
     def about_to_show_menu(self):
         self.launch_library_scanner()
         self.rebuild_menus()
@@ -82,7 +117,7 @@ class AnnotationsAction(InterfaceAction):
     def accept_enter_event(self, event, md):
         if False:
             for fmt in md.formats():
-                self.log("fmt: %s" % fmt)
+                self._log("fmt: %s" % fmt)
 
         if md.hasFormat("text/uri-list"):
             return True
@@ -101,8 +136,8 @@ class AnnotationsAction(InterfaceAction):
         Add annotations from a single db to calibre
         Update destination Comments or #<custom>
         """
-        update_field = cfg.plugin_prefs.get('cfg_annotations_destination_field', 'Comments')
-        self.log_location(update_field)
+        update_field = plugin_prefs.get('cfg_annotations_destination_field', 'Comments')
+        self._log_location(update_field)
         db = self.opts.gui.current_db
         mi = db.get_metadata(cid, index_is_id=True)
 
@@ -139,7 +174,7 @@ class AnnotationsAction(InterfaceAction):
         #self.gui.library_view.select_rows([cid], using_ids=True)
         updateCalibreGUIView()
 
-        self.log(" annotations updated: '%s' cid:%d " % (mi.title, cid))
+        self._log(" annotations updated: '%s' cid:%d " % (mi.title, cid))
 
     def create_menu_item(self, m, menu_text, image=None, tooltip=None, shortcut=None):
         ac = self.create_action(spec=(menu_text, None, tooltip, shortcut), attr=menu_text)
@@ -216,13 +251,13 @@ class AnnotationsAction(InterfaceAction):
 
         # Wait for library_scanner to complete
         if self.library_scanner.isRunning():
-            self.log("waiting for library_scanner()")
+            self._log("waiting for library_scanner()")
             self.library_scanner.wait()
 
         path = urlparse.urlparse(self.dropped_url).path.strip()
         scheme = urlparse.urlparse(self.dropped_url).scheme
         path = re.sub('%20', ' ', path)
-        self.log_location(path)
+        self._log_location(path)
 
         if iswindows:
             if path.startswith('/Shared Folders'):
@@ -249,10 +284,10 @@ class AnnotationsAction(InterfaceAction):
                 title = "Unable to import annotations"
                 msg = ("<p>Unable to import anotations from <tt>{0}</tt>.</p>".format(os.path.basename(path)))
                 MessageBox(MessageBox.INFO, title, msg, show_copy_button=False).exec_()
-                self.log_location("INFO: %s" % msg)
+                self._log_location("INFO: %s" % msg)
 
     def fetch_device_annotations(self, annotated_book_list, source):
-        self.log_location(source)
+        self._log_location(source)
         if annotated_book_list:
             d = AnnotatedBooksDialog(self, annotated_book_list, self.get_annotations_as_HTML, source)
             if d.exec_():
@@ -280,7 +315,7 @@ class AnnotationsAction(InterfaceAction):
                         msg = ('<p>Unable to fetch annotations from {0}.</p>'.format(source))
                         det_msg = traceback.format_exc()
                         MessageBox(MessageBox.ERROR, title, msg, det_msg, show_copy_button=False).exec_()
-                        self.log_location("ERROR: %s" % msg)
+                        self._log_location("ERROR: %s" % msg)
                     self.opts.pb.hide()
                     if updated_annotations:
                         self.report_updated_annotations(updated_annotations)
@@ -289,7 +324,7 @@ class AnnotationsAction(InterfaceAction):
             title = "No annotated books found on device"
             msg = ('<p>Unable to find any annotations on {0} matching books in your library.</p>'.format(source))
             MessageBox(MessageBox.INFO, title, msg, show_copy_button=False).exec_()
-            self.log_location("INFO: %s" % msg)
+            self._log_location("INFO: %s" % msg)
 
     def fetch_ios_annotations(self, an):
         """
@@ -347,8 +382,8 @@ class AnnotationsAction(InterfaceAction):
         set_plugin_icon_resources(self.name, icon_resources)
 
         # Instantiate libiMobileDevice
-        self.ios = libiMobileDevice(log=self.log,
-            verbose=cfg.plugin_prefs.get('cfg_libimobiledevice_debug_log_checkbox', False))
+        self.ios = libiMobileDevice(
+            verbose=plugin_prefs.get('cfg_libimobiledevice_debug_log_checkbox', False))
 
         # Build an opts object
         self.opts = self.init_options()
@@ -370,6 +405,12 @@ class AnnotationsAction(InterfaceAction):
 
         # Load the dynamic reader classes
         self.load_dynamic_reader_classes()
+
+        # Populate dialog resources
+        self.inflate_dialog_resources()
+
+        # Compile .ui files as needed
+        CompileUI(self)
 
         # Populate the help resources
         self.inflate_help_resources()
@@ -478,7 +519,7 @@ class AnnotationsAction(InterfaceAction):
             title = "Error fetching annotations"
             msg = ('<p>Unable to fetch annotations from {0}.</p>'.format(reader_app))
             MessageBox(MessageBox.ERROR, title, msg, show_copy_button=False).exec_()
-            self.log_location("ERROR: %s" % msg)
+            self._log_location("ERROR: %s" % msg)
 
         return annotated_book_list
 
@@ -536,14 +577,14 @@ class AnnotationsAction(InterfaceAction):
                 msg = ('<p>Unable to fetch annotations from {0}.</p>'.format(reader_app) +
                        '<p>Try updating to most recent version.</p>')
                 MessageBox(MessageBox.ERROR, title, msg, show_copy_button=False).exec_()
-                self.log_location("ERROR: %s" % msg)
+                self._log_location("ERROR: %s" % msg)
 
         self.opts.pb.hide()
         return annotated_book_list
     '''
 
     def get_annotated_books_on_usb_device(self, reader_app):
-        self.log_location()
+        self._log_location()
 
         annotated_book_list = []
 
@@ -602,6 +643,42 @@ class AnnotationsAction(InterfaceAction):
         self.opts['mount_point'] = self.mount_point
         return self.opts
 
+    def inflate_dialog_resources(self):
+        '''
+        Copy the dialog files to our resource directory
+        '''
+        self._log_location()
+
+        dialogs = []
+        with ZipFile(self.plugin_path, 'r') as zf:
+            for candidate in zf.namelist():
+                # Qt UI files
+                if candidate.startswith('dialogs/') and candidate.endswith('.ui'):
+                    dialogs.append(candidate)
+                # Corresponding class definitions
+                if candidate.startswith('dialogs/') and candidate.endswith('.py'):
+                    dialogs.append(candidate)
+        dr = self.load_resources(dialogs)
+        for dialog in dialogs:
+            if not dialog in dr:
+                continue
+            fs = os.path.join(self.resources_path, dialog)
+            if not os.path.exists(fs):
+                # If the file doesn't exist in the resources dir, add it
+                if not os.path.exists(os.path.dirname(fs)):
+                    os.makedirs(os.path.dirname(fs))
+                with open(fs, 'wb') as f:
+                    f.write(dr[dialog])
+            else:
+                # Is the .ui file current?
+                update_needed = False
+                with open(fs, 'r') as f:
+                    if f.read() != dr[dialog]:
+                        update_needed = True
+                if update_needed:
+                    with open(fs, 'wb') as f:
+                        f.write(dr[dialog])
+
     def inflate_help_resources(self):
         '''
         Extract the help resources from the plugin
@@ -628,12 +705,6 @@ class AnnotationsAction(InterfaceAction):
         """
         Create the logger with profiling support
         """
-        self.log = DebugLog(self.name)
-        sys.stderr = self.log
-        profiler = Profiler(self.log, 'calibre_plugins.annotations')
-        self.get_location = profiler.get_location
-        self.log_location = profiler.where_am_i
-        self.log_invocation = profiler.what_time_is_it
         if DEBUG:
             env = 'linux'
             if isosx:
@@ -642,28 +713,24 @@ class AnnotationsAction(InterfaceAction):
                 env = "Windows"
             version = self.interface_action_base_plugin.version
             title = "%s plugin %d.%d.%d" % (self.name, version[0], version[1], version[2])
-            self.log_invocation("%s (%s)" % (title, env))
+            self._log("{:~^80}".format(" %s (%s) " % (title, env)))
 
     def init_options(self, disable_caching=False):
         """
         Build an opts object with a ProgressBar
         """
         opts = Struct(
-            disable_caching=cfg.plugin_prefs.get('cfg_disable_caching_checkbox', True),
+            disable_caching=plugin_prefs.get('cfg_disable_caching_checkbox', True),
             gui=self.gui,
             icon=get_icon(PLUGIN_ICONS[0]),
             ios = self.ios,
-            log=self.log,
-            log_location=self.log_location,
-            log_invocation=self.log_invocation,
             parent=self,
-            prefs=cfg.plugin_prefs,
+            prefs=plugin_prefs,
             resources_path=self.resources_path,
             verbose=DEBUG)
 
-        self.log.log_to_console = cfg.plugin_prefs.get('cfg_plugin_debug_log_checkbox', False)
         opts['pb'] = ProgressBar(parent=self.gui, window_title=self.name)
-        self.log_location("disable_caching: %s" % opts.disable_caching)
+        self._log_location("disable_caching: %s" % opts.disable_caching)
         return opts
 
     def init_prefs(self):
@@ -679,15 +746,15 @@ class AnnotationsAction(InterfaceAction):
             'HORIZONTAL_RULE': "<hr width='80%' />",
             'plugin_version': "%d.%d.%d" % self.interface_action_base_plugin.version}
         for pm in pref_map:
-            if not cfg.plugin_prefs.get(pm, None):
-                cfg.plugin_prefs.set(pm, pref_map[pm])
+            if not plugin_prefs.get(pm, None):
+                plugin_prefs.set(pm, pref_map[pm])
 
     def import_annotations(self, reader_app):
         """
         Dispatch to reader_app_class handling exported annotations.
         Generate a confidence index 0-4 based on matches
         """
-        self.log_location(reader_app)
+        self._log_location(reader_app)
 
         supported_reader_apps = ReaderApp.get_reader_app_classes()
         reader_app_class = supported_reader_apps[reader_app]
@@ -711,7 +778,7 @@ class AnnotationsAction(InterfaceAction):
                 rac = reader_app_class(self)
                 success = rac.parse_exported_highlights(raw_xml)
                 if not success:
-                    self.log.errors = True
+                    self._log("errors parsing raw_xml")
 
                 # Present the imported books, get a list of books to add to calibre
                 if rac.annotated_book_list:
@@ -734,22 +801,22 @@ class AnnotationsAction(InterfaceAction):
         if (self.library_last_modified == self.gui.current_db.last_modified() and
                 self.indexed_library is self.gui.current_db and
                 self.library_indexed):
-            self.log_location("library index current")
+            self._log_location("library index current")
         else:
-            self.log_location("updating library index")
+            self._log_location("updating library index")
             self.library_scanner = IndexLibrary(self)
             self.connect(self.library_scanner, self.library_scanner.signal, self.library_index_complete)
             QTimer.singleShot(1, self.start_library_indexing)
 
     # subclass override
     def library_changed(self, db):
-        self.log_location()
+        self._log_location()
         self.library_indexed = False
         self.indexed_library = None
         self.library_last_modified = None
 
     def library_index_complete(self):
-        self.log_location()
+        self._log_location()
         self.library_indexed = True
         self.indexed_library = self.gui.current_db
         self.library_last_modified = self.gui.current_db.last_modified()
@@ -759,7 +826,7 @@ class AnnotationsAction(InterfaceAction):
         Load reader classes dynamically from readers/ folder in plugin zip file
         Load additional classes under development from paths specified in config file
         '''
-        self.log_location()
+        self._log_location()
 
         # Load the builtin classes
         folder = 'readers/'
@@ -775,22 +842,22 @@ class AnnotationsAction(InterfaceAction):
                 os.makedirs(os.path.dirname(tmp_file))
             with open(tmp_file, 'w') as tf:
                 tf.write(get_resources(rac))
-            self.log(" loading built-in class '%s'" % name)
+            self._log(" loading built-in class '%s'" % name)
             imp.load_source(name, tmp_file)
             os.remove(tmp_file)
 
         # Load locally defined classes specified in config file
-        additional_readers = cfg.plugin_prefs.get('additional_readers', None)
+        additional_readers = plugin_prefs.get('additional_readers', None)
         sample_path = 'path/to/your/reader_class.py'
         if additional_readers is None:
             # Create an entry for editing
-            cfg.plugin_prefs.set('additional_readers', [sample_path])
+            plugin_prefs.set('additional_readers', [sample_path])
         else:
             for ac in additional_readers:
                 if os.path.exists(ac):
                     name = os.path.basename(ac).split('.')[0]
                     name = re.sub('_', '', name)
-                    self.log(" loading external class '%s'" % name)
+                    self._log(" loading external class '%s'" % name)
                     try:
                         imp.load_source(name, ac)
                     except:
@@ -799,7 +866,7 @@ class AnnotationsAction(InterfaceAction):
                         traceback.print_exc()
                         raise SystemExit
                 elif ac != sample_path:
-                    self.log(" unable to load external class from '%s' (file not found)" % ac)
+                    self._log(" unable to load external class from '%s' (file not found)" % ac)
 
     def main_menu_button_clicked(self):
         self.show_configuration()
@@ -832,7 +899,7 @@ class AnnotationsAction(InterfaceAction):
                        show_copy_button=False)
         if not d.exec_():
             return
-        self.log_location("QUESTION: %s" % msg)
+        self._log_location("QUESTION: %s" % msg)
 
         # Show progress
         pb = ProgressBar(parent=self.gui, window_title="Removing annotations", on_top=True)
@@ -912,7 +979,7 @@ class AnnotationsAction(InterfaceAction):
         self.plugin_device_connection_changed.emit(is_connected)
         if is_connected:
             self.connected_device = self.gui.device_manager.device
-            self.log_location(self.connected_device.gui_name)
+            self._log_location(self.connected_device.gui_name)
 
             # If iDevice, scan for installed reader apps
             if getattr(self.connected_device, 'VENDOR_ID', 0) == [0x05ac]:
@@ -920,7 +987,7 @@ class AnnotationsAction(InterfaceAction):
             else:
                 USBReader.get_usb_reader_classes()
         else:
-            self.log_location("device disconnected")
+            self._log_location("device disconnected")
             self.connected_device = None
             self.rebuild_menus()
 
@@ -945,7 +1012,7 @@ class AnnotationsAction(InterfaceAction):
                     msg = ('<p>Unable to import annotations from {0}.</p>'.format(rac.app_name))
                     det_msg = traceback.format_exc()
                     MessageBox(MessageBox.ERROR, title, msg, det_msg, show_copy_button=False).exec_()
-                    self.log_location("ERROR: %s" % msg)
+                    self._log_location("ERROR: %s" % msg)
                 self.opts.pb.hide()
                 if updated_annotations:
                     self.report_updated_annotations(updated_annotations)
@@ -954,12 +1021,12 @@ class AnnotationsAction(InterfaceAction):
         '''
         Add annotations arriving from importing classes.
         '''
-        self.log_location()
+        self._log_location()
         updated_annotations = 0
 
         # Are we collecting News clippings?
-        collect_news_clippings = cfg.plugin_prefs.get('cfg_news_clippings_checkbox', False)
-        news_clippings_destination = cfg.plugin_prefs.get('cfg_news_clippings_lineEdit', None)
+        collect_news_clippings = plugin_prefs.get('cfg_news_clippings_checkbox', False)
+        news_clippings_destination = plugin_prefs.get('cfg_news_clippings_lineEdit', None)
 
         for book_mi in selected_books[reader_app]:
 
@@ -973,7 +1040,7 @@ class AnnotationsAction(InterfaceAction):
 
             if confidence >= 3:
                 self.add_annotations_to_calibre(book_mi, annotations_db, book_mi['cid'])
-                self.log(" '%s' (confidence: %d) annotations added automatically" % (book_mi['title'], confidence))
+                self._log(" '%s' (confidence: %d) annotations added automatically" % (book_mi['title'], confidence))
                 updated_annotations += 1
             else:
                 # Low or zero confidence, confirm with user
@@ -1051,10 +1118,10 @@ class AnnotationsAction(InterfaceAction):
                 if d.exec_() == d.Accepted:
                     self.add_annotations_to_calibre(book_mi, annotations_db, book_mi['cid'])
                     updated_annotations += 1
-                    self.log(" '{0}' annotations added to '{2}' with user confirmation (confidence: {1})".format(
+                    self._log(" '{0}' annotations added to '{2}' with user confirmation (confidence: {1})".format(
                         book_mi['title'], confidence, proposed_mi.title))
                 else:
-                    self.log(" NO CONFIDENCE: '%s' (confidence: %d), annotations not added to '%s'" %
+                    self._log(" NO CONFIDENCE: '%s' (confidence: %d), annotations not added to '%s'" %
                             (book_mi['title'], confidence, self.selected_mi.title))
             self.opts.pb.increment()
 
@@ -1138,12 +1205,6 @@ class AnnotationsAction(InterfaceAction):
             ac.triggered.connect(self.find_annotations)
             m.addSeparator()
 
-            # If developer_mode, add a 'Nuke annotations' option
-            if cfg.plugin_prefs.get('developer_mode', False):
-                ac = self.create_menu_item(m, 'Remove all annotations', image=I("list_remove.png"))
-                ac.triggered.connect(self.nuke_annotations)
-                m.addSeparator()
-
             # Add 'Customize plugin…'
             ac = self.create_menu_item(m, 'Customize plugin' + '…', image=I("config.png"))
             ac.triggered.connect(self.show_configuration)
@@ -1152,17 +1213,27 @@ class AnnotationsAction(InterfaceAction):
             ac = self.create_menu_item(m, 'Help', image=I('help.png'))
             ac.triggered.connect(self.show_help)
 
+            # If Alt/Option key pressed, show Developer submenu
+            modifiers = Application.keyboardModifiers()
+            if bool(modifiers & Qt.AltModifier):
+                m.addSeparator()
+                self.developer_menu = m.addMenu(QIcon(I('config.png')),
+                                                "Developer…")
+                action = 'Remove all annotations'
+                ac = self.create_menu_item(self.developer_menu, action, image=I('list_remove.png'))
+                ac.triggered.connect(self.nuke_annotations)
+
     def report_updated_annotations(self, updated_annotations):
         suffix = " from 1 book "
         if updated_annotations > 1:
             suffix = " from %d books " % updated_annotations
-        msg = "<p>Annotations" + suffix + "added to <b>%s</b>.</p>" % cfg.plugin_prefs.get('cfg_annotations_destination_comboBox')
+        msg = "<p>Annotations" + suffix + "added to <b>%s</b>.</p>" % plugin_prefs.get('cfg_annotations_destination_comboBox')
         MessageBox(MessageBox.INFO,
                    '',
                    msg=msg,
                    show_copy_button=False,
                    parent=self.gui).exec_()
-        self.log_location("INFO: %s" % msg)
+        self._log_location("INFO: %s" % msg)
 
     def show_configuration(self):
         self.interface_action_base_plugin.do_user_config(self.gui)
@@ -1201,12 +1272,11 @@ class AnnotationsAction(InterfaceAction):
             msg = ("The %s plugin supports fetching from %s." %
                    (self.name, supported_reader_apps[0]))
         MessageBox(MessageBox.INFO, title, msg, show_copy_button=False).exec_()
-        self.log_location("INFO: %s" % msg)
+        self._log_location("INFO: %s" % msg)
 
     # subclass override
     def shutting_down(self):
-        if self.log.errors or cfg.plugin_prefs.get('cfg_save_debug_log_checkbox', False):
-            self.log.save_log(os.path.join(os.path.expanduser('~'), 'Desktop'))
+        self._log_location()
         return True
 
     def start_library_indexing(self):

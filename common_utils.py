@@ -8,12 +8,12 @@ __license__ = 'GPL v3'
 __copyright__ = '2013, Greg Riker <griker@hotmail.com>'
 __docformat__ = 'restructuredtext en'
 
-import re, os, shutil, sys, tempfile, time, urlparse, zipfile
+import cStringIO, re, os, shutil, sys, tempfile, time, urlparse, zipfile
 from collections import defaultdict
 from time import sleep
 
 from calibre.constants import iswindows
-from calibre.ebooks.BeautifulSoup import BeautifulSoup
+from calibre.ebooks.BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 from calibre.ebooks.metadata import MetaInformation
 from calibre.gui2 import Application
 from calibre.gui2.dialogs.message_box import MessageBox
@@ -31,6 +31,7 @@ from PyQt4.Qt import (Qt, QAction, QApplication,
     QVBoxLayout,
     SIGNAL)
 from PyQt4.QtWebKit import QWebView
+from PyQt4.uic import compileUi
 
 # Stateful controls: (<class>,<list_name>,<get_method>,<default>,<set_method(s)>)
 # multiple set_methods are chained, i.e. the results of the first call are passed to the second
@@ -109,6 +110,7 @@ class BookStruct(Struct):
             )
 
 
+"""
 class DebugLog(Log):
 
     def __init__(self, plugin_name, level=1):
@@ -175,7 +177,7 @@ class DebugLog(Log):
             self.out_file.write(error_report + '\n')
             #Log.prints(self, 1, '\n')
             self.errors = True
-
+"""
 
 class PlainTextEdit(QPlainTextEdit):
     """
@@ -225,6 +227,7 @@ class PlainTextEdit(QPlainTextEdit):
             self.log_location("unsupported import: %s" % path)
 
 
+"""
 class Profiler():
     def __init__(self, log, plugin_dir):
         self.log = log
@@ -258,7 +261,7 @@ class Profiler():
         ans = '{:-^120}'.format('   %s @ %s   ' % (location, time.strftime('%H:%M:%S')))
         self.log.info(ans)
         return ans
-
+"""
 
 class SizePersistedDialog(QDialog):
     '''
@@ -599,6 +602,81 @@ class IndexLibrary(QThread):
                 'title': record[title],
                 }
         return by_uuid
+
+
+'''     Helper Classes  '''
+
+
+class CompileUI():
+    '''
+    Compile Qt Creator .ui files at runtime
+    '''
+    def __init__(self, parent, verbose=True):
+        self.compiled_forms = {}
+        self.help_file = None
+        self._log = parent._log
+        self._log_location = parent._log_location
+        self.parent = parent
+        self.verbose = verbose
+        self.compiled_forms = self.compile_ui()
+
+    def compile_ui(self):
+        pat = re.compile(r'''(['"]):/images/([^'"]+)\1''')
+
+        def sub(match):
+            ans = 'I(%s%s%s)' % (match.group(1), match.group(2), match.group(1))
+            return ans
+
+        # >>> Entry point
+        self._log_location()
+
+        compiled_forms = {}
+        self._find_forms()
+
+        # Cribbed from gui2.__init__:build_forms()
+        for form in self.forms:
+            with open(form) as form_file:
+                soup = BeautifulStoneSoup(form_file.read())
+                property = soup.find('property', attrs={'name': 'windowTitle'})
+                string = property.find('string')
+                window_title = string.renderContents()
+
+            compiled_form = self._form_to_compiled_form(form)
+            if (not os.path.exists(compiled_form) or
+                    os.stat(form).st_mtime > os.stat(compiled_form).st_mtime):
+
+                if not os.path.exists(compiled_form):
+                    if self.verbose:
+                        self._log(' compiling %s' % form)
+                else:
+                    if self.verbose:
+                        self._log(' recompiling %s' % form)
+                    os.remove(compiled_form)
+                buf = cStringIO.StringIO()
+                compileUi(form, buf)
+                dat = buf.getvalue()
+                dat = dat.replace('__appname__', 'calibre')
+                dat = dat.replace('import images_rc', '')
+                dat = re.compile(r'(?:QtGui.QApplication.translate|(?<!def )_translate)\(.+?,\s+"(.+?)(?<!\\)",.+?\)').sub(r'_("\1")', dat)
+                dat = dat.replace('_("MMM yyyy")', '"MMM yyyy"')
+                dat = pat.sub(sub, dat)
+                with open(compiled_form, 'wb') as cf:
+                    cf.write(dat)
+
+            compiled_forms[window_title] = compiled_form.rpartition(os.sep)[2].partition('.')[0]
+        return compiled_forms
+
+    def _find_forms(self):
+        forms = []
+        for root, _, files in os.walk(self.parent.resources_path):
+            for name in files:
+                if name.endswith('.ui'):
+                    forms.append(os.path.abspath(os.path.join(root, name)))
+        self.forms = forms
+
+    def _form_to_compiled_form(self, form):
+        compiled_form = form.rpartition('.')[0]+'_ui.py'
+        return compiled_form
 
 
 '''     Helper functions   '''

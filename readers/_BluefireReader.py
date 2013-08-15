@@ -206,10 +206,10 @@ class BluefireReader(ExportingReader):
                     break
         except:
             if log_failure:
-                self.log(" unable to parse %s Annotations" % self.app_name)
-                self.log_invocation("Imported Annotation summary")
-                self.log(raw)
-                self.log_invocation("end imported Annotations summary")
+                self._log(" unable to parse %s Annotations" % self.app_name)
+                self._log("{:~^80}".format(" Imported Annotation summary ")
+                self._log(raw)
+                self._log("{:~^80}".format(" end imported Annotations summary ")
                 import traceback
                 traceback.print_exc()
                 msg = ('Unable to parse Annotation summary from %s. ' % self.app_name +
@@ -219,7 +219,7 @@ class BluefireReader(ExportingReader):
                     msg,
                     show_copy_button=False,
                     parent=self.opts.gui).exec_()
-                self.log_location("WARNING: %s" % msg)
+                self._log_location("WARNING: %s" % msg)
             return False
 
         # Populate a BookStruct

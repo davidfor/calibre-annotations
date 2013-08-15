@@ -12,7 +12,8 @@ __copyright__ = '2013, Greg Riker <griker@hotmail.com>'
 __docformat__ = 'restructuredtext en'
 
 from datetime import datetime
-import hashlib, os, re
+from functools import partial
+import hashlib, importlib, os, re, sys
 from time import mktime
 
 from PyQt4 import QtGui
@@ -24,7 +25,8 @@ from PyQt4.Qt import (Qt, QCheckBox, QComboBox, QFileDialog, QFrame, QGridLayout
 from calibre.ebooks.BeautifulSoup import BeautifulSoup
 from calibre.gui2.dialogs.message_box import MessageBox
 from calibre.constants import islinux, iswindows
-from calibre.utils.config import JSONConfig
+from calibre.devices.usbms.driver import debug_print
+from calibre.utils.config import JSONConfig, config_dir
 from calibre.utils.logging import Log
 
 from calibre_plugins.annotations.appearance import AnnotationsAppearance
@@ -34,14 +36,23 @@ from calibre_plugins.annotations.common_utils import (Struct,
 
 plugin_prefs = JSONConfig('plugins/annotations')
 
+dialog_resources_path = os.path.join(config_dir, 'plugins', 'annotations_resources', 'dialogs')
 
 class ConfigWidget(QWidget):
+    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
+
+    WIZARD_PROFILES = {
+        'Annotations': {
+            'label': 'mm_annotations',
+            'datatype': 'comments',
+            'display': {},
+            'is_multiple': False
+            }
+        }
 
     def __init__(self, plugin_action):
         self.gui = plugin_action.gui
         self.opts = plugin_action.opts
-        self.log = plugin_action.opts.log
-        self.log_location = plugin_action.opts.log_location
 
         QWidget.__init__(self)
         self.l = QVBoxLayout()
@@ -60,17 +71,10 @@ class ConfigWidget(QWidget):
         self.cfg_disable_caching_checkbox.setChecked(False)
         self.cfg_runtime_options_qvl.addWidget(self.cfg_disable_caching_checkbox)
 
-        # ~~~~~~~~ Save debug log checkbox ~~~~~~~~
-        self.cfg_save_debug_log_checkbox = QCheckBox('Save debug log to desktop at exit')
-        self.cfg_save_debug_log_checkbox.setObjectName('cfg_save_debug_log_checkbox')
-        self.cfg_save_debug_log_checkbox.setToolTip('Save diagnostic debug log')
-        self.cfg_save_debug_log_checkbox.setChecked(False)
-        self.cfg_runtime_options_qvl.addWidget(self.cfg_save_debug_log_checkbox)
-
         # ~~~~~~~~ plugin logging checkbox ~~~~~~~~
-        self.cfg_plugin_debug_log_checkbox = QCheckBox('Enable debug logging for Annotations plugin')
+        self.cfg_plugin_debug_log_checkbox = QCheckBox('Enable debug logging for plugin')
         self.cfg_plugin_debug_log_checkbox.setObjectName('cfg_plugin_debug_log_checkbox')
-        self.cfg_plugin_debug_log_checkbox.setToolTip('Print plugin debug messages to console')
+        self.cfg_plugin_debug_log_checkbox.setToolTip('Print plugin diagnostic messages to console')
         self.cfg_plugin_debug_log_checkbox.setChecked(False)
         self.cfg_runtime_options_qvl.addWidget(self.cfg_plugin_debug_log_checkbox)
 
@@ -162,6 +166,14 @@ class ConfigWidget(QWidget):
         all_fields = self.custom_fields.keys() + ['Comments']
         for cf in sorted(all_fields):
             self.cfg_annotations_destination_comboBox.addItem(cf)
+
+        # Add CC Wizard
+        self.cfg_annotations_wizard = QToolButton()
+        self.cfg_annotations_wizard.setIcon(QIcon(I('wizard.png')))
+        self.cfg_annotations_wizard.setToolTip("Create a custom column to store annotations")
+        self.cfg_annotations_wizard.clicked.connect(partial(self.launch_cc_wizard, 'Annotations'))
+        self.cfg_annotation_options_qgl.addWidget(self.cfg_annotations_wizard, current_row, 2)
+
         current_row += 1
 
         # ~~~~~~~~ Add a horizontal line ~~~~~~~~
@@ -246,6 +258,10 @@ class ConfigWidget(QWidget):
             return
 
         new_destination_name = str(qs_new_destination_name)
+        if old_destination_name == new_destination_name:
+            self._log_location("old_destination_name = new_destination_name, no changes")
+            return
+
         new_destination_field = None
         if new_destination_name == 'Comments':
             new_destination_field = 'Comments'
@@ -263,7 +279,7 @@ class ConfigWidget(QWidget):
             d = MessageBox(MessageBox.QUESTION,
                            title, msg,
                            show_copy_button=False)
-            self.log_location("QUESTION: %s" % msg)
+            self._log_location("QUESTION: %s" % msg)
             if d.exec_():
                 plugin_prefs.set('cfg_annotations_destination_field', new_destination_field)
                 plugin_prefs.set('cfg_annotations_destination_comboBox', new_destination_name)
@@ -283,7 +299,9 @@ class ConfigWidget(QWidget):
             plugin_prefs.set('cfg_annotations_destination_field', new_destination_field)
             plugin_prefs.set('cfg_annotations_destination_comboBox', new_destination_name)
 
+    """
     def choose_win_iexplorer_path(self, destination):
+        # *** Does this belong anymore? ***
         #print(os.environ.keys())
         selected_file = QFileDialog.getOpenFileName(
                                                     self,
@@ -294,6 +312,7 @@ class ConfigWidget(QWidget):
 
         if selected_file:
             self.cfg_path_to_ie_lineEdit.setText(selected_file)
+    """
 
     def configure_appearance(self):
         '''
@@ -336,7 +355,7 @@ class ConfigWidget(QWidget):
             d = MessageBox(MessageBox.QUESTION,
                            title, msg,
                            show_copy_button=False)
-            self.log_location("QUESTION: %s" % msg)
+            self._log_location("QUESTION: %s" % msg)
             if d.exec_():
                 self.opts.log_location("Updating existing annotations to modified appearance")
                 if self.annotated_books_scanner.isRunning():
@@ -345,7 +364,63 @@ class ConfigWidget(QWidget):
                     field, field, window_title="Updating appearance")
 
     def inventory_complete(self, msg):
-        self.log_location(msg)
+        self._log_location(msg)
+
+    def launch_cc_wizard(self, column_type):
+        '''
+        '''
+        def _update_combo_box(comboBox, destination, previous):
+            '''
+            '''
+            cb = getattr(self, comboBox)
+
+            all_items = [str(cb.itemText(i))
+                         for i in range(cb.count())]
+            if previous and previous in all_items:
+                all_items.remove(previous)
+            all_items.append(destination)
+
+            cb.clear()
+            cb.addItems(sorted(all_items, key=lambda s: s.lower()))
+            idx = cb.findText(destination)
+            if idx > -1:
+                cb.setCurrentIndex(idx)
+
+        klass = os.path.join(dialog_resources_path, 'cc_wizard.py')
+        if os.path.exists(klass):
+            #self._log("importing CC Wizard dialog from '%s'" % klass)
+            sys.path.insert(0, dialog_resources_path)
+            this_dc = importlib.import_module('cc_wizard')
+            sys.path.remove(dialog_resources_path)
+            dlg = this_dc.CustomColumnWizard(self,
+                                             column_type,
+                                             self.WIZARD_PROFILES[column_type],
+                                             verbose=True)
+            dlg.exec_()
+
+            if dlg.modified_column:
+                self._log("modified_column: %s" % dlg.modified_column)
+
+                destination = dlg.modified_column['destination']
+                label = dlg.modified_column['label']
+                previous = dlg.modified_column['previous']
+                source = dlg.modified_column['source']
+
+                if source == "Annotations":
+                    # Add/update the new destination so save_settings() can find it
+                    self.custom_fields[destination]['field'] = label
+
+                    _update_combo_box("cfg_annotations_destination_comboBox", destination, previous)
+
+                    # Save field manually in case user cancels
+                    self.prefs.set('cfg_annotations_destination_comboBox', destination)
+                    self.prefs.set('cfg_annotations_destination_field', label)
+
+                    # Inform user to restart
+                    self.restart_required('custom_column')
+
+        else:
+            self._log("ERROR: Can't import from '%s'" % klass)
 
     def news_clippings_destination_changed(self):
         qs_new_destination_name = self.cfg_news_clippings_lineEdit.text()
@@ -356,7 +431,7 @@ class ConfigWidget(QWidget):
             d = MessageBox(MessageBox.WARNING,
                            title, msg,
                            show_copy_button=False)
-            self.log_location("WARNING: %s" % msg)
+            self._log_location("WARNING: %s" % msg)
             d.exec_()
 
     def news_clippings_toggled(self, state):
@@ -367,11 +442,11 @@ class ConfigWidget(QWidget):
 
     def restart_required(self, state):
         title = 'Restart required'
-        msg = 'To change caching mode, a restart is required.'
+        msg = 'To apply changes, restart calibre.'
         d = MessageBox(MessageBox.WARNING,
                        title, msg,
                        show_copy_button=False)
-        self.log_location("WARNING: %s" % msg)
+        self._log_location("WARNING: %s" % msg)
         d.exec_()
 
     def save_settings(self):
@@ -386,6 +461,36 @@ class ConfigWidget(QWidget):
 
     def start_inventory(self):
         self.annotated_books_scanner.start()
+
+    def _log(self, msg=None):
+        '''
+        Print msg to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        if msg:
+            debug_print(" %s" % str(msg))
+        else:
+            debug_print()
+
+    def _log_location(self, *args):
+        '''
+        Print location, args to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        arg1 = arg2 = ''
+
+        if len(args) > 0:
+            arg1 = str(args[0])
+        if len(args) > 1:
+            arg2 = str(args[1])
+
+        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
+                    func=sys._getframe(1).f_code.co_name,
+                    arg1=arg1, arg2=arg2))
 
 class InventoryAnnotatedBooks(QThread):
 

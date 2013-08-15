@@ -142,7 +142,7 @@ class SampleExportingApp(ExportingReader):
            *timestamp: Unique timestamp of highlight's creation/modification time
 
         """
-        self.log("%s:parse_exported_highlight()" % self.app_name)
+        self._log("%s:parse_exported_highlight()" % self.app_name)
 
         # Create the annotations, books table as needed
         self.annotations_db = "%s_imported_annotations" % self.app_name_

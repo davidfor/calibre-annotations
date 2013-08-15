@@ -50,7 +50,7 @@ class KindleReaderApp(iOSReaderApp):
         BookData.sqlite has ZRAWLASTACCESSTIME, which is as close as I can get to a timestamp.
         '''
 
-        self.log("%s:get_active_annotations()" % (self.app_name))
+        self._log("%s:get_active_annotations()" % (self.app_name))
 
         self.opts.pb.set_label("Getting active annotations for %s" % self.app_name)
         self.opts.pb.set_value(0)
@@ -67,7 +67,7 @@ class KindleReaderApp(iOSReaderApp):
         books_db = self.generate_books_db_name(self.app_name_, self.ios.device_name)
 
         if self.opts.disable_caching or not self._cache_is_current(ra_db_path_stats, cached_db):
-            self.log(" fetching annotations from %s on %s" % (self.app_name, self.ios.device_name))
+            self._log(" fetching annotations from %s on %s" % (self.app_name, self.ios.device_name))
 
             # Create the annotations table as needed
             self.create_annotations_table(cached_db)
@@ -195,13 +195,13 @@ class KindleReaderApp(iOSReaderApp):
                 self.opts.conn.commit()
 
         else:
-            self.log(" retrieving cached annotations from %s" % cached_db)
+            self._log(" retrieving cached annotations from %s" % cached_db)
 
     def get_installed_books(self):
         """
         Fetch installed books from mainDb.sqlite or cached_db
         """
-        self.log("%s:get_installed_books(%s)" % (self.__class__.__name__, self.app_name))
+        self._log("%s:get_installed_books(%s)" % (self.__class__.__name__, self.app_name))
 
         self.opts.pb.set_label("Getting installed books from %s" % self.app_name)
         self.opts.pb.set_value(0)
@@ -214,7 +214,7 @@ class KindleReaderApp(iOSReaderApp):
         # Test timestamp against cached value
         if self.opts.disable_caching or not self._cache_is_current(db_profile['stats'], cached_db):
             # (Re)load installed books from device
-            self.log(" fetching installed books from %s on %s" % (self.app_name, self.ios.device_name))
+            self._log(" fetching installed books from %s on %s" % (self.app_name, self.ios.device_name))
 
             # Mount the ios container
             self.ios.mount_ios_app(app_id=self.app_id)
@@ -284,7 +284,7 @@ class KindleReaderApp(iOSReaderApp):
             installed_books = list(installed_books)
 
         else:
-            self.log(" retrieving cached books from %s" % cached_db)
+            self._log(" retrieving cached books from %s" % cached_db)
             installed_books = self._get_cached_books(cached_db)
 
         self.installed_books = installed_books

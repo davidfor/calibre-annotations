@@ -13,8 +13,9 @@ import hashlib, re
 from datetime import datetime
 from xml.sax.saxutils import escape
 
+from calibre.devices.usbms.driver import debug_print
 from calibre.ebooks.BeautifulSoup import BeautifulSoup, Tag
-import calibre_plugins.annotations.config as cfg
+from calibre_plugins.annotations.config import plugin_prefs
 
 COLOR_MAP = {
                   'Blue': {'bg': '#b1ccf3', 'fg': 'black'},
@@ -62,6 +63,37 @@ class Annotations(Annotation):
     annotations: [{title:, path:, timestamp:, genre:, highlightcolor:, text:} ...]
     Inherits Annotation solely to share style characteristics for agroups
     '''
+    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
+
+    def _log(self, msg=None):
+        '''
+        Print msg to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        if msg:
+            debug_print(" %s" % str(msg))
+        else:
+            debug_print()
+
+    def _log_location(self, *args):
+        '''
+        Print location, args to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        arg1 = arg2 = ''
+
+        if len(args) > 0:
+            arg1 = str(args[0])
+        if len(args) > 1:
+            arg2 = str(args[1])
+
+        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
+                    func=sys._getframe(1).f_code.co_name,
+                    arg1=arg1, arg2=arg2))
 
     @dynamic_property
     def annotations(self):
@@ -71,10 +103,6 @@ class Annotations(Annotation):
 
     def __init__(self, opts, title=None, annotations=None, cid=None, genre=None):
 
-        self.log = None
-        if opts:
-            self.log = opts.log
-            self.log_location = opts.log_location
         self.opts = opts
         self.cid = cid
         self.title = title
@@ -111,7 +139,7 @@ class Annotations(Annotation):
         '''
         from calibre_plugins.annotations.appearance import default_timestamp
         d = datetime.fromtimestamp(float(timestamp))
-        friendly_timestamp_format = cfg.plugin_prefs.get('appearance_timestamp_format', default_timestamp)
+        friendly_timestamp_format = plugin_prefs.get('appearance_timestamp_format', default_timestamp)
         try:
             friendly_timestamp = d.strftime(friendly_timestamp_format)
         except:
@@ -124,7 +152,7 @@ class Annotations(Annotation):
         '''
         # Retrieve CSS prefs
         from calibre_plugins.annotations.appearance import default_elements
-        stored_css = cfg.plugin_prefs.get('appearance_css', default_elements)
+        stored_css = plugin_prefs.get('appearance_css', default_elements)
 
         elements = []
         for element in stored_css:
@@ -185,7 +213,7 @@ class Annotations(Annotation):
                         msg = "No highlight color specified, using Default"
                     else:
                         msg = "Unknown color '%s' specified" % agroup.highlightcolor
-                    self.log_location(msg)
+                    self._log_location(msg)
                     dt_bgcolor = COLOR_MAP['Default']['bg']
                     dt_fgcolor = COLOR_MAP['Default']['fg']
 
@@ -220,8 +248,8 @@ class Annotations(Annotation):
                 soup.div.insert(dtc, divTag)
                 dtc += 1
                 if i < len(self.annotations) - 1 and \
-                    cfg.plugin_prefs.get('appearance_hr_checkbox', False):
-                    soup.div.insert(dtc, cfg.plugin_prefs.get('HORIZONTAL_RULE', '<hr width="80%" />'))
+                    plugin_prefs.get('appearance_hr_checkbox', False):
+                    soup.div.insert(dtc, plugin_prefs.get('HORIZONTAL_RULE', '<hr width="80%" />'))
                     dtc += 1
 
         else:
@@ -283,7 +311,7 @@ def merge_annotations_with_comments(parent, cid, comments_soup, new_soup):
 
     # Prepare a new COMMENTS_DIVIDER
     comments_divider = '<div class="comments_divider"><p style="text-align:center;margin:1em 0 1em 0">{0}</p></div>'.format(
-        cfg.plugin_prefs.get('COMMENTS_DIVIDER', '&middot;  &middot;  &bull;  &middot;  &#x2726;  &middot;  &bull;  &middot; &middot;'))
+        plugin_prefs.get('COMMENTS_DIVIDER', '&middot;  &middot;  &bull;  &middot;  &#x2726;  &middot;  &bull;  &middot; &middot;'))
 
     # Remove the old comments_divider
     cds = comments_soup.find('div', 'comments_divider')
@@ -323,7 +351,7 @@ def sort_merged_annotations(merged_soup):
     Input: a combined group of user annotations
     Output: sorted by location
     '''
-    include_hr = cfg.plugin_prefs.get('appearance_hr_checkbox', False)
+    include_hr = plugin_prefs.get('appearance_hr_checkbox', False)
     locations = merged_soup.findAll(location_sort=True)
     locs = [loc['location_sort'] for loc in locations]
     locs.sort()
@@ -335,7 +363,7 @@ def sort_merged_annotations(merged_soup):
         sorted_soup.div.insert(dtc, next_div)
         dtc += 1
         if include_hr and i < len(locs) - 1:
-            sorted_soup.div.insert(dtc, cfg.plugin_prefs.get('HORIZONTAL_RULE', '<hr width="80%" />'))
+            sorted_soup.div.insert(dtc, plugin_prefs.get('HORIZONTAL_RULE', '<hr width="80%" />'))
             dtc += 1
 
     return sorted_soup

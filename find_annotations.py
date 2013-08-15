@@ -27,7 +27,8 @@ from PyQt4.Qt import (Qt, QComboBox, QDate, QDateTime, QDateTimeEdit, QDialogBut
 
 from calibre_plugins.annotations.annotations import COLOR_MAP
 from calibre_plugins.annotations.common_utils import SizePersistedDialog
-from calibre_plugins.annotations.config import InventoryAnnotatedBooks
+from calibre_plugins.annotations.config import InventoryAnnotatedBooks, plugin_prefs
+
 from calibre_plugins.annotations.reader_app_support import ReaderApp
 
 utc_tz = tzutc()
@@ -72,10 +73,40 @@ class FindAnnotationsDialog(SizePersistedDialog):
     GENERIC_STYLE = 'Any style'
     GENERIC_READER = 'Any reader'
 
-    def __init__(self, opts):
+    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
 
-        self.log = opts.log
-        self.log_location = opts.log_location
+    def _log(self, msg=None):
+        '''
+        Print msg to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        if msg:
+            debug_print(" %s" % str(msg))
+        else:
+            debug_print()
+
+    def _log_location(self, *args):
+        '''
+        Print location, args to console
+        '''
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        arg1 = arg2 = ''
+
+        if len(args) > 0:
+            arg1 = str(args[0])
+        if len(args) > 1:
+            arg2 = str(args[1])
+
+        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
+                    func=sys._getframe(1).f_code.co_name,
+                    arg1=arg1, arg2=arg2))
+
+
+    def __init__(self, opts):
         self.matched_ids = set()
         self.opts = opts
         self.prefs = opts.prefs
@@ -269,7 +300,7 @@ class FindAnnotationsDialog(SizePersistedDialog):
         Update the Date range widgets with the rounded oldest, newest dates
         Don't connect date signals until date range available
         '''
-        self.log_location()
+        self._log_location()
 
         # Reset the date range based on available annotations
         oldest = QDateTime(datetime.fromtimestamp(self.annotated_books_scanner.oldest_annotation))
@@ -342,11 +373,11 @@ class FindAnnotationsDialog(SizePersistedDialog):
             self.prefs.set('find_annotations_date_to_dateEdit', to_date)
 
     def start_inventory_scan(self):
-        self.log_location()
+        self._log_location()
         self.annotated_books_scanner.start()
 
     def update_results(self, trigger):
-        #self.log_location(trigger)
+        #self._log_location(trigger)
         reader_to_match = str(self.find_annotations_reader_comboBox.currentText())
         color_to_match = str(self.find_annotations_color_comboBox.currentText())
         text_to_match = str(self.find_annotations_text_lineEdit.text())

@@ -48,7 +48,7 @@ class KindleReaderApp(USBReader):
            -note_text: A list of paragraphs constituting the note
            *timestamp: Unique timestamp of highlight's creation/modification time
         '''
-        self.log("%s:get_active_annotations()" % self.app_name)
+        self._log("%s:get_active_annotations()" % self.app_name)
 
         self.active_annotations = {}
 
@@ -135,7 +135,7 @@ class KindleReaderApp(USBReader):
              title_sort: "Story of John Smith, The" (if known)
              uuid: Calibre's uuid for this book, if known
         '''
-        self.log("%s:get_installed_books()" % self.app_name)
+        self._log("%s:get_installed_books()" % self.app_name)
         self.installed_books = []
 
         self.device = self.opts.gui.device_manager.device
@@ -173,7 +173,7 @@ class KindleReaderApp(USBReader):
             else:
                 installed_books.add(book_id)
 
-            #self.log(mi.standard_field_keys())
+            #self._log(mi.standard_field_keys())
             # Populate a BookStruct with available metadata
             book_mi = BookStruct()
             book_mi.path = resolved_path_map[book_id]
@@ -370,8 +370,8 @@ class KindleReaderApp(USBReader):
                         timestamp = mktime(isoformat.timetuple())
                     except:
                         if not timestamp_parse_failed:
-                            self.log(" Unable to parse entries from 'My Clippings.txt'")
-                            self.log(" %s driver supports English only." % self.app_name)
+                            self._log(" Unable to parse entries from 'My Clippings.txt'")
+                            self._log(" %s driver supports English only." % self.app_name)
                             timestamp_parse_failed = True
                         timestamp = mktime(localtime())
                         while timestamp in self.active_annotations:
@@ -418,7 +418,7 @@ class KindleReaderApp(USBReader):
                             self.active_annotations[timestamp]['note_text'] = note_text
                 except:
                     # Unexpected EOF. Return with whatever we have
-                    self.log_location("failed with line: %s" % repr(line))
+                    self._log_location("failed with line: %s" % repr(line))
                     import traceback
                     traceback.print_exc()
                     return
