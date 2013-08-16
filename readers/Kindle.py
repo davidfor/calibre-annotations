@@ -303,6 +303,40 @@ class KindleReaderApp(USBReader):
         return resolved_path_map
 
     def _parse_my_clippings(self):
+        import ParseKindleMyClippingsTxt
+        def log(level, msg, self=self):
+            self._log('ParseKindleMyClippingsTxt '+level+': '+msg)
+        ParseKindleMyClippingsTxt.log = log
+        annos = ParseKindleMyClippingsTxt.FromFileName(self._get_my_clippings())
+        for anno in annos:
+            title = anno.title.decode('utf-8')
+            # If title/author_sort match book in library,
+            # consider this an active annotation
+            book_id = None
+            if title in self.installed_books_by_title.keys():
+                book_id = self.installed_books_by_title[title]['book_id']
+            if not book_id:
+                continue
+            if anno.time:
+                timestamp = mktime(anno.time.timetuple())
+            else:
+                self._log(" Unable to parse entries from 'My Clippings.txt'")
+                timestamp = mktime(localtime())
+            while timestamp in self.active_annotations:
+                timestamp += 1
+            self.active_annotations[timestamp] = {
+                'annotation_id': timestamp,
+                'book_id': book_id,
+                'highlight_color': 'Gray',
+                'location': anno.begin if anno.begin is not None else 'Unknown',
+                'location_sort': "%06d" % anno.begin if anno.begin is not None else "000000"
+                }
+            if anno.kind == 'highlight':
+                self.active_annotations[timestamp]['highlight_text'] = anno.text.decode('utf-8').split(u'\n')
+            elif anno.kind == 'note':
+                self.active_annotations[timestamp]['note_text'] = anno.text.decode('utf-8').split(u'\n')
+
+    def _parse_my_clippings_original(self):
         '''
         Parse MyClippings.txt for entries matching installed books.
         File should end with SEPARATOR and a newline.

@@ -13,6 +13,7 @@ import os, re, sqlite3
 from lxml import etree, html
 
 from calibre.ebooks.BeautifulSoup import UnicodeDammit
+from calibre.gui2 import Application
 
 from calibre_plugins.annotations.reader_app_support import iOSReaderApp
 from calibre_plugins.annotations.common_utils import (AnnotationStruct, BookStruct,
@@ -354,6 +355,9 @@ class MarvinReaderApp(iOSReaderApp):
         else:
             # Load installed books from cache
             self._log(" retrieving cached books from %s" % cached_db)
+            self.opts.pb.set_maximum(2)
+            self.opts.pb.set_value(1)
+            Application.processEvents()
             installed_books = self._get_cached_books(cached_db)
 
         self.installed_books = installed_books
