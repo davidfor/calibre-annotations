@@ -18,6 +18,7 @@ from time import sleep
 from PyQt4.Qt import QModelIndex
 
 from calibre.constants import islinux, isosx, iswindows
+from calibre.devices.usbms.driver import debug_print
 from calibre.ebooks.metadata import MetaInformation
 from calibre.gui2 import error_dialog
 from calibre.utils.filenames import shorten_components_to

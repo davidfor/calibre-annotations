@@ -306,6 +306,7 @@ class AnnotationsAction(InterfaceAction):
 
                     try:
                         for reader_app in d.selected_books:
+                            Application.processEvents()
                             annotations_db = ReaderApp.generate_annotations_db_name(reader_app, source)
                             updated_annotations += self.process_selected_books(d.selected_books, reader_app, annotations_db)
                     except:

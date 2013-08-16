@@ -228,6 +228,8 @@ class ConfigWidget(QWidget):
 
         # Hook changes to diagnostic checkboxes
         self.cfg_disable_caching_checkbox.stateChanged.connect(self.restart_required)
+        self.cfg_libimobiledevice_debug_log_checkbox.stateChanged.connect(self.restart_required)
+        self.cfg_plugin_debug_log_checkbox.stateChanged.connect(self.restart_required)
 
         # First run: if no destination field selected, default to 'Comments'
         if self.cfg_annotations_destination_comboBox.currentText() == QString(u''):
@@ -446,7 +448,7 @@ class ConfigWidget(QWidget):
         d = MessageBox(MessageBox.WARNING,
                        title, msg,
                        show_copy_button=False)
-        self._log_location("WARNING: %s" % msg)
+        self._log_location("WARNING: %s" % (msg))
         d.exec_()
 
     def save_settings(self):

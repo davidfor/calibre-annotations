@@ -574,6 +574,11 @@ class IndexLibrary(QThread):
         self.emit(self.signal)
 
     def index_by_title(self):
+        '''
+        By default, any search restrictions or virtual libraries are applied
+        calibre.db.view:search_getting_ids()
+        '''
+        """
         id = self.cdb.FIELD_MAP['id']
         uuid = self.cdb.FIELD_MAP['uuid']
         title = self.cdb.FIELD_MAP['title']
@@ -587,8 +592,25 @@ class IndexLibrary(QThread):
                 'uuid': record[uuid],
                 }
         return by_title
+        """
+        by_title = {}
+
+        cids = self.cdb.search_getting_ids('', '')
+        for cid in cids:
+            title = self.cdb.title(cid, index_is_id=True)
+            by_title[title] = {
+                'authors': self.cdb.authors(cid, index_is_id=True).split(','),
+                'id': cid,
+                'uuid': self.cdb.uuid(cid, index_is_id=True)
+                }
+        return by_title
 
     def index_by_uuid(self):
+        '''
+        By default, any search restrictions or virtual libraries are applied
+        calibre.db.view:search_getting_ids()
+        '''
+        """
         id = self.cdb.FIELD_MAP['id']
         uuid = self.cdb.FIELD_MAP['uuid']
         title = self.cdb.FIELD_MAP['title']
@@ -601,6 +623,19 @@ class IndexLibrary(QThread):
                 'id': record[id],
                 'title': record[title],
                 }
+        return by_uuid
+        """
+        by_uuid = {}
+
+        cids = self.cdb.search_getting_ids('', '')
+        for cid in cids:
+            uuid = self.cdb.uuid(cid, index_is_id=True)
+            by_uuid[uuid] = {
+                'authors': self.cdb.authors(cid, index_is_id=True).split(','),
+                'id': cid,
+                'title': self.cdb.title(cid, index_is_id=True),
+                }
+
         return by_uuid
 
 
