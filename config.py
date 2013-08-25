@@ -72,7 +72,7 @@ class ConfigWidget(QWidget):
         self.cfg_runtime_options_qvl.addWidget(self.cfg_disable_caching_checkbox)
 
         # ~~~~~~~~ plugin logging checkbox ~~~~~~~~
-        self.cfg_plugin_debug_log_checkbox = QCheckBox('Enable debug logging for plugin')
+        self.cfg_plugin_debug_log_checkbox = QCheckBox('Enable debug logging for Annotations plugin')
         self.cfg_plugin_debug_log_checkbox.setObjectName('cfg_plugin_debug_log_checkbox')
         self.cfg_plugin_debug_log_checkbox.setToolTip('Print plugin diagnostic messages to console')
         self.cfg_plugin_debug_log_checkbox.setChecked(False)
@@ -300,21 +300,6 @@ class ConfigWidget(QWidget):
             # No existing annotations, just update prefs
             plugin_prefs.set('cfg_annotations_destination_field', new_destination_field)
             plugin_prefs.set('cfg_annotations_destination_comboBox', new_destination_name)
-
-    """
-    def choose_win_iexplorer_path(self, destination):
-        # *** Does this belong anymore? ***
-        #print(os.environ.keys())
-        selected_file = QFileDialog.getOpenFileName(
-                                                    self,
-                                                    'Select location of iExplorer.exe',
-                                                    os.environ['PROGRAMFILES'],
-                                                    "EXE (iExplorer.exe)"
-                                                    )
-
-        if selected_file:
-            self.cfg_path_to_ie_lineEdit.setText(selected_file)
-    """
 
     def configure_appearance(self):
         '''

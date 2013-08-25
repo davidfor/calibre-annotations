@@ -13,8 +13,8 @@ class AnnotationsPlugin(InterfaceActionBase):
     description         = 'Import annotations'
     supported_platforms = ['linux', 'osx', 'windows']
     author              = 'Greg Riker'
-    version             = (1, 9, 8)
-    minimum_calibre_version = (0, 9, 34)
+    version             = (1, 2, 0)
+    minimum_calibre_version = (1, 0, 0)
 
     actual_plugin       = 'calibre_plugins.annotations.action:AnnotationsAction'
 

@@ -10,7 +10,8 @@ from time import localtime, strftime
 
 from PyQt4 import QtCore, QtGui
 from PyQt4.Qt import (Qt, QAbstractItemModel, QAbstractTableModel, QBrush,
-                      QCheckBox, QColor, QDialog, QDialogButtonBox, QFont, QLabel,
+                      QCheckBox, QColor, QDialog, QDialogButtonBox, QFont, QFontMetrics,
+                      QLabel,
                       QTableView, QTableWidgetItem,
                       QVariant, QVBoxLayout,
                       SIGNAL)
@@ -20,7 +21,7 @@ from calibre.constants import islinux, isosx, iswindows
 
 from calibre_plugins.annotations.common_utils import (
     BookStruct, HelpView, SizePersistedDialog,
-    get_clippings_cid)
+    get_clippings_cid, get_icon)
 
 from calibre_plugins.annotations.config import plugin_prefs
 from calibre_plugins.annotations.reader_app_support import ReaderApp
@@ -280,9 +281,10 @@ class AnnotatedBooksDialog(QDialog):
             self.tv.setColumnWidth(self.annotations_header.index(nc), cw + extra_width)
 
         # Set row height
+        fm = QFontMetrics(self.FONT)
         nrows = len(self.tabledata)
         for row in xrange(nrows):
-            self.tv.setRowHeight(row, 16)
+            self.tv.setRowHeight(row, fm.height() + 4)
 
         self.tv.setSortingEnabled(True)
         sort_column = self.opts.prefs.get('annotated_books_dialog_sort_column',
@@ -301,11 +303,15 @@ class AnnotatedBooksDialog(QDialog):
         self.toggle_checkmarks_button = self.dialogButtonBox.addButton('Clear All', QDialogButtonBox.ActionRole)
         self.toggle_checkmarks_button.setObjectName('toggle_checkmarks_button')
 
-        scb_text = 'Show Metadata Quality'
+        scb_text = 'Show match status'
         if self.show_confidence_colors:
-            scb_text = "Hide Metadata Quality"
+            scb_text = "Hide match status"
         self.show_confidence_button = self.dialogButtonBox.addButton(scb_text, QDialogButtonBox.ActionRole)
         self.show_confidence_button.setObjectName('confidence_button')
+        if self.show_confidence_colors:
+            self.show_confidence_button.setIcon(get_icon('images/matches_hide.png'))
+        else:
+            self.show_confidence_button.setIcon(get_icon('images/matches_show.png'))
 
         self.preview_button = self.dialogButtonBox.addButton('Preview', QDialogButtonBox.ActionRole)
         self.preview_button.setObjectName('preview_button')
@@ -425,11 +431,13 @@ class AnnotatedBooksDialog(QDialog):
         self.show_confidence_colors = not self.show_confidence_colors
         self.opts.prefs.set('annotated_books_dialog_show_confidence_as_bg_color', self.show_confidence_colors)
         if self.show_confidence_colors:
-            self.show_confidence_button.setText("Hide Metadata Quality")
+            self.show_confidence_button.setText("Hide match status")
+            self.show_confidence_button.setIcon(get_icon('images/matches_hide.png'))
             self.tv.sortByColumn(self.annotations_header.index('Confidence'), Qt.DescendingOrder)
             self.capture_sort_column(self.annotations_header.index('Confidence'))
         else:
-            self.show_confidence_button.setText("Show Metadata Quality")
+            self.show_confidence_button.setText("Show match status")
+            self.show_confidence_button.setIcon(get_icon('images/matches_show.png'))
         self.tv.setAlternatingRowColors(not self.show_confidence_colors)
         self.tm.refresh(self.show_confidence_colors)
 

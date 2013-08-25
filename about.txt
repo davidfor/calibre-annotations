@@ -3,8 +3,10 @@ Thanks to kovidgoyal, chaley and kiwidude for their generous assistance and supp
 Special thanks to Kristian Guillaumier for Marvin, a most excellent iOS reader application, which inspired the completion of this plugin.
 
 Version history:
-2.0.0 [1 July 2013]
- • Removed dependency on iExplorer
+1.2.0 [25 August 2013]
+ • Removed dependency on iExplorer for iOS reader applications
+1.1.2 [19 April 2013]
+ • Handle non-English locations in Kindle 'My Clippings.txt'
 1.1.0 [15 March 2013]
  • Add News clipping feature
  • Add support for GoodReader

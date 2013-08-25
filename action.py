@@ -13,7 +13,8 @@ import imp, inspect, os, re, sys, tempfile, threading, types, urlparse
 from functools import partial
 from zipfile import ZipFile
 
-from PyQt4.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QPixmap, QTimer)
+from PyQt4.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QPixmap,
+                      QTimer, QToolButton)
 
 from calibre.constants import DEBUG, isosx, iswindows
 #from calibre_plugins.annotations.libimobiledevice import libiMobileDevice, libiMobileDeviceException
@@ -54,6 +55,7 @@ PLUGIN_ICONS = ['images/annotations.png', 'images/apple.png',
                 'images/goodreader.png', 'images/ibooks.png',
                 'images/kindle_for_ios.png',
                 'images/magnifying_glass.png', 'images/marvin.png',
+                'images/matches_hide.png', 'images/matches_show.png',
                 'images/stanza.png']
 
 
@@ -74,6 +76,8 @@ class AnnotationsAction(InterfaceAction):
     # Declare the main action associated with this plugin
     action_spec = ('Annotations', None,
                    'Import annotations from eBook reader', None)
+    action_menu_clone_qaction = True
+    popup_type = QToolButton.InstantPopup
 
     plugin_device_connection_changed = pyqtSignal(object)
 
@@ -393,7 +397,7 @@ class AnnotationsAction(InterfaceAction):
         self.menu = QMenu(self.gui)
         self.qaction.setMenu(self.menu)
         self.qaction.setIcon(get_icon(PLUGIN_ICONS[0]))
-        self.qaction.triggered.connect(self.main_menu_button_clicked)
+        #self.qaction.triggered.connect(self.main_menu_button_clicked)
         self.menu.aboutToShow.connect(self.about_to_show_menu)
 
         # Instantiate the database
@@ -523,66 +527,6 @@ class AnnotationsAction(InterfaceAction):
             self._log_location("ERROR: %s" % msg)
 
         return annotated_book_list
-
-    # *** Obsolete get_annotated_books_on_ios_device() ***
-    '''
-    def get_annotated_books_on_ios_device(self):
-        # Scan all sqlite apps for active annotations
-        sql_reader_apps = iOSReaderApp.get_sqlite_app_classes()
-        self.opts.pb.show()
-        annotated_book_list = []
-        for reader_app_class in sql_reader_apps:
-            try:
-                reader_app = sql_reader_apps[reader_app_class]
-                # Instantiate reader_app_class
-                ra = reader_app_class(self)
-                ra.open()
-                ra.get_installed_books()
-                ra.get_active_annotations()
-                books_db = ra.generate_books_db_name(reader_app, self.ios.device_name)
-                annotations_db = ra.generate_annotations_db_name(reader_app, self.ios.device_name)
-                books = ra.get_books(books_db)
-                ra.close()
-
-                if books is None:
-                    continue
-
-                # Get the books for this db
-                this_book_list = []
-                for book in books:
-                    book_mi = {}
-                    for key in book.keys():
-                        book_mi[key] = book[key]
-                    if not book_mi['active']:
-                        continue
-                    annotation_count = self.opts.db.get_annotation_count(annotations_db, book_mi['book_id'])
-                    last_update = self.opts.db.get_last_update(books_db, book_mi['book_id'], as_timestamp=True)
-                    if annotation_count:
-                        this_book_list.append({
-                            'annotations': annotation_count,
-                            'author': book_mi['author'],
-                            'author_sort': book_mi['author_sort'] if book_mi['author_sort'] else book_mi['author'],
-                            'book_id': book_mi['book_id'],
-                            'genre': book_mi['genre'],
-                            'last_update': last_update,
-                            'reader_app': reader_app,
-                            'title': book_mi['title'],
-                            'title_sort': book_mi['title_sort'] if book_mi['title_sort'] else book_mi['title'],
-                            'uuid': book_mi['uuid'],
-                            })
-                annotated_book_list += this_book_list
-            except:
-                import traceback
-                traceback.print_exc()
-                title = "Error fetching annotations"
-                msg = ('<p>Unable to fetch annotations from {0}.</p>'.format(reader_app) +
-                       '<p>Try updating to most recent version.</p>')
-                MessageBox(MessageBox.ERROR, title, msg, show_copy_button=False).exec_()
-                self._log_location("ERROR: %s" % msg)
-
-        self.opts.pb.hide()
-        return annotated_book_list
-    '''
 
     def get_annotated_books_on_usb_device(self, reader_app):
         self._log_location()
@@ -870,6 +814,8 @@ class AnnotationsAction(InterfaceAction):
                     self._log(" unable to load external class from '%s' (file not found)" % ac)
 
     def main_menu_button_clicked(self):
+        '''
+        '''
         self.show_configuration()
 
     def nuke_annotations(self):
