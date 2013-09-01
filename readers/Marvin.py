@@ -189,8 +189,8 @@ class MarvinReaderApp(iOSReaderApp):
 
                     note_text = None
                     if row[b'Note']:
-                        note_text = UnicodeDammit(row[b'Note']).unicode
-                        note_text = note_text.rstrip('\n').split('\n')[0]
+                        ntu = UnicodeDammit(row[b'Note']).unicode
+                        note_text = ntu.rstrip('\n')
 
                     # Populate an AnnotationStruct
                     a_mi = AnnotationStruct()
