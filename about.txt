@@ -1,9 +1,5 @@
-Thanks to kovidgoyal, chaley and kiwidude for their generous assistance and support.
-
-Special thanks to Kristian Guillaumier for Marvin, a most excellent iOS reader application, which inspired the completion of this plugin.
-
 Version history:
-1.2.0 [25 August 2013]
+1.2.0 [13 September 2013]
  • Removed dependency on iExplorer for iOS reader applications.
  • Added improved international support for Kindle 'My Clippings.txt' contributed by MobileRead member -axel-.
 1.1.2 [19 April 2013]
@@ -17,3 +13,8 @@ Version history:
 1.0.0 [11 March 2013]
  • Initial release for Linux, OS X and Windows.
  • Support for Marvin, an iOS reader application.
+
+Thanks to kovidgoyal, chaley and kiwidude for their generous assistance and support.
+
+Special thanks to Kristian Guillaumier for Marvin, a most excellent iOS reader application, which inspired the completion of this plugin.
+
