@@ -344,7 +344,7 @@ class ConfigWidget(QWidget):
                            show_copy_button=False)
             self._log_location("QUESTION: %s" % msg)
             if d.exec_():
-                self.opts.log_location("Updating existing annotations to modified appearance")
+                self.opts._log_location("Updating existing annotations to modified appearance")
                 if self.annotated_books_scanner.isRunning():
                     self.annotated_books_scanner.wait()
                 move_annotations(self, self.annotated_books_scanner.annotation_map,

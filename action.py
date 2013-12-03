@@ -26,6 +26,7 @@ from calibre.gui2 import Application, open_url
 from calibre.gui2.device import device_signals
 from calibre.gui2.dialogs.message_box import MessageBox
 from calibre.gui2.actions import InterfaceAction
+from calibre.library import current_library_name
 from calibre.utils.config import config_dir
 
 from calibre_plugins.annotations.annotated_books import AnnotatedBooksDialog
@@ -755,7 +756,7 @@ class AnnotationsAction(InterfaceAction):
 
     # subclass override
     def library_changed(self, db):
-        self._log_location()
+        self._log_location(current_library_name())
         self.library_indexed = False
         self.indexed_library = None
         self.library_last_modified = None

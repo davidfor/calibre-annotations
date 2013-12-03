@@ -188,7 +188,7 @@ class PlainTextEdit(QPlainTextEdit):
         self.parent = parent
         self.opts = parent.opts
         self.log = parent.opts.log
-        self.log_location = parent.opts.log_location
+        self._log_location = parent.opts._log_location
         self.setAcceptDrops(True)
 
     def dragEnterEvent(self, event):
@@ -224,7 +224,7 @@ class PlainTextEdit(QPlainTextEdit):
                 u = unicode(raw, 'utf-8')
             self.setPlainText(u)
         else:
-            self.log_location("unsupported import: %s" % path)
+            self._log_location("unsupported import: %s" % path)
 
 
 """
@@ -255,7 +255,7 @@ class Profiler():
         pass
 
     def where_am_i(self, *args):
-        self.log_location(args)
+        self._log_location(args)
 
     def what_time_is_it(self, location):
         ans = '{:-^120}'.format('   %s @ %s   ' % (location, time.strftime('%H:%M:%S')))
@@ -740,7 +740,7 @@ def existing_annotations(parent, field, return_all=False):
                 if not return_all:
                     break
         if return_all:
-            parent.log_location("Identified %d annotated books of %d total books" %
+            parent._log_location("Identified %d annotated books of %d total books" %
                 (len(annotation_map), len(db.data)))
         return annotation_map
 
@@ -886,7 +886,7 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
     '''
     import calibre_plugins.annotations.config as cfg
 
-    parent.opts.log_location("%s -> %s" % (old_destination_field, new_destination_field))
+    parent.opts._log_location("%s -> %s" % (old_destination_field, new_destination_field))
 
     db = parent.opts.gui.current_db
     id = db.FIELD_MAP['id']
@@ -1098,7 +1098,7 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
                msg=msg,
                show_copy_button=False,
                parent=parent.gui).exec_()
-    parent.opts.log_location("INFO: %s" % msg)
+    parent.opts._log_location("INFO: %s" % msg)
 
     # Update the UI
     updateCalibreGUIView()
