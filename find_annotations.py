@@ -26,7 +26,8 @@ from PyQt4.Qt import (Qt, QComboBox, QDate, QDateTime, QDateTimeEdit, QDialogBut
     SIGNAL)
 
 from calibre_plugins.annotations.annotations import COLOR_MAP
-from calibre_plugins.annotations.common_utils import SizePersistedDialog
+from calibre_plugins.annotations.common_utils import (SizePersistedDialog,
+    get_cc_mapping)
 from calibre_plugins.annotations.config import InventoryAnnotatedBooks, plugin_prefs
 
 from calibre_plugins.annotations.reader_app_support import ReaderApp
@@ -272,7 +273,8 @@ class FindAnnotationsDialog(SizePersistedDialog):
         # Date range signals connected in inventory_available()
 
         # ~~~~~~~~ Allow dialog to render before doing inventory ~~~~~~~~
-        field = self.prefs.get('cfg_annotations_destination_field', None)
+        #field = self.prefs.get('cfg_annotations_destination_field', None)
+        field = get_cc_mapping('annotations', 'field', None)
         self.annotated_books_scanner = InventoryAnnotatedBooks(self.opts.gui, field, get_date_range=True)
         self.connect(self.annotated_books_scanner, self.annotated_books_scanner.signal,
             self.inventory_available)
@@ -387,7 +389,8 @@ class FindAnnotationsDialog(SizePersistedDialog):
         to_date = self.find_annotations_date_to_dateEdit.dateTime().toTime_t()
 
         annotation_map = self.annotated_books_scanner.annotation_map
-        field = self.prefs.get("cfg_annotations_destination_field", None)
+        #field = self.prefs.get("cfg_annotations_destination_field", None)
+        field = get_cc_mapping('annotations', 'field', None)
 
         db = self.opts.gui.current_db
         matched_titles = []

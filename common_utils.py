@@ -17,6 +17,7 @@ from calibre.ebooks.BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 from calibre.ebooks.metadata import MetaInformation
 from calibre.gui2 import Application
 from calibre.gui2.dialogs.message_box import MessageBox
+from calibre.library import current_library_name
 from calibre.utils.config import config_dir
 from calibre.utils.ipc import RC
 from calibre.utils.logging import Log
@@ -745,6 +746,26 @@ def existing_annotations(parent, field, return_all=False):
         return annotation_map
 
 
+def get_cc_mapping(cc_name, element, default=None):
+    '''
+    Return the element mapped to cc_name in prefs
+    '''
+    from calibre_plugins.annotations.config import plugin_prefs
+
+    if element not in ['field', 'combobox']:
+        raise ValueError("invalid element '{0}' requested for custom column '{1}'".format(
+            element, cc_name))
+
+    ans = default
+    cc_mappings = plugin_prefs.get('cc_mappings', {})
+    current_library = current_library_name()
+    if (current_library in cc_mappings and
+        cc_name in cc_mappings[current_library] and
+        element in cc_mappings[current_library][cc_name]):
+        ans = cc_mappings[current_library][cc_name][element]
+    return ans
+
+
 def get_clippings_cid(parent, title):
     '''
     Find or create cid for title
@@ -854,6 +875,7 @@ def get_selected_book_mi(opts, msg=None, det_msg=None):
 def inventory_controls(ui, dump_controls=False):
     '''
      Build an inventory of stateful controls
+     Exclude controls listed in ui.EXCLUDED_CONTROLS
     '''
     controls = {'owner': ui.__class__.__name__}
     control_dict = defaultdict(list)
@@ -863,6 +885,9 @@ def inventory_controls(ui, dump_controls=False):
     # Inventory existing controls
     for item in ui.__dict__:
         if type(ui.__dict__[item]) in CONTROL_CLASSES:
+            if (hasattr(ui, 'EXCLUDED_CONTROLS') and
+                str(ui.__dict__[item].objectName()) in ui.EXCLUDED_CONTROLS):
+                continue
             index = CONTROL_CLASSES.index(type(ui.__dict__[item]))
             control_dict[CONTROL_TYPES[index]].append(str(ui.__dict__[item].objectName()))
 
@@ -1104,7 +1129,8 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
     updateCalibreGUIView()
 
 
-def restore_state(ui, prefs, restore_position=False):
+def restore_state(ui, restore_position=False):
+    from calibre_plugins.annotations.config import plugin_prefs
     if restore_position:
         _restore_ui_position(ui, ui.controls['owner'])
 
@@ -1120,13 +1146,13 @@ def restore_state(ui, prefs, restore_position=False):
                     setter_ref = getattr(control_ref, CONTROL_SET[index], None)
                     if setter_ref is not None:
                         if callable(setter_ref):
-                            setter_ref(prefs.get(control, CONTROL_DEFAULT[index]))
+                            setter_ref(plugin_prefs.get(control, CONTROL_DEFAULT[index]))
                 elif isinstance(CONTROL_SET[index], tuple) and len(CONTROL_SET[index]) == 2:
                     # Special case for comboBox - first findText, then setCurrentIndex
                     setter_ref = getattr(control_ref, CONTROL_SET[index][0], None)
                     if setter_ref is not None:
                         if callable(setter_ref):
-                            result = setter_ref(prefs.get(control, CONTROL_DEFAULT[index]))
+                            result = setter_ref(plugin_prefs.get(control, CONTROL_DEFAULT[index]))
                             setter_ref = getattr(control_ref, CONTROL_SET[index][1], None)
                             if setter_ref is not None:
                                 if callable(setter_ref):
@@ -1147,7 +1173,8 @@ def _restore_ui_position(ui, owner):
     ui.move(last_x, last_y)
 
 
-def save_state(ui, prefs, save_position=False):
+def save_state(ui, save_position=False):
+    from calibre_plugins.annotations.config import plugin_prefs
     if save_position:
         _save_ui_position(ui, ui.controls['owner'])
 
@@ -1162,12 +1189,29 @@ def save_state(ui, prefs, save_position=False):
             qt_type = getattr(getattr(ui, control), CONTROL_GET[index])()
             if type(qt_type) is QString:
                 qt_type = unicode(qt_type)
-            prefs.set(control, qt_type)
+            #print("control: %s qt_type: %s" % (control, qt_type))
+            plugin_prefs.set(control, qt_type)
 
 
 def _save_ui_position(ui, owner):
     prefs.set('%s_last_x' % owner, ui.pos().x())
     prefs.set('%s_last_y' % owner, ui.pos().y())
+
+
+def set_cc_mapping(cc_name, field=None, combobox=None):
+    '''
+    Store element to cc_name in prefs:cc_mappings
+    '''
+    from calibre_plugins.annotations.config import plugin_prefs
+
+    cc_mappings = plugin_prefs.get('cc_mappings', {})
+    current_library = current_library_name()
+    if current_library in cc_mappings:
+        cc_mappings[current_library][cc_name]['field'] = field
+        cc_mappings[current_library][cc_name]['combobox'] = combobox
+    else:
+        cc_mappings[current_library] = {cc_name: {'field': field, 'combobox': combobox}}
+    plugin_prefs.set('cc_mappings', cc_mappings)
 
 
 def set_plugin_icon_resources(name, resources):

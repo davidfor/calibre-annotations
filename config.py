@@ -31,14 +31,19 @@ from calibre.utils.logging import Log
 
 from calibre_plugins.annotations.appearance import AnnotationsAppearance
 from calibre_plugins.annotations.common_utils import (Struct,
-    existing_annotations, get_icon, inventory_controls, move_annotations, restore_state,
-    save_state)
+    existing_annotations, get_cc_mapping, get_icon, inventory_controls,
+    move_annotations, restore_state, save_state, set_cc_mapping)
 
 plugin_prefs = JSONConfig('plugins/annotations')
 
 dialog_resources_path = os.path.join(config_dir, 'plugins', 'annotations_resources', 'dialogs')
 
 class ConfigWidget(QWidget):
+    # Manually managed controls when saving/restoring
+    EXCLUDED_CONTROLS = [
+        'cfg_annotations_destination_comboBox'
+        ]
+
     LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
 
     WIZARD_PROFILES = {
@@ -84,55 +89,6 @@ class ConfigWidget(QWidget):
         self.cfg_libimobiledevice_debug_log_checkbox.setToolTip('Print libiMobileDevice debug messages to console')
         self.cfg_libimobiledevice_debug_log_checkbox.setChecked(False)
         self.cfg_runtime_options_qvl.addWidget(self.cfg_libimobiledevice_debug_log_checkbox)
-
-        # iExplorer stuff to remove
-        '''
-        # ~~~~~~~~ Create the iExplorer group box ~~~~~~~~
-        if not islinux:
-            self.cfg_ie_gb = QGroupBox(self)
-            self.cfg_ie_gb.setTitle('iExplorer')
-            self.cfg_runtime_options_qvl.addWidget(self.cfg_ie_gb)
-            self.cfg_ie_gb_qgl = QGridLayout(self.cfg_ie_gb)
-            current_row = 0
-
-            ie_installed = iOSMounter(self.opts).app_path is not None
-            # Path to iExplorer (Windows only)
-            if iswindows:
-                self.cfg_path_to_ie_lineEdit = QLineEdit(self)
-                self.cfg_path_to_ie_lineEdit.setObjectName('cfg_path_to_ie_lineEdit')
-                self.cfg_path_to_ie_lineEdit.setToolTip('Path to iExplorer')
-                self.cfg_path_to_ie_lineEdit.setPlaceholderText('Select path to iExplorer')
-                self.cfg_ie_gb_qgl.addWidget(self.cfg_path_to_ie_lineEdit, current_row, 0)
-
-                self.cfg_choose_path_toolButton = QToolButton(self)
-                self.cfg_choose_path_toolButton.setToolTip('Select location of iExplorer')
-                self.cfg_choose_path_toolButton.setIcon(QIcon(I('mimetypes/dir')))
-                self.cfg_choose_path_toolButton.clicked.connect(self.choose_win_iexplorer_path)
-                self.cfg_ie_gb_qgl.addWidget(self.cfg_choose_path_toolButton, current_row, 1)
-                current_row += 1
-
-            self.cfg_disable_iexplorer_radioButton = QRadioButton('Disable', self)
-            self.cfg_disable_iexplorer_radioButton.setObjectName('cfg_disable_iexplorer_radioButton')
-            self.cfg_disable_iexplorer_radioButton.setChecked(True)
-            self.cfg_disable_iexplorer_radioButton.setEnabled(ie_installed)
-            self.cfg_ie_gb_qgl.addWidget(self.cfg_disable_iexplorer_radioButton, current_row, 0)
-            current_row += 1
-
-            self.cfg_launch_with_calibre_radioButton = QRadioButton('Launch with calibre', self)
-            self.cfg_launch_with_calibre_radioButton.setObjectName('cfg_launch_with_calibre_radioButton')
-            self.cfg_ie_gb_qgl.addWidget(self.cfg_launch_with_calibre_radioButton, current_row, 0)
-            self.cfg_launch_with_calibre_radioButton.setEnabled(ie_installed)
-            current_row += 1
-
-            self.cfg_launch_on_demand_radioButton = QRadioButton('Launch with plugin', self)
-            self.cfg_launch_on_demand_radioButton.setObjectName('cfg_launch_on_demand_radioButton')
-            self.cfg_launch_on_demand_radioButton.setEnabled(ie_installed)
-            self.cfg_ie_gb_qgl.addWidget(self.cfg_launch_on_demand_radioButton, current_row, 0)
-            current_row += 1
-
-            self.ie_spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-            self.cfg_ie_gb_qgl.addItem(self.ie_spacerItem, current_row, 0)
-        '''
 
         # ~~~~~~~~ Create the Annotations options group box ~~~~~~~~
         self.cfg_annotation_options_gb = QGroupBox(self)
@@ -217,8 +173,10 @@ class ConfigWidget(QWidget):
         self.resize(self.sizeHint())
 
         # Restore state of controls
-        self.controls = inventory_controls(self)
-        restore_state(self, plugin_prefs)
+        self.controls = inventory_controls(self, dump_controls=False)
+        restore_state(self)
+
+        self.populate_annotations()
 
         # Hook changes to annotations_destination_combobox
         #self.cfg_annotations_destination_comboBox.currentIndexChanged.connect(self.annotations_destination_changed)
@@ -231,10 +189,6 @@ class ConfigWidget(QWidget):
         self.cfg_libimobiledevice_debug_log_checkbox.stateChanged.connect(self.restart_required)
         self.cfg_plugin_debug_log_checkbox.stateChanged.connect(self.restart_required)
 
-        # First run: if no destination field selected, default to 'Comments'
-        if self.cfg_annotations_destination_comboBox.currentText() == QString(u''):
-            ci = self.cfg_annotations_destination_comboBox.findText('Comments')
-            self.cfg_annotations_destination_comboBox.setCurrentIndex(ci)
 
         # Hook changes to News clippings, initialize
         self.cfg_news_clippings_checkbox.stateChanged.connect(self.news_clippings_toggled)
@@ -242,7 +196,8 @@ class ConfigWidget(QWidget):
         self.cfg_news_clippings_lineEdit.editingFinished.connect(self.news_clippings_destination_changed)
 
         # Launch the annotated_books_scanner
-        field = plugin_prefs.get('cfg_annotations_destination_field', None)
+        #field = plugin_prefs.get('cfg_annotations_destination_field', None)
+        field = get_cc_mapping('annotations', 'field', None)
         self.annotated_books_scanner = InventoryAnnotatedBooks(self.gui, field)
         self.connect(self.annotated_books_scanner, self.annotated_books_scanner.signal,
             self.inventory_complete)
@@ -252,14 +207,24 @@ class ConfigWidget(QWidget):
         '''
         If the destination field changes, move all existing annotations from old to new
         '''
-        old_destination_field = plugin_prefs.get("cfg_annotations_destination_field", None)
-        old_destination_name = plugin_prefs.get("cfg_annotations_destination_comboBox", None)
+        self._log_location(repr(qs_new_destination_name))
+        self._log("self.custom_fields: %s" % self.custom_fields)
+
+        #old_destination_field = plugin_prefs.get("cfg_annotations_destination_field", None)
+        old_destination_field = get_cc_mapping('annotations', 'field', None)
+        #old_destination_name = plugin_prefs.get("cfg_annotations_destination_comboBox", None)
+        old_destination_name = get_cc_mapping('annotations', 'combobox', None)
+
+        self._log("old_destination_field: %s" % old_destination_field)
+        self._log("old_destination_name: %s" % old_destination_name)
 
         # Catch initial change from None to Comments - first run only
-        if old_destination_field == None:
+        if old_destination_field is None:
             return
 
         new_destination_name = str(qs_new_destination_name)
+        self._log("new_destination_name: %s" % new_destination_name)
+
         if old_destination_name == new_destination_name:
             self._log_location("old_destination_name = new_destination_name, no changes")
             return
@@ -283,8 +248,9 @@ class ConfigWidget(QWidget):
                            show_copy_button=False)
             self._log_location("QUESTION: %s" % msg)
             if d.exec_():
-                plugin_prefs.set('cfg_annotations_destination_field', new_destination_field)
-                plugin_prefs.set('cfg_annotations_destination_comboBox', new_destination_name)
+                #plugin_prefs.set('cfg_annotations_destination_field', new_destination_field)
+                #plugin_prefs.set('cfg_annotations_destination_comboBox', new_destination_name)
+                set_cc_mapping('annotations', field=new_destination_field, combobox=new_destination_name)
 
                 if self.annotated_books_scanner.isRunning():
                     self.annotated_books_scanner.wait()
@@ -298,8 +264,9 @@ class ConfigWidget(QWidget):
                 self.cfg_annotations_destination_comboBox.blockSignals(False)
         else:
             # No existing annotations, just update prefs
-            plugin_prefs.set('cfg_annotations_destination_field', new_destination_field)
-            plugin_prefs.set('cfg_annotations_destination_comboBox', new_destination_name)
+            #plugin_prefs.set('cfg_annotations_destination_field', new_destination_field)
+            #plugin_prefs.set('cfg_annotations_destination_comboBox', new_destination_name)
+            set_cc_mapping('annotations', field=new_destination_field, combobox=new_destination_name)
 
     def configure_appearance(self):
         '''
@@ -335,7 +302,8 @@ class ConfigWidget(QWidget):
             nsh = osh
 
         # If there were changes, and there are existing annotations, offer to re-render
-        field = plugin_prefs.get("cfg_annotations_destination_field", None)
+        #field = plugin_prefs.get("cfg_annotations_destination_field", None)
+        field = get_cc_mapping('annotations', 'field', None)
         if osh.digest() != nsh.digest() and existing_annotations(self.opts.parent,field):
             title = 'Update annotations?'
             msg = '<p>Update existing annotations to new appearance settings?</p>'
@@ -359,8 +327,10 @@ class ConfigWidget(QWidget):
         def _update_combo_box(comboBox, destination, previous):
             '''
             '''
-            cb = getattr(self, comboBox)
+            self._log_location()
 
+            cb = getattr(self, comboBox)
+            cb.blockSignals(True)
             all_items = [str(cb.itemText(i))
                          for i in range(cb.count())]
             if previous and previous in all_items:
@@ -369,9 +339,17 @@ class ConfigWidget(QWidget):
 
             cb.clear()
             cb.addItems(sorted(all_items, key=lambda s: s.lower()))
+
+            # Select the new destination in the comboBox
             idx = cb.findText(destination)
             if idx > -1:
                 cb.setCurrentIndex(idx)
+
+            # Process the changed destination
+            self.annotations_destination_changed(QString(destination))
+
+            cb.blockSignals(False)
+
 
         klass = os.path.join(dialog_resources_path, 'cc_wizard.py')
         if os.path.exists(klass):
@@ -393,15 +371,24 @@ class ConfigWidget(QWidget):
                 previous = dlg.modified_column['previous']
                 source = dlg.modified_column['source']
 
+                self._log("destination: %s" % destination)
+                self._log("label: %s" % label)
+                self._log("previous: %s" % previous)
+                self._log("source: %s" % source)
+
                 if source == "Annotations":
                     # Add/update the new destination so save_settings() can find it
-                    self.custom_fields[destination]['field'] = label
+                    if destination in self.custom_fields:
+                        self.custom_fields[destination]['field'] = label
+                    else:
+                        self.custom_fields[destination] = {'field': label}
 
-                    _update_combo_box("cfg_annotations_destination_comboBox", destination, previous)
+                    _update_combo_box('cfg_annotations_destination_comboBox', destination, previous)
 
                     # Save field manually in case user cancels
-                    self.prefs.set('cfg_annotations_destination_comboBox', destination)
-                    self.prefs.set('cfg_annotations_destination_field', label)
+                    #self.prefs.set('cfg_annotations_destination_comboBox', destination)
+                    #self.prefs.set('cfg_annotations_destination_field', label)
+                    set_cc_mapping('annotations', field=label, combobox=destination)
 
                     # Inform user to restart
                     self.restart_required('custom_column')
@@ -427,6 +414,18 @@ class ConfigWidget(QWidget):
         else:
             self.cfg_news_clippings_lineEdit.setEnabled(False)
 
+    def populate_annotations(self):
+        '''
+        Restore annotations combobox
+        '''
+        self._log_location()
+        target = 'Comments'
+        existing = get_cc_mapping('annotations', 'combobox')
+        if existing:
+            target = existing
+        ci = self.cfg_annotations_destination_comboBox.findText(target)
+        self.cfg_annotations_destination_comboBox.setCurrentIndex(ci)
+
     def restart_required(self, state):
         title = 'Restart required'
         msg = 'To apply changes, restart calibre.'
@@ -437,14 +436,16 @@ class ConfigWidget(QWidget):
         d.exec_()
 
     def save_settings(self):
-        save_state(self, plugin_prefs)
+        save_state(self)
 
         # Save the annotation destination field
         ann_dest = str(self.cfg_annotations_destination_comboBox.currentText())
         if ann_dest == 'Comments':
-            plugin_prefs.set('cfg_annotations_destination_field', 'Comments')
+            #plugin_prefs.set('cfg_annotations_destination_field', 'Comments')
+            set_cc_mapping('annotations', field='Comments', combobox='Comments')
         else:
-            plugin_prefs.set('cfg_annotations_destination_field', self.custom_fields[ann_dest]['field'])
+            #plugin_prefs.set('cfg_annotations_destination_field', self.custom_fields[ann_dest]['field'])
+            set_cc_mapping('annotations', field=self.custom_fields[ann_dest]['field'], combobox=ann_dest)
 
     def start_inventory(self):
         self.annotated_books_scanner.start()

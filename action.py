@@ -36,9 +36,9 @@ from calibre_plugins.annotations.annotations_db import AnnotationsDB
 from calibre_plugins.annotations.common_utils import (CompileUI,
     CoverMessageBox, HelpView, ImportAnnotationsDialog, IndexLibrary,
     ProgressBar, Struct,
-    get_clippings_cid, get_icon, get_pixmap, get_resource_files,
+    get_cc_mapping, get_clippings_cid, get_icon, get_pixmap, get_resource_files,
     get_selected_book_mi, plugin_tmpdir,
-    set_plugin_icon_resources, updateCalibreGUIView)
+    set_cc_mapping, set_plugin_icon_resources, updateCalibreGUIView)
 #import calibre_plugins.annotations.config as cfg
 from calibre_plugins.annotations.config import plugin_prefs
 from calibre_plugins.annotations.find_annotations import FindAnnotationsDialog
@@ -141,7 +141,8 @@ class AnnotationsAction(InterfaceAction):
         Add annotations from a single db to calibre
         Update destination Comments or #<custom>
         """
-        update_field = plugin_prefs.get('cfg_annotations_destination_field', 'Comments')
+        #update_field = plugin_prefs.get('cfg_annotations_destination_field', 'Comments')
+        update_field = get_cc_mapping('annotations', 'field', 'Comments')
         self._log_location(update_field)
         db = self.opts.gui.current_db
         mi = db.get_metadata(cid, index_is_id=True)
@@ -684,8 +685,8 @@ class AnnotationsAction(InterfaceAction):
         Set the initial default values as needed
         '''
         pref_map = {
-            'cfg_annotations_destination_comboBox': 'Comments',
-            'cfg_annotations_destination_field': 'Comments',
+            #'cfg_annotations_destination_comboBox': 'Comments',
+            #'cfg_annotations_destination_field': 'Comments',
             'cfg_news_clippings_lineEdit': 'My News Clippings',
             'developer_mode': False,
             'COMMENTS_DIVIDER': '&middot;  &middot;  &bull;  &middot;  &#x2726;  &middot;  &bull;  &middot; &middot;',
@@ -1175,7 +1176,7 @@ class AnnotationsAction(InterfaceAction):
         suffix = " from 1 book "
         if updated_annotations > 1:
             suffix = " from %d books " % updated_annotations
-        msg = "<p>Annotations" + suffix + "added to <b>%s</b>.</p>" % plugin_prefs.get('cfg_annotations_destination_comboBox')
+        msg = "<p>Annotations" + suffix + "added to <b>{0}</b>.</p>".format(get_cc_mapping('annotations', 'combobox'))
         MessageBox(MessageBox.INFO,
                    '',
                    msg=msg,
