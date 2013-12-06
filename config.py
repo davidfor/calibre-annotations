@@ -230,6 +230,28 @@ class ConfigWidget(QWidget, Logger):
             new_destination_field = self.custom_fields[new_destination_name]['field']
 
         if existing_annotations(self.opts.parent, old_destination_field):
+            command = self.launch_new_destination_dialog(old_destination_name, new_destination_name)
+
+            if command == 'move':
+                set_cc_mapping('annotations', field=new_destination_field, combobox=new_destination_name)
+
+                if self.annotated_books_scanner.isRunning():
+                    self.annotated_books_scanner.wait()
+                move_annotations(self, self.annotated_books_scanner.annotation_map,
+                    old_destination_field, new_destination_field)
+
+            elif command == 'change':
+                # Keep the updated destination field, but don't move annotations
+                pass
+
+            elif command == 'cancel':
+                # Restore previous destination
+                self.cfg_annotations_destination_comboBox.blockSignals(True)
+                old_index = self.cfg_annotations_destination_comboBox.findText(old_destination_name)
+                self.cfg_annotations_destination_comboBox.setCurrentIndex(old_index)
+                self.cfg_annotations_destination_comboBox.blockSignals(False)
+
+            """
             # Warn user that change will move existing annotations to new field
             title = 'Move annotations?'
             msg = ("<p>Existing annotations will be moved from <b>%s</b> to <b>%s</b>.</p>" %
@@ -254,6 +276,8 @@ class ConfigWidget(QWidget, Logger):
                 old_index = self.cfg_annotations_destination_comboBox.findText(old_destination_name)
                 self.cfg_annotations_destination_comboBox.setCurrentIndex(old_index)
                 self.cfg_annotations_destination_comboBox.blockSignals(False)
+            """
+
         else:
             # No existing annotations, just update prefs
             set_cc_mapping('annotations', field=new_destination_field, combobox=new_destination_name)
@@ -384,6 +408,23 @@ class ConfigWidget(QWidget, Logger):
 
         else:
             self._log("ERROR: Can't import from '%s'" % klass)
+
+    def launch_new_destination_dialog(self, old, new):
+        '''
+        Return 'move', 'change' or 'cancel'
+        '''
+        self._log_location()
+
+        klass = os.path.join(dialog_resources_path, 'new_destination.py')
+        if os.path.exists(klass):
+            self._log("importing new destination dialog from '%s'" % klass)
+            sys.path.insert(0, dialog_resources_path)
+            this_dc = importlib.import_module('new_destination')
+            sys.path.remove(dialog_resources_path)
+            dlg = this_dc.NewDestinationDialog(self, old, new)
+            dlg.exec_()
+            return dlg.command
+
 
     def news_clippings_destination_changed(self):
         qs_new_destination_name = self.cfg_news_clippings_lineEdit.text()

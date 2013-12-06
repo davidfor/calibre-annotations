@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>545</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Annotations destination</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>:/images/lt.png</normaloff>:/images/lt.png</iconset>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_2">
+   <item row="0" column="0">
+    <layout class="QGridLayout" name="gl">
+     <item row="3" column="1">
+      <widget class="QLabel" name="change_label">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change annotations storage from &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt; to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Existing annotations will remain in &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Newly imported annotations will be added to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="header">
+       <property name="font">
+        <font>
+         <pointsize>16</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Move existing annotations?</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="icon">
+       <property name="text">
+        <string>icon</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="move_label">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Move existing annotations from &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt; to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Existing annotations will be removed from &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Newly imported annotations will be added to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QPushButton" name="move_button">
+       <property name="text">
+        <string>Move</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QPushButton" name="change_button">
+       <property name="text">
+        <string>Change</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="0">
+    <widget class="QDialogButtonBox" name="bb">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
