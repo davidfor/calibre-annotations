@@ -13,6 +13,7 @@ from collections import defaultdict
 from time import sleep
 
 from calibre.constants import iswindows
+from calibre.devices.usbms.driver import debug_print
 from calibre.ebooks.BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 from calibre.ebooks.metadata import MetaInformation
 from calibre.gui2 import Application
@@ -59,6 +60,41 @@ plugin_tmpdir = 'calibre_annotations_plugin'
 plugin_icon_resources = {}
 
 '''     Base classes    '''
+
+class Logger():
+    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
+    def _log(self, msg=None):
+        '''
+        Print msg to console
+        '''
+        from calibre_plugins.annotations.config import plugin_prefs
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        if msg:
+            debug_print(" %s" % str(msg))
+        else:
+            debug_print()
+
+    def _log_location(self, *args):
+        '''
+        Print location, args to console
+        '''
+        from calibre_plugins.annotations.config import plugin_prefs
+        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+            return
+
+        arg1 = arg2 = ''
+
+        if len(args) > 0:
+            arg1 = str(args[0])
+        if len(args) > 1:
+            arg2 = str(args[1])
+
+        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
+                    func=sys._getframe(1).f_code.co_name,
+                    arg1=arg1, arg2=arg2))
+
 
 class Struct(dict):
     """
@@ -111,76 +147,7 @@ class BookStruct(Struct):
             )
 
 
-"""
-class DebugLog(Log):
-
-    def __init__(self, plugin_name, level=1):
-        #Log.__init__(self, level)
-        super(DebugLog, self).__init__(level)
-        self.stream = sys.stdout
-        self.debug_fn = "%s_DEBUG.txt" % plugin_name
-        self.log_to_console = False
-        self.out_fs = os.path.join(tempfile.gettempdir(), plugin_tmpdir, self.debug_fn)
-        if not os.path.exists(os.path.dirname(self.out_fs)):
-            os.makedirs(os.path.dirname(self.out_fs))
-        self.out_file = open(self.out_fs, 'w')
-        # Write a UTF-8 BOM
-        self.out_file.write('\xef\xbb\xbf')
-        self.out_file.write('\n')
-        self.errors = False
-
-    def __getattr__(self, attr):
-        if hasattr(self, attr):
-            return getattr(self, attr)
-        else:
-            return getattr(self.stream, attr)
-
-    def close(self):
-        self.out_file.flush()
-        self.out_file.close()
-        sys.stderr = sys.__stderr__
-
-    def save_log(self, dest_dir):
-        self.close()
-        src = self.out_fs
-        dst = dest_dir
-        debug_fs = os.path.join(dest_dir, self.debug_fn)
-        if os.path.exists(debug_fs):
-            os.remove(debug_fs)
-        shutil.copy(src, dst)
-
-    def prints(self, level, *args, **kwargs):
-        if self.log_to_console:
-            Log.prints(self, level, *args, **kwargs)
-        self.out_file.write('%s\n' % args[0])
-        self.out_file.flush()
-
-    def write(self, *args):
-        '''
-        For traceback(), hooked calls to sys.stderr
-        '''
-        if args[0].strip():
-            if 'BeautifulSoup' in args[0] and 'UnicodeWarning:' in args[0]:
-                #Log.prints(self, 1, " ignoring BeautifulSoup UnicodeWarning")
-                return
-
-            err_type = '<stderr>'
-            if 'Traceback' in args[0]:
-                err_type = 'Traceback'
-                error_report = '{:~^80}\n'.format('  %s   ' % err_type) + \
-                               '%s' % args[0].strip()
-            elif 'Error' in args[0]:
-                error_report = '%s' % args[0].strip() + \
-                               '\n{:~^80}'.format('')
-            else:
-                error_report = '%s' % args[0].strip()
-            Log.prints(self, 1, error_report)
-            self.out_file.write(error_report + '\n')
-            #Log.prints(self, 1, '\n')
-            self.errors = True
-"""
-
-class PlainTextEdit(QPlainTextEdit):
+class PlainTextEdit(QPlainTextEdit, Logger):
     """
     Subclass enabling drag 'n drop
     """
@@ -188,8 +155,6 @@ class PlainTextEdit(QPlainTextEdit):
         QPlainTextEdit.__init__(self, parent.gui)
         self.parent = parent
         self.opts = parent.opts
-        self.log = parent.opts.log
-        self._log_location = parent.opts._log_location
         self.setAcceptDrops(True)
 
     def dragEnterEvent(self, event):
@@ -227,42 +192,6 @@ class PlainTextEdit(QPlainTextEdit):
         else:
             self._log_location("unsupported import: %s" % path)
 
-
-"""
-class Profiler():
-    def __init__(self, log, plugin_dir):
-        self.log = log
-        self.plugin_dir = plugin_dir
-
-    def get_location(self, args=None):
-        fn = sys._getframe(1).f_code.co_filename
-        if fn.startswith(self.plugin_dir):
-            fn = fn[len(self.plugin_dir) + 1:]
-        mn = sys._getframe(1).f_code.co_name
-        ans = "%s:%s(%s)" % (fn, mn, args if args else '')
-        return ans
-
-    def log_location(self, args):
-        fn = sys._getframe(2).f_code.co_filename
-        if fn.startswith(self.plugin_dir):
-            fn = fn[len(self.plugin_dir) + 1:]
-        mn = sys._getframe(2).f_code.co_name
-        args = [str(item) for item in args]
-        ans = "%s:%s(%s)" % (fn, mn, ', '.join(args) if args else '')
-        self.log.info(ans)
-        return ans
-
-    def null(self, *args):
-        pass
-
-    def where_am_i(self, *args):
-        self._log_location(args)
-
-    def what_time_is_it(self, location):
-        ans = '{:-^120}'.format('   %s @ %s   ' % (location, time.strftime('%H:%M:%S')))
-        self.log.info(ans)
-        return ans
-"""
 
 class SizePersistedDialog(QDialog):
     '''
@@ -643,15 +572,13 @@ class IndexLibrary(QThread):
 '''     Helper Classes  '''
 
 
-class CompileUI():
+class CompileUI(Logger):
     '''
     Compile Qt Creator .ui files at runtime
     '''
     def __init__(self, parent, verbose=True):
         self.compiled_forms = {}
         self.help_file = None
-        self._log = parent._log
-        self._log_location = parent._log_location
         self.parent = parent
         self.verbose = verbose
         self.compiled_forms = self.compile_ui()
@@ -682,11 +609,9 @@ class CompileUI():
                     os.stat(form).st_mtime > os.stat(compiled_form).st_mtime):
 
                 if not os.path.exists(compiled_form):
-                    if self.verbose:
-                        self._log(' compiling %s' % form)
+                    self._log(' compiling %s' % form)
                 else:
-                    if self.verbose:
-                        self._log(' recompiling %s' % form)
+                    self._log(' recompiling %s' % form)
                     os.remove(compiled_form)
                 buf = cStringIO.StringIO()
                 compileUi(form, buf)
@@ -717,6 +642,38 @@ class CompileUI():
 
 '''     Helper functions   '''
 
+def _log(msg=None):
+    '''
+    Print msg to console
+    '''
+    from calibre_plugins.annotations.config import plugin_prefs
+    if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+        return
+
+    if msg:
+        debug_print(" %s" % str(msg))
+    else:
+        debug_print()
+
+
+def _log_location(*args):
+    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
+
+    from calibre_plugins.annotations.config import plugin_prefs
+    if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
+        return
+
+    arg1 = arg2 = ''
+
+    if len(args) > 0:
+        arg1 = str(args[0])
+    if len(args) > 1:
+        arg2 = str(args[1])
+
+    debug_print(LOCATION_TEMPLATE.format(cls='common_utils',
+                func=sys._getframe(1).f_code.co_name,
+                arg1=arg1, arg2=arg2))
+
 
 def existing_annotations(parent, field, return_all=False):
     '''
@@ -741,7 +698,7 @@ def existing_annotations(parent, field, return_all=False):
                 if not return_all:
                     break
         if return_all:
-            parent._log_location("Identified %d annotated books of %d total books" %
+            _log_location("Identified %d annotated books of %d total books" %
                 (len(annotation_map), len(db.data)))
         return annotation_map
 
@@ -911,7 +868,7 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
     '''
     import calibre_plugins.annotations.config as cfg
 
-    parent.opts._log_location("%s -> %s" % (old_destination_field, new_destination_field))
+    _log_location("%s -> %s" % (old_destination_field, new_destination_field))
 
     db = parent.opts.gui.current_db
     id = db.FIELD_MAP['id']
@@ -1123,7 +1080,8 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
                msg=msg,
                show_copy_button=False,
                parent=parent.gui).exec_()
-    parent.opts._log_location("INFO: %s" % msg)
+    _log_location()
+    _log("INFO: %s" % msg)
 
     # Update the UI
     updateCalibreGUIView()

@@ -11,44 +11,13 @@ from datetime import datetime
 from calibre.devices.usbms.driver import debug_print
 from calibre.ebooks.BeautifulSoup import NavigableString
 from calibre_plugins.annotations.annotations import Annotation, Annotations
-from calibre_plugins.annotations.common_utils import AnnotationStruct
+from calibre_plugins.annotations.common_utils import AnnotationStruct, Logger
 from calibre_plugins.annotations.config import plugin_prefs
 
-class AnnotationsDB():
+class AnnotationsDB(Logger):
     """
     Handle I/O with SQLite db
     """
-    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
-
-    def _log(self, msg=None):
-        '''
-        Print msg to console
-        '''
-        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
-            return
-
-        if msg:
-            debug_print(" %s" % str(msg))
-        else:
-            debug_print()
-
-    def _log_location(self, *args):
-        '''
-        Print location, args to console
-        '''
-        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
-            return
-
-        arg1 = arg2 = ''
-
-        if len(args) > 0:
-            arg1 = str(args[0])
-        if len(args) > 1:
-            arg2 = str(args[1])
-
-        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
-                    func=sys._getframe(1).f_code.co_name,
-                    arg1=arg1, arg2=arg2))
 
     version = 1
 

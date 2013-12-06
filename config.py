@@ -30,7 +30,7 @@ from calibre.utils.config import JSONConfig, config_dir
 from calibre.utils.logging import Log
 
 from calibre_plugins.annotations.appearance import AnnotationsAppearance
-from calibre_plugins.annotations.common_utils import (Struct,
+from calibre_plugins.annotations.common_utils import (Logger, Struct,
     existing_annotations, get_cc_mapping, get_icon, inventory_controls,
     move_annotations, restore_state, save_state, set_cc_mapping)
 
@@ -38,13 +38,13 @@ plugin_prefs = JSONConfig('plugins/annotations')
 
 dialog_resources_path = os.path.join(config_dir, 'plugins', 'annotations_resources', 'dialogs')
 
-class ConfigWidget(QWidget):
+class ConfigWidget(QWidget, Logger):
     # Manually managed controls when saving/restoring
     EXCLUDED_CONTROLS = [
         'cfg_annotations_destination_comboBox'
         ]
 
-    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
+    #LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
 
     WIZARD_PROFILES = {
         'Annotations': {
@@ -172,14 +172,12 @@ class ConfigWidget(QWidget):
 
         self.resize(self.sizeHint())
 
-        # Restore state of controls
+        # Restore state of controls, populate annotations combobox
         self.controls = inventory_controls(self, dump_controls=False)
         restore_state(self)
-
         self.populate_annotations()
 
         # Hook changes to annotations_destination_combobox
-        #self.cfg_annotations_destination_comboBox.currentIndexChanged.connect(self.annotations_destination_changed)
         self.connect(self.cfg_annotations_destination_comboBox,
                      SIGNAL('currentIndexChanged(const QString &)'),
                      self.annotations_destination_changed)
@@ -189,15 +187,13 @@ class ConfigWidget(QWidget):
         self.cfg_libimobiledevice_debug_log_checkbox.stateChanged.connect(self.restart_required)
         self.cfg_plugin_debug_log_checkbox.stateChanged.connect(self.restart_required)
 
-
         # Hook changes to News clippings, initialize
         self.cfg_news_clippings_checkbox.stateChanged.connect(self.news_clippings_toggled)
         self.news_clippings_toggled(self.cfg_news_clippings_checkbox.checkState())
         self.cfg_news_clippings_lineEdit.editingFinished.connect(self.news_clippings_destination_changed)
 
         # Launch the annotated_books_scanner
-        #field = plugin_prefs.get('cfg_annotations_destination_field', None)
-        field = get_cc_mapping('annotations', 'field', None)
+        field = get_cc_mapping('annotations', 'field', 'Comment')
         self.annotated_books_scanner = InventoryAnnotatedBooks(self.gui, field)
         self.connect(self.annotated_books_scanner, self.annotated_books_scanner.signal,
             self.inventory_complete)
@@ -210,9 +206,7 @@ class ConfigWidget(QWidget):
         self._log_location(repr(qs_new_destination_name))
         self._log("self.custom_fields: %s" % self.custom_fields)
 
-        #old_destination_field = plugin_prefs.get("cfg_annotations_destination_field", None)
         old_destination_field = get_cc_mapping('annotations', 'field', None)
-        #old_destination_name = plugin_prefs.get("cfg_annotations_destination_comboBox", None)
         old_destination_name = get_cc_mapping('annotations', 'combobox', None)
 
         self._log("old_destination_field: %s" % old_destination_field)
@@ -248,8 +242,6 @@ class ConfigWidget(QWidget):
                            show_copy_button=False)
             self._log_location("QUESTION: %s" % msg)
             if d.exec_():
-                #plugin_prefs.set('cfg_annotations_destination_field', new_destination_field)
-                #plugin_prefs.set('cfg_annotations_destination_comboBox', new_destination_name)
                 set_cc_mapping('annotations', field=new_destination_field, combobox=new_destination_name)
 
                 if self.annotated_books_scanner.isRunning():
@@ -264,8 +256,6 @@ class ConfigWidget(QWidget):
                 self.cfg_annotations_destination_comboBox.blockSignals(False)
         else:
             # No existing annotations, just update prefs
-            #plugin_prefs.set('cfg_annotations_destination_field', new_destination_field)
-            #plugin_prefs.set('cfg_annotations_destination_comboBox', new_destination_name)
             set_cc_mapping('annotations', field=new_destination_field, combobox=new_destination_name)
 
     def configure_appearance(self):
@@ -302,7 +292,6 @@ class ConfigWidget(QWidget):
             nsh = osh
 
         # If there were changes, and there are existing annotations, offer to re-render
-        #field = plugin_prefs.get("cfg_annotations_destination_field", None)
         field = get_cc_mapping('annotations', 'field', None)
         if osh.digest() != nsh.digest() and existing_annotations(self.opts.parent,field):
             title = 'Update annotations?'
@@ -441,46 +430,14 @@ class ConfigWidget(QWidget):
         # Save the annotation destination field
         ann_dest = str(self.cfg_annotations_destination_comboBox.currentText())
         if ann_dest == 'Comments':
-            #plugin_prefs.set('cfg_annotations_destination_field', 'Comments')
             set_cc_mapping('annotations', field='Comments', combobox='Comments')
         else:
-            #plugin_prefs.set('cfg_annotations_destination_field', self.custom_fields[ann_dest]['field'])
             set_cc_mapping('annotations', field=self.custom_fields[ann_dest]['field'], combobox=ann_dest)
 
     def start_inventory(self):
         self.annotated_books_scanner.start()
 
-    def _log(self, msg=None):
-        '''
-        Print msg to console
-        '''
-        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
-            return
-
-        if msg:
-            debug_print(" %s" % str(msg))
-        else:
-            debug_print()
-
-    def _log_location(self, *args):
-        '''
-        Print location, args to console
-        '''
-        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
-            return
-
-        arg1 = arg2 = ''
-
-        if len(args) > 0:
-            arg1 = str(args[0])
-        if len(args) > 1:
-            arg2 = str(args[1])
-
-        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
-                    func=sys._getframe(1).f_code.co_name,
-                    arg1=arg1, arg2=arg2))
-
-class InventoryAnnotatedBooks(QThread):
+class InventoryAnnotatedBooks(QThread, Logger):
 
     def __init__(self, gui, field, get_date_range=False):
         QThread.__init__(self, gui)
@@ -502,6 +459,11 @@ class InventoryAnnotatedBooks(QThread):
         '''
         Find all annotated books in library
         '''
+        if not self.field:
+            self._log_location()
+            self._log("No custom column field specified, cannot find annotated books")
+            return
+
         id = self.cdb.FIELD_MAP['id']
         for record in self.cdb.data.iterall():
             mi = self.cdb.get_metadata(record[id], index_is_id=True)

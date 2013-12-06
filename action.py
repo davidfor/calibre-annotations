@@ -35,7 +35,7 @@ from calibre_plugins.annotations.annotations_db import AnnotationsDB
 
 from calibre_plugins.annotations.common_utils import (CompileUI,
     CoverMessageBox, HelpView, ImportAnnotationsDialog, IndexLibrary,
-    ProgressBar, Struct,
+    Logger, ProgressBar, Struct,
     get_cc_mapping, get_clippings_cid, get_icon, get_pixmap, get_resource_files,
     get_selected_book_mi, plugin_tmpdir,
     set_cc_mapping, set_plugin_icon_resources, updateCalibreGUIView)
@@ -60,7 +60,7 @@ PLUGIN_ICONS = ['images/annotations.png', 'images/apple.png',
                 'images/stanza.png']
 
 
-class AnnotationsAction(InterfaceAction):
+class AnnotationsAction(InterfaceAction, Logger):
 
     accepts_drops = True
     ios_fs = None
@@ -81,38 +81,6 @@ class AnnotationsAction(InterfaceAction):
     popup_type = QToolButton.InstantPopup
 
     plugin_device_connection_changed = pyqtSignal(object)
-
-    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
-
-    def _log(self, msg=None):
-        '''
-        Print msg to console
-        '''
-        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
-            return
-
-        if msg:
-            debug_print(" %s" % str(msg))
-        else:
-            debug_print()
-
-    def _log_location(self, *args):
-        '''
-        Print location, args to console
-        '''
-        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
-            return
-
-        arg1 = arg2 = ''
-
-        if len(args) > 0:
-            arg1 = str(args[0])
-        if len(args) > 1:
-            arg2 = str(args[1])
-
-        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
-                    func=sys._getframe(1).f_code.co_name,
-                    arg1=arg1, arg2=arg2))
 
     def about_to_show_menu(self):
         self.launch_library_scanner()
@@ -141,7 +109,6 @@ class AnnotationsAction(InterfaceAction):
         Add annotations from a single db to calibre
         Update destination Comments or #<custom>
         """
-        #update_field = plugin_prefs.get('cfg_annotations_destination_field', 'Comments')
         update_field = get_cc_mapping('annotations', 'field', 'Comments')
         self._log_location(update_field)
         db = self.opts.gui.current_db
@@ -695,6 +662,17 @@ class AnnotationsAction(InterfaceAction):
         for pm in pref_map:
             if not plugin_prefs.get(pm, None):
                 plugin_prefs.set(pm, pref_map[pm])
+
+        # Clean up existing JSON file < v1.3.0
+        if self.interface_action_base_plugin.version < (1, 3, 0):
+            self._log_location("Updating prefs from %d.%d.%d to 1.3.0" %
+                self.interface_action_base_plugin.version)
+            for obsolete_setting in ['cfg_annotations_destination_field',
+                'cfg_annotations_destination_comboBox']:
+                if plugin_prefs.get(obsolete_setting, None):
+                    self._log("removing obsolete entry '{0}'".format(obsolete_setting))
+                    plugin_prefs.__delitem__(obsolete_setting)
+            plugin_prefs.set('plugin_version', "%d.%d.%d" % self.interface_action_base_plugin.version)
 
     def import_annotations(self, reader_app):
         """

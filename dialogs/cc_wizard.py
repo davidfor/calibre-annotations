@@ -13,6 +13,7 @@ import sys
 from calibre.devices.usbms.driver import debug_print
 from calibre.gui2 import warning_dialog
 
+from calibre_plugins.annotations.common_utils import Logger
 from calibre_plugins.annotations.config import dialog_resources_path
 
 from PyQt4.Qt import (QDialog, QDialogButtonBox, QIcon, QPixmap,
@@ -25,9 +26,7 @@ if True:
     sys.path.remove(dialog_resources_path)
 
 
-class CustomColumnWizard(QDialog, Ui_Dialog):
-
-    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
+class CustomColumnWizard(QDialog, Ui_Dialog, Logger):
 
     STEP_ONE = "Name your '{0}' column:"
 
@@ -218,35 +217,3 @@ class CustomColumnWizard(QDialog, Ui_Dialog):
         '''
         enabled = len(str(destination))
         self.accept_button.setEnabled(enabled)
-
-    # ~~~~~~ Helpers ~~~~~~
-    def _log(self, msg=None):
-        '''
-        Print msg to console
-        '''
-        if not self.verbose:
-            return
-
-        if msg:
-            debug_print(" %s" % msg)
-        else:
-            debug_print()
-
-    def _log_location(self, *args):
-        '''
-        Print location, args to console
-        '''
-        if not self.verbose:
-            return
-
-        arg1 = arg2 = ''
-
-        if len(args) > 0:
-            arg1 = args[0]
-        if len(args) > 1:
-            arg2 = args[1]
-
-        debug_print(self.LOCATION_TEMPLATE.format(
-            cls=self.__class__.__name__,
-            func=sys._getframe(1).f_code.co_name,
-            arg1=arg1, arg2=arg2))

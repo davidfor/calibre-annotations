@@ -15,6 +15,7 @@ from xml.sax.saxutils import escape
 
 from calibre.devices.usbms.driver import debug_print
 from calibre.ebooks.BeautifulSoup import BeautifulSoup, Tag
+from calibre_plugins.annotations.common_utils import Logger
 from calibre_plugins.annotations.config import plugin_prefs
 
 COLOR_MAP = {
@@ -57,44 +58,12 @@ class Annotation(object):
             setattr(self, p, annotation.get(p))
 
 
-class Annotations(Annotation):
+class Annotations(Annotation, Logger):
     '''
     A collection of Annotation objects
     annotations: [{title:, path:, timestamp:, genre:, highlightcolor:, text:} ...]
     Inherits Annotation solely to share style characteristics for agroups
     '''
-    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
-
-    def _log(self, msg=None):
-        '''
-        Print msg to console
-        '''
-        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
-            return
-
-        if msg:
-            debug_print(" %s" % str(msg))
-        else:
-            debug_print()
-
-    def _log_location(self, *args):
-        '''
-        Print location, args to console
-        '''
-        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
-            return
-
-        arg1 = arg2 = ''
-
-        if len(args) > 0:
-            arg1 = str(args[0])
-        if len(args) > 1:
-            arg2 = str(args[1])
-
-        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
-                    func=sys._getframe(1).f_code.co_name,
-                    arg1=arg1, arg2=arg2))
-
     @dynamic_property
     def annotations(self):
         def fget(self):

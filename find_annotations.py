@@ -26,7 +26,7 @@ from PyQt4.Qt import (Qt, QComboBox, QDate, QDateTime, QDateTimeEdit, QDialogBut
     SIGNAL)
 
 from calibre_plugins.annotations.annotations import COLOR_MAP
-from calibre_plugins.annotations.common_utils import (SizePersistedDialog,
+from calibre_plugins.annotations.common_utils import (Logger, SizePersistedDialog,
     get_cc_mapping)
 from calibre_plugins.annotations.config import InventoryAnnotatedBooks, plugin_prefs
 
@@ -69,43 +69,10 @@ class MyLineEdit(QLineEdit):
         return QLineEdit.event(self, event)
 
 
-class FindAnnotationsDialog(SizePersistedDialog):
+class FindAnnotationsDialog(SizePersistedDialog, Logger):
 
     GENERIC_STYLE = 'Any style'
     GENERIC_READER = 'Any reader'
-
-    LOCATION_TEMPLATE = "{cls}:{func}({arg1}) {arg2}"
-
-    def _log(self, msg=None):
-        '''
-        Print msg to console
-        '''
-        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
-            return
-
-        if msg:
-            debug_print(" %s" % str(msg))
-        else:
-            debug_print()
-
-    def _log_location(self, *args):
-        '''
-        Print location, args to console
-        '''
-        if not plugin_prefs.get('cfg_plugin_debug_log_checkbox', False):
-            return
-
-        arg1 = arg2 = ''
-
-        if len(args) > 0:
-            arg1 = str(args[0])
-        if len(args) > 1:
-            arg2 = str(args[1])
-
-        debug_print(self.LOCATION_TEMPLATE.format(cls=self.__class__.__name__,
-                    func=sys._getframe(1).f_code.co_name,
-                    arg1=arg1, arg2=arg2))
-
 
     def __init__(self, opts):
         self.matched_ids = set()
