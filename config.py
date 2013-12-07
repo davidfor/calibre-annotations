@@ -193,7 +193,7 @@ class ConfigWidget(QWidget, Logger):
         self.cfg_news_clippings_lineEdit.editingFinished.connect(self.news_clippings_destination_changed)
 
         # Launch the annotated_books_scanner
-        field = get_cc_mapping('annotations', 'field', 'Comment')
+        field = get_cc_mapping('annotations', 'field', 'Comments')
         self.annotated_books_scanner = InventoryAnnotatedBooks(self.gui, field)
         self.connect(self.annotated_books_scanner, self.annotated_books_scanner.signal,
             self.inventory_complete)
