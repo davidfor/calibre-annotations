@@ -36,12 +36,6 @@ class NewDestinationDialog(QDialog, Ui_Dialog, Logger):
         self.setupUi(self)
         self._log_location()
 
-        # Populate the icon
-        self.icon.setText('')
-        self.icon.setMaximumSize(QSize(40, 40))
-        self.icon.setScaledContents(True)
-        self.icon.setPixmap(QPixmap(I('wizard.png')))
-
         # Hook the button events
         self.bb.clicked.connect(partial(self.button_clicked, 'cancel'))
         self.move_button.clicked.connect(partial(self.button_clicked, 'move'))
@@ -52,6 +46,7 @@ class NewDestinationDialog(QDialog, Ui_Dialog, Logger):
         self.change_label.setText(str(self.change_label.text()).format(old=old, new=new))
 
         self.command = 'cancel'
+        self.do_resize()
 
     def button_clicked(self, button):
         '''
@@ -62,6 +57,12 @@ class NewDestinationDialog(QDialog, Ui_Dialog, Logger):
 
     def close(self):
         super(NewDestinationDialog, self).close()
+
+    def do_resize(self):
+        sz = self.sizeHint() + QSize(100, 0)
+        sz.setWidth(min(450, sz.width()))
+        sz.setHeight(min(280, sz.height()))
+        self.resize(sz)
 
     def esc(self, *args):
         self.close()

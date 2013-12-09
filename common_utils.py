@@ -1165,8 +1165,7 @@ def set_cc_mapping(cc_name, field=None, combobox=None):
     cc_mappings = plugin_prefs.get('cc_mappings', {})
     current_library = current_library_name()
     if current_library in cc_mappings:
-        cc_mappings[current_library][cc_name]['field'] = field
-        cc_mappings[current_library][cc_name]['combobox'] = combobox
+        cc_mappings[current_library][cc_name] = {'field': field, 'combobox': combobox}
     else:
         cc_mappings[current_library] = {cc_name: {'field': field, 'combobox': combobox}}
     plugin_prefs.set('cc_mappings', cc_mappings)

@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>545</width>
-    <height>300</height>
+    <width>463</width>
+    <height>279</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Annotations destination</string>
@@ -20,78 +26,107 @@
   <layout class="QGridLayout" name="gridLayout_2">
    <item row="0" column="0">
     <layout class="QGridLayout" name="gl">
-     <item row="3" column="1">
-      <widget class="QLabel" name="change_label">
-       <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change annotations storage from &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt; to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Existing annotations will remain in &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Newly imported annotations will be added to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="1">
-      <spacer name="verticalSpacer">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>40</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="0" column="1">
+     <item row="0" column="0" colspan="2">
       <widget class="QLabel" name="header">
        <property name="font">
         <font>
+         <family>Lucida Grande</family>
          <pointsize>16</pointsize>
         </font>
        </property>
        <property name="text">
-        <string>Move existing annotations?</string>
+        <string>Move annotations or change destination?</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
      </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="icon">
-       <property name="text">
-        <string>icon</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QLabel" name="move_label">
-       <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Move existing annotations from &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt; to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Existing annotations will be removed from &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;Newly imported annotations will be added to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="Line" name="line_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
+     <item row="3" column="0">
       <widget class="QPushButton" name="move_button">
        <property name="text">
         <string>Move</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
+     <item row="5" column="0">
       <widget class="QPushButton" name="change_button">
        <property name="text">
         <string>Change</string>
        </property>
       </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLabel" name="move_label">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&amp;bull; Move existing annotations from &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt; to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;br/&gt;&amp;bull; Existing annotations will be removed from &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt;.&lt;br/&gt;&amp;bull; Newly imported annotations will be added to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QLabel" name="change_label">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&amp;bull; Change annotations storage from &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt; to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;br/&gt;&amp;bull; Existing annotations will remain in &lt;span style=&quot; font-weight:600;&quot;&gt;{old}&lt;/span&gt;.&lt;br/&gt;&amp;bull; Newly imported annotations will be added to &lt;span style=&quot; font-weight:600;&quot;&gt;{new}&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0" colspan="2">
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <spacer name="verticalSpacer_top">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>8</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="6" column="1">
+      <spacer name="verticalSpacer_bb">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::MinimumExpanding</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>8</height>
+        </size>
+       </property>
+      </spacer>
      </item>
     </layout>
    </item>

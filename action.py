@@ -669,7 +669,7 @@ class AnnotationsAction(InterfaceAction, Logger):
                 self.interface_action_base_plugin.version)
             for obsolete_setting in ['cfg_annotations_destination_field',
                 'cfg_annotations_destination_comboBox']:
-                if plugin_prefs.get(obsolete_setting, None):
+                if plugin_prefs.get(obsolete_setting, None) is not None:
                     self._log("removing obsolete entry '{0}'".format(obsolete_setting))
                     plugin_prefs.__delitem__(obsolete_setting)
             plugin_prefs.set('plugin_version', "%d.%d.%d" % self.interface_action_base_plugin.version)

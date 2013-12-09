@@ -216,7 +216,7 @@ class ConfigWidget(QWidget, Logger):
         if old_destination_field is None:
             return
 
-        new_destination_name = str(qs_new_destination_name)
+        new_destination_name = unicode(qs_new_destination_name)
         self._log("new_destination_name: %s" % new_destination_name)
 
         if old_destination_name == new_destination_name:
@@ -425,7 +425,6 @@ class ConfigWidget(QWidget, Logger):
             dlg.exec_()
             return dlg.command
 
-
     def news_clippings_destination_changed(self):
         qs_new_destination_name = self.cfg_news_clippings_lineEdit.text()
         if not re.match(r'^\S+[A-Za-z0-9 ]+$', qs_new_destination_name):
@@ -469,7 +468,7 @@ class ConfigWidget(QWidget, Logger):
         save_state(self)
 
         # Save the annotation destination field
-        ann_dest = str(self.cfg_annotations_destination_comboBox.currentText())
+        ann_dest = unicode(self.cfg_annotations_destination_comboBox.currentText())
         if ann_dest == 'Comments':
             set_cc_mapping('annotations', field='Comments', combobox='Comments')
         else:
