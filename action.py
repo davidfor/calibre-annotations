@@ -664,8 +664,8 @@ class AnnotationsAction(InterfaceAction, Logger):
                 plugin_prefs.set(pm, pref_map[pm])
 
         # Clean up existing JSON file < v1.3.0
-        if self.interface_action_base_plugin.version < (1, 3, 0):
-            self._log_location("Updating prefs from %d.%d.%d to 1.3.0" %
+        if plugin_prefs.get('plugin_version', "0.0.0") < "1.3.0":
+            self._log_location("Updating prefs to %d.%d.%d" %
                 self.interface_action_base_plugin.version)
             for obsolete_setting in ['cfg_annotations_destination_field',
                 'cfg_annotations_destination_comboBox']:
