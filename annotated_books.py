@@ -18,6 +18,7 @@ from PyQt4.Qt import (Qt, QAbstractItemModel, QAbstractTableModel, QBrush,
 from PyQt4.QtWebKit import QWebView
 
 from calibre.constants import islinux, isosx, iswindows
+from calibre.gui2 import Application
 
 from calibre_plugins.annotations.common_utils import (
     BookStruct, HelpView, SizePersistedDialog,
@@ -426,6 +427,7 @@ class AnnotatedBooksDialog(QDialog):
                 self.tm.arraydata[i][self.ENABLED_COL].setCheckState(True)
             self.toggle_checkmarks_button.setText('Clear All')
         self.repaint()
+        Application.processEvents()
 
     def toggle_confidence_colors(self):
         self.show_confidence_colors = not self.show_confidence_colors

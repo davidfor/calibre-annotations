@@ -971,7 +971,6 @@ class AnnotationsAction(InterfaceAction, Logger):
                 updated_annotations += 1
             else:
                 # Low or zero confidence, confirm with user
-                print("book_mi: %s" % book_mi)
                 if confidence == 0:
                     book_mi['cid'] = self.selected_mi.id
                 proposed_mi = self.opts.gui.current_db.get_metadata(int(book_mi['cid']), index_is_id=True)
