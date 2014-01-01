@@ -445,6 +445,9 @@ class AnnotationsAction(InterfaceAction, Logger):
             sql_reader_apps = iOSReaderApp.get_sqlite_app_classes(by_name=True)
             reader_app_class = sql_reader_apps[reader_app]
 
+            # Save a reference for merge_annotations
+            self.reader_app_class = reader_app_class
+
             # Instantiate reader_app_class
             ra = reader_app_class(self)
             ra.app_id = self.installed_app_aliases[reader_app]
@@ -504,6 +507,10 @@ class AnnotationsAction(InterfaceAction, Logger):
 
         usb_readers = USBReader.get_usb_reader_classes()
         reader_app_class = usb_readers[reader_app]
+
+        # Save a reference for merge_annotations
+        self.reader_app_class = reader_app_class
+
         # Instantiate reader_app_class
         ra = reader_app_class(self)
         ra.open()
@@ -683,6 +690,9 @@ class AnnotationsAction(InterfaceAction, Logger):
 
         supported_reader_apps = ReaderApp.get_reader_app_classes()
         reader_app_class = supported_reader_apps[reader_app]
+
+        # Save a reference for merge_annotations
+        self.reader_app_class = reader_app_class
 
         self.selected_mi = get_selected_book_mi(self.get_options(),
                                                 msg=self.SELECT_DESTINATION_MSG,

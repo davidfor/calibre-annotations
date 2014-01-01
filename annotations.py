@@ -234,59 +234,102 @@ def merge_annotations(parent, cid, old_soup, new_soup):
     '''
     TRANSIENT_DB = 'transient'
 
-    timestamps = {}
-    # Get the timestamps and hashes of the stored annotations
-    suas = old_soup.findAll('div', 'annotation')
-    for sua in suas:
-        #print("sua: %s" % sua.prettify())
-        timestamp = sua.find('td', 'timestamp')['uts']
-        timestamps[timestamp] = {'stored_hash': sua['hash']}
+    # Fetch preferred merge index technique
+    merge_index = getattr(parent.reader_app_class, 'MERGE_INDEX', 'hash')
 
-    # Rerender stored annotations
-    ouas = old_soup.find('div', 'user_annotations')
-    if ouas:
-        ouas.extract()
+    if merge_index == 'hash':
+        # Get the hashes of any existing annotations
+        oiuas = old_soup.findAll('div', 'annotation')
+        old_hashes = set([ua['hash'] for ua in oiuas])
 
-        # Capture existing annotations
-        parent.opts.db.capture_content(ouas, cid, TRANSIENT_DB)
+        # Extract old user_annotations
+        ouas = old_soup.find('div', 'user_annotations')
+        if ouas:
+            ouas.extract()
 
-        # Regurgitate old_soup with current CSS
-        regurgitated_soup = BeautifulSoup(parent.opts.db.rerender_to_html(TRANSIENT_DB, cid))
+            # Capture existing annotations
+            parent.opts.db.capture_content(ouas, cid, TRANSIENT_DB)
 
-    # Add device annotation timestamps and hashes
-    duas = new_soup.findAll('div', 'annotation')
-    for dua in duas:
-        timestamp = dua.find('td', 'timestamp')['uts']
-        if timestamp in timestamps:
-            timestamps[timestamp]['device_hash'] = dua['hash']
+            # Regurgitate old_soup with current CSS
+            regurgitated_soup = BeautifulSoup(parent.opts.db.rerender_to_html(TRANSIENT_DB, cid))
+
+        # Find new annotations
+        uas = new_soup.findAll('div', 'annotation')
+        new_hashes = set([ua['hash'] for ua in uas])
+
+        updates = list(new_hashes.difference(old_hashes))
+        if len(updates) and ouas is not None:
+            # Append new to regurgitated
+            dtc = len(regurgitated_soup.div)
+            for new_annotation_id in updates:
+                new_annotation = new_soup.find('div', {'hash': new_annotation_id})
+                regurgitated_soup.div.insert(dtc, new_annotation)
+                dtc += 1
+            if old_soup:
+                merged_soup = unicode(old_soup) + unicode(sort_merged_annotations(regurgitated_soup))
+            else:
+                merged_soup = unicode(sort_merged_annotations(regurgitated_soup))
         else:
-            timestamps[timestamp] = {'device_hash': dua['hash']}
+            if old_soup:
+                merged_soup = unicode(old_soup) + unicode(new_soup)
+            else:
+                merged_soup = unicode(new_soup)
+        return merged_soup
 
-    merged_soup = BeautifulSoup(ANNOTATIONS_HEADER)
+    elif merge_index == 'timestamp':
+        timestamps = {}
+        # Get the timestamps and hashes of the stored annotations
+        suas = old_soup.findAll('div', 'annotation')
+        for sua in suas:
+            #print("sua: %s" % sua.prettify())
+            timestamp = sua.find('td', 'timestamp')['uts']
+            timestamps[timestamp] = {'stored_hash': sua['hash']}
 
-    for ts in sorted(timestamps):
-        if 'stored_hash' in timestamps[ts] and not 'device_hash' in timestamps[ts]:
-            # Stored only - add from regurgitated_soup
-            annotation = regurgitated_soup.find('div', {'hash': timestamps[ts]['stored_hash']})
+        # Rerender stored annotations
+        ouas = old_soup.find('div', 'user_annotations')
+        if ouas:
+            ouas.extract()
 
-        elif not 'stored_hash' in timestamps[ts] and 'device_hash' in timestamps[ts]:
-            # Device only - add from new_soup
-            annotation = new_soup.find('div', {'hash': timestamps[ts]['device_hash']})
+            # Capture existing annotations
+            parent.opts.db.capture_content(ouas, cid, TRANSIENT_DB)
 
-        elif timestamps[ts]['stored_hash'] == timestamps[ts]['device_hash']:
-            # Stored matches device - add from regurgitated_soup, as user may have modified
-            annotation = regurgitated_soup.find('div', {'hash': timestamps[ts]['stored_hash']})
+            # Regurgitate old_soup with current CSS
+            regurgitated_soup = BeautifulSoup(parent.opts.db.rerender_to_html(TRANSIENT_DB, cid))
 
-        elif timestamps[ts]['stored_hash'] != timestamps[ts]['device_hash']:
-            # Device has been updated since initial capture - add from new_soup
-            annotation = new_soup.find('div', {'hash': timestamps[ts]['device_hash']})
+        # Add device annotation timestamps and hashes
+        duas = new_soup.findAll('div', 'annotation')
+        for dua in duas:
+            timestamp = dua.find('td', 'timestamp')['uts']
+            if timestamp in timestamps:
+                timestamps[timestamp]['device_hash'] = dua['hash']
+            else:
+                timestamps[timestamp] = {'device_hash': dua['hash']}
 
-        else:
-            continue
+        merged_soup = BeautifulSoup(ANNOTATIONS_HEADER)
 
-        merged_soup.div.append(annotation)
+        for ts in sorted(timestamps):
+            if 'stored_hash' in timestamps[ts] and not 'device_hash' in timestamps[ts]:
+                # Stored only - add from regurgitated_soup
+                annotation = regurgitated_soup.find('div', {'hash': timestamps[ts]['stored_hash']})
 
-    return unicode(sort_merged_annotations(merged_soup))
+            elif not 'stored_hash' in timestamps[ts] and 'device_hash' in timestamps[ts]:
+                # Device only - add from new_soup
+                annotation = new_soup.find('div', {'hash': timestamps[ts]['device_hash']})
+
+            elif timestamps[ts]['stored_hash'] == timestamps[ts]['device_hash']:
+                # Stored matches device - add from regurgitated_soup, as user may have modified
+                annotation = regurgitated_soup.find('div', {'hash': timestamps[ts]['stored_hash']})
+
+            elif timestamps[ts]['stored_hash'] != timestamps[ts]['device_hash']:
+                # Device has been updated since initial capture - add from new_soup
+                annotation = new_soup.find('div', {'hash': timestamps[ts]['device_hash']})
+
+            else:
+                continue
+
+            merged_soup.div.append(annotation)
+
+        return unicode(sort_merged_annotations(merged_soup))
 
 
 def merge_annotations_with_comments(parent, cid, comments_soup, new_soup):

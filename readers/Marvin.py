@@ -31,6 +31,7 @@ class MarvinReaderApp(iOSReaderApp):
     app_aliases = [b'com.appstafarian.Marvin', b'com.appstafarian.MarvinIP']
     books_subpath = '/Library/mainDb.sqlite'
     HIGHLIGHT_COLORS = ['Pink', 'Yellow', 'Blue', 'Green', 'Purple']
+    MERGE_INDEX = "timestamp"
 
     import_dialog_title = "Import Marvin annotations"
     # import_help_text
