@@ -535,12 +535,15 @@ class InventoryAnnotatedBooks(QThread, Logger):
 
             uas = soup.findAll('div', 'annotation')
             for ua in uas:
-                annotations_found = True
-                timestamp = float(ua.find('td', 'timestamp')['uts'])
-                if timestamp < self.oldest_annotation:
-                    self.oldest_annotation = timestamp
-                if timestamp > self.newest_annotation:
-                    self.newest_annotation = timestamp
+                try:
+                    timestamp = float(ua.find('td', 'timestamp')['uts'])
+                    if timestamp < self.oldest_annotation:
+                        self.oldest_annotation = timestamp
+                    if timestamp > self.newest_annotation:
+                        self.newest_annotation = timestamp
+                    annotations_found = True
+                except:
+                    continue
 
         if not annotations_found:
             temp = self.newest_annotation

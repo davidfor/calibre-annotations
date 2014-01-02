@@ -301,11 +301,14 @@ def merge_annotations(parent, cid, old_soup, new_soup):
         # Add device annotation timestamps and hashes
         duas = new_soup.findAll('div', 'annotation')
         for dua in duas:
-            timestamp = dua.find('td', 'timestamp')['uts']
-            if timestamp in timestamps:
-                timestamps[timestamp]['device_hash'] = dua['hash']
-            else:
-                timestamps[timestamp] = {'device_hash': dua['hash']}
+            try:
+                timestamp = dua.find('td', 'timestamp')['uts']
+                if timestamp in timestamps:
+                    timestamps[timestamp]['device_hash'] = dua['hash']
+                else:
+                    timestamps[timestamp] = {'device_hash': dua['hash']}
+            except:
+                print("ERROR: malformed timestamp")
 
         merged_soup = BeautifulSoup(ANNOTATIONS_HEADER)
 
