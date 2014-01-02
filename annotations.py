@@ -308,7 +308,8 @@ def merge_annotations(parent, cid, old_soup, new_soup):
                 else:
                     timestamps[timestamp] = {'device_hash': dua['hash']}
             except:
-                print("ERROR: malformed timestamp")
+                print("ERROR: malformed timestamp in device annotation")
+                print(dua.prettify())
 
         merged_soup = BeautifulSoup(ANNOTATIONS_HEADER)
 
