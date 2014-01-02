@@ -241,9 +241,20 @@ class AnnotationsDB(Logger):
             this_ua.highlight_color = ua.find('table')['color']
             this_ua.reader = ua['reader']
 
-            this_ua.last_modification = ua.find('td', 'timestamp')['uts']
-            this_ua.location = ua.find('td', 'location').string
-            this_ua.location_sort = ua['location_sort']
+            try:
+                this_ua.last_modification = ua.find('td', 'timestamp')['uts']
+            except:
+                this_ua.last_modification = "0"
+
+            try:
+                this_ua.location = ua.find('td', 'location').string
+            except:
+                this_ua.location = ""
+
+            try:
+                this_ua.location_sort = ua['location_sort']
+            except:
+                this_ua.location_sort = ""
 
             try:
                 pels = ua.findAll('p', 'highlight')

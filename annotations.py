@@ -281,9 +281,11 @@ def merge_annotations(parent, cid, old_soup, new_soup):
         # Get the timestamps and hashes of the stored annotations
         suas = old_soup.findAll('div', 'annotation')
         for sua in suas:
-            #print("sua: %s" % sua.prettify())
-            timestamp = sua.find('td', 'timestamp')['uts']
-            timestamps[timestamp] = {'stored_hash': sua['hash']}
+            try:
+                timestamp = sua.find('td', 'timestamp')['uts']
+                timestamps[timestamp] = {'stored_hash': sua['hash']}
+            except:
+                continue
 
         # Rerender stored annotations
         ouas = old_soup.find('div', 'user_annotations')

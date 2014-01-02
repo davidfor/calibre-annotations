@@ -391,9 +391,12 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
                         if this_color != color_to_match:
                             continue
 
-                    # Check date range
-                    timestamp = float(ua.find('td', 'timestamp')['uts'])
-                    if timestamp < from_date or timestamp > to_date:
+                    # Check date range, allow for mangled timestamp
+                    try:
+                        timestamp = float(ua.find('td', 'timestamp')['uts'])
+                        if timestamp < from_date or timestamp > to_date:
+                            continue
+                    except:
                         continue
 
                     highlight_text = ''
