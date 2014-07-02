@@ -1178,7 +1178,7 @@ class AnnotationsAction(InterfaceAction, Logger):
         version = self.interface_action_base_plugin.version
         title = "%s v %d.%d.%d" % (self.name, version[0], version[1], version[2])
         msg = ('<p>To learn more about this plugin, visit the '
-               '<a href="http://www.mobileread.com/forums/showthread.php?t=205062">Annotations plugin thread</a> '
+               '<a href="http://www.mobileread.com/forums/showthread.php?p=2853161">Annotations plugin thread</a> '
                'at MobileRead’s Calibre forum.</p>')
         text = get_resources('about.txt')
         text = text.decode('utf-8')
