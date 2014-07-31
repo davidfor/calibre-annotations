@@ -13,7 +13,7 @@ class AnnotationsPlugin(InterfaceActionBase):
     description         = 'Import annotations'
     supported_platforms = ['linux', 'osx', 'windows']
     author              = 'David Forrester'
-    version             = (1, 4, 0)
+    version             = (1, 4, 1)
     minimum_calibre_version = (1, 0, 0)
 
     actual_plugin       = 'calibre_plugins.annotations.action:AnnotationsAction'
@@ -36,7 +36,10 @@ class AnnotationsPlugin(InterfaceActionBase):
 # For testing ConfigWidget, run from command line:
 # calibre-debug __init__.py
 if __name__ == '__main__':
-    from PyQt4.Qt import QApplication
+    try:
+        from PyQt5.Qt import QApplication
+    except ImportError:
+        from PyQt4.Qt import QApplication
     from calibre.gui2.preferences import test_widget
     app = QApplication([])
     test_widget('Advanced', 'Plugins')

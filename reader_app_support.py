@@ -15,7 +15,10 @@ from datetime import datetime
 from lxml import etree
 from time import sleep
 
-from PyQt4.Qt import QModelIndex
+try:
+    from PyQt5.Qt import QModelIndex
+except ImportError as e:
+    from PyQt4.Qt import QModelIndex
 
 from calibre.constants import islinux, isosx, iswindows
 from calibre.devices.usbms.driver import debug_print

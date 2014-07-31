@@ -18,12 +18,21 @@ from time import mktime
 from calibre.ebooks.BeautifulSoup import BeautifulSoup
 from calibre.gui2.metadata.basic_widgets import DateEdit
 
-from PyQt4 import QtCore, QtGui
-from PyQt4.Qt import (Qt, QComboBox, QDate, QDateTime, QDateTimeEdit, QDialogButtonBox,
-    QEvent, QFrame, QGridLayout, QGroupBox, QIcon, QLabel, QLineEdit, QPushButton,
-    QRect, QTimer,
-    QToolButton, QVBoxLayout,
-    SIGNAL)
+try:
+    from PyQt5 import QtWidgets as QtGui
+    from PyQt5 import QtCore
+    from PyQt5.Qt import (Qt, QComboBox, QDateTime, QDialogButtonBox,
+        QEvent, QFrame, QGridLayout, QGroupBox, QIcon, QLabel, QLineEdit, QPushButton,
+        QRect, QTimer,
+        QToolButton, QVBoxLayout,
+        pyqtSignal)
+except ImportError as e:
+    from PyQt4 import QtCore, QtGui
+    from PyQt4.Qt import (Qt, QComboBox, QDateTime, QDialogButtonBox,
+        QEvent, QFrame, QGridLayout, QGroupBox, QIcon, QLabel, QLineEdit, QPushButton,
+        QRect, QTimer,
+        QToolButton, QVBoxLayout,
+        pyqtSignal)
 
 from calibre_plugins.annotations.annotations import COLOR_MAP
 from calibre_plugins.annotations.common_utils import (Logger, SizePersistedDialog,
@@ -59,12 +68,13 @@ class MyLineEdit(QLineEdit):
     '''
     Capture enter/return events so dialog doesn't close
     '''
+    return_pressed = pyqtSignal(object)
     def __init__(self, *args):
         QLineEdit.__init__(self, *args)
 
     def event(self, event):
         if (event.type() == QEvent.KeyPress) and (event.key() == Qt.Key_Return):
-            self.emit(SIGNAL("return_pressed"))
+            self.return_pressed.emit("return_pressed")
             return True
         return QLineEdit.event(self, event)
 
@@ -234,8 +244,10 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         self.find_annotations_color_comboBox.currentIndexChanged.connect(partial(self.update_results, 'color'))
         self.find_annotations_text_lineEdit.editingFinished.connect(partial(self.update_results, 'text'))
         self.find_annotations_note_lineEdit.editingFinished.connect(partial(self.update_results, 'note'))
-        self.connect(self.find_annotations_text_lineEdit, SIGNAL("return_pressed"), self.return_pressed)
-        self.connect(self.find_annotations_note_lineEdit, SIGNAL("return_pressed"), self.return_pressed)
+#        self.connect(self.find_annotations_text_lineEdit, pyqtSignal("return_pressed"), self.return_pressed)
+        self.find_annotations_text_lineEdit.return_pressed.connect(self.return_pressed)
+#        self.connect(self.find_annotations_note_lineEdit, pyqtSignal("return_pressed"), self.return_pressed)
+        self.find_annotations_note_lineEdit.return_pressed.connect(self.return_pressed)
 
         # Date range signals connected in inventory_available()
 
@@ -243,8 +255,7 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         #field = self.prefs.get('cfg_annotations_destination_field', None)
         field = get_cc_mapping('annotations', 'field', None)
         self.annotated_books_scanner = InventoryAnnotatedBooks(self.opts.gui, field, get_date_range=True)
-        self.connect(self.annotated_books_scanner, self.annotated_books_scanner.signal,
-            self.inventory_available)
+        self.annotated_books_scanner.signal.connect(self.inventory_available)
         QTimer.singleShot(1, self.start_inventory_scan)
 
     def clear_note_field(self):

@@ -166,6 +166,7 @@ class KindleReaderApp(USBReader):
         #  Add installed books to the database
         for book_id in resolved_path_map:
             mi = self._get_metadata(resolved_path_map[book_id])
+            self._log('Book on device title: %s', (mi.title))
             if 'News' in mi.tags:
                 if not self.collect_news_clippings:
                     continue
@@ -308,14 +309,18 @@ class KindleReaderApp(USBReader):
             self._log('ParseKindleMyClippingsTxt '+level+': '+msg)
         ParseKindleMyClippingsTxt.log = log
         annos = ParseKindleMyClippingsTxt.FromFileName(self._get_my_clippings())
+        self._log(" Number of entries retreived from 'My Clippings.txt'=%d" % (len(annos)))
         for anno in annos:
             title = anno.title.decode('utf-8')
+            self._log("  title==%s" % (title))
             # If title/author_sort match book in library,
             # consider this an active annotation
             book_id = None
             if title in self.installed_books_by_title.keys():
                 book_id = self.installed_books_by_title[title]['book_id']
+                self._log("   Found book_id=%d" % (book_id))
             if not book_id:
+                self._log("  Title not found in books on device")
                 continue
             if anno.time:
                 timestamp = mktime(anno.time.timetuple())
@@ -335,6 +340,8 @@ class KindleReaderApp(USBReader):
                 self.active_annotations[timestamp]['highlight_text'] = anno.text.decode('utf-8').split(u'\n')
             elif anno.kind == 'note':
                 self.active_annotations[timestamp]['note_text'] = anno.text.decode('utf-8').split(u'\n')
+            else:
+                self._log("  Clipping is not a highlight or note")
 
     def _parse_my_clippings_original(self):
         '''

@@ -362,7 +362,7 @@ class KoboFetchingApp(USBReader):
             for i, book_id in enumerate(path_map):
 #                mi = db.get_metadata(book_id, index_is_id=True)
                 contentId = self.device.contentid_from_path(path_map[book_id]['path'], 6)
-                self._log("_fetch_annotations - contentId={0}".format(contentId))
+#                self._log("_fetch_annotations - contentId={0}".format(contentId))
                 bookmark_data = (contentId,)
                 cursor.execute(bookmark_query, bookmark_data)
 

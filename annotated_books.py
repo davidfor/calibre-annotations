@@ -8,14 +8,27 @@ __docformat__ = 'restructuredtext en'
 import operator
 from time import localtime, strftime
 
-from PyQt4 import QtCore, QtGui
-from PyQt4.Qt import (Qt, QAbstractItemModel, QAbstractTableModel, QBrush,
-                      QCheckBox, QColor, QDialog, QDialogButtonBox, QFont, QFontMetrics,
-                      QLabel,
-                      QTableView, QTableWidgetItem,
-                      QVariant, QVBoxLayout,
-                      SIGNAL)
-from PyQt4.QtWebKit import QWebView
+from calibre.devices.usbms.driver import debug_print
+try:
+    from PyQt5 import QtCore
+    from PyQt5 import QtWidgets as QtGui
+    from PyQt5.Qt import (Qt, QAbstractItemModel, QAbstractTableModel, QBrush,
+                          QCheckBox, QColor, QDialog, QDialogButtonBox, QFont, QFontMetrics,
+                          QLabel, QVariant,
+                          QTableView, QTableWidgetItem,
+                          QVBoxLayout,
+                          pyqtSignal)
+    from PyQt5.QtWebKitWidgets import QWebView
+except ImportError as e:
+    debug_print("Error loading QT5: ", e)
+    from PyQt4 import QtCore, QtGui
+    from PyQt4.Qt import (Qt, QAbstractItemModel, QAbstractTableModel, QBrush,
+                          QCheckBox, QColor, QDialog, QDialogButtonBox, QFont, QFontMetrics,
+                          QLabel, QVariant,
+                          QTableView, QTableWidgetItem,
+                          QVBoxLayout,
+                          pyqtSignal)
+    from PyQt4.QtWebKit import QWebView
 
 from calibre.constants import islinux, isosx, iswindows
 
@@ -69,7 +82,7 @@ class MarkupTableModel(QAbstractTableModel):
     def data(self, index, role):
         row, col = index.row(), index.column()
         if not index.isValid():
-            return QVariant()
+            return ''
         elif role == Qt.BackgroundRole and self.show_confidence_colors:
             confidence = self.arraydata[row][self.CONFIDENCE_COL]
             saturation = 0.40
@@ -78,30 +91,30 @@ class MarkupTableModel(QAbstractTableModel):
             green_hue = 0.333
             yellow_hue = 0.1665
             if confidence >= 3:
-                return QVariant(QBrush(QColor.fromHsvF(green_hue, saturation, value)))
+                return QBrush(QColor.fromHsvF(green_hue, saturation, value))
             elif confidence:
-                return QVariant(QBrush(QColor.fromHsvF(yellow_hue, saturation, value)))
+                return QBrush(QColor.fromHsvF(yellow_hue, saturation, value))
             else:
-                return QVariant(QBrush(QColor.fromHsvF(red_hue, saturation, value)))
+                return QBrush(QColor.fromHsvF(red_hue, saturation, value))
 
         elif role == Qt.CheckStateRole and col == self.ENABLED_COL:
             if self.arraydata[row][self.ENABLED_COL].checkState():
-                return QVariant(Qt.Checked)
+                return Qt.Checked
             else:
-                return QVariant(Qt.Unchecked)
+                return Qt.Unchecked
         elif role == Qt.DisplayRole and col == self.READER_APP_COL:
-            return self.arraydata[row][self.READER_APP_COL].text()
+            return unicode(self.arraydata[row][self.READER_APP_COL].text())
         elif role == Qt.DisplayRole and col == self.TITLE_COL:
-            return self.arraydata[row][self.TITLE_COL].text()
+            return unicode(self.arraydata[row][self.TITLE_COL].text())
         elif role == Qt.DisplayRole and col == self.AUTHOR_COL:
-            return self.arraydata[row][self.AUTHOR_COL].text()
+            return unicode(self.arraydata[row][self.AUTHOR_COL].text())
         elif role == Qt.DisplayRole and col == self.LAST_ANNOTATION_COL:
-            return self.arraydata[row][self.LAST_ANNOTATION_COL].text()
+            return unicode(self.arraydata[row][self.LAST_ANNOTATION_COL].text())
         elif role == Qt.TextAlignmentRole and (col in self.centered_columns):
             return Qt.AlignHCenter
         elif role != Qt.DisplayRole:
-            return QVariant()
-        return QVariant(self.arraydata[index.row()][index.column()])
+            return None
+        return self.arraydata[index.row()][index.column()]
 
     def flags(self, index):
         if index.column() == self.ENABLED_COL:
@@ -116,8 +129,8 @@ class MarkupTableModel(QAbstractTableModel):
 
     def headerData(self, col, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return QVariant(self.headerdata[col])
-        return QVariant()
+            return unicode(self.headerdata[col])
+        return None
 
     def setData(self, index, value, role):
         row, col = index.row(), index.column()
@@ -127,18 +140,19 @@ class MarkupTableModel(QAbstractTableModel):
             else:
                 self.arraydata[row][self.ENABLED_COL].setCheckState(True)
 
-        self.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"), index, index)
+#        self.emit(pyqtSignal("dataChanged(QModelIndex,QModelIndex)"), index, index)
+        self.dataChanged.emit(index, index)
         return True
 
     def sort(self, Ncol, order):
         """
         Sort table by given column number.
         """
-        self.emit(SIGNAL("layoutAboutToBeChanged()"))
+        self.layoutAboutToBeChanged.emit()
         self.arraydata = sorted(self.arraydata, key=operator.itemgetter(Ncol))
         if order == Qt.DescendingOrder:
             self.arraydata.reverse()
-        self.emit(SIGNAL("layoutChanged()"))
+        self.layoutChanged.emit()
 
 
 class AnnotatedBooksDialog(QDialog):
@@ -248,8 +262,8 @@ class AnnotatedBooksDialog(QDialog):
         self.tv.setSelectionBehavior(self.tv.SelectRows)
 
         # Connect signals
-        self.connect(self.tv, SIGNAL("doubleClicked(QModelIndex)"), self.getTableRowDoubleClick)
-        self.connect(self.tv.horizontalHeader(), SIGNAL("sectionClicked(int)"), self.capture_sort_column)
+        self.tv.doubleClicked.connect(self.getTableRowDoubleClick)
+        self.tv.horizontalHeader().sectionClicked.connect(self.capture_sort_column)
 
         # Hide the vertical self.header
         self.tv.verticalHeader().setVisible(False)
@@ -462,11 +476,13 @@ class PreviewDialog(SizePersistedDialog):
         self.wv.setHtml(annotations)
         self.pl.addWidget(self.wv)
 
-        self.buttonbox = QDialogButtonBox(self)
-        self.buttonbox.addButton('Close', QDialogButtonBox.AcceptRole)
+        self.buttonbox = QDialogButtonBox(QDialogButtonBox.Close)
+#        self.buttonbox.addButton('Close', QDialogButtonBox.AcceptRole)
         self.buttonbox.setOrientation(Qt.Horizontal)
-        self.connect(self.buttonbox, SIGNAL('accepted()'), self.close)
-        self.connect(self.buttonbox, SIGNAL('rejected()'), self.close)
+#        self.buttonbox.accepted.connect(self.close)
+        self.buttonbox.rejected.connect(self.close)
+#        self.connect(self.buttonbox, pyqtSignal('accepted()'), self.close)
+#        self.connect(self.buttonbox, pyqtSignal('rejected()'), self.close)
         self.pl.addWidget(self.buttonbox)
 
         # Sizing

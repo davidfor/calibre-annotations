@@ -16,11 +16,18 @@ from functools import partial
 import hashlib, importlib, os, re, sys
 from time import mktime
 
-from PyQt4 import QtGui
-from PyQt4.Qt import (Qt, QCheckBox, QComboBox, QFileDialog, QFrame, QGridLayout,
-    QGroupBox, QIcon, QLabel, QLineEdit, QPushButton, QRadioButton,
-    QRect, QString, QThread, QTimer, QToolButton, QVBoxLayout, QWidget,
-    SIGNAL)
+try:
+    from PyQt5 import QtWidgets as QtGui
+    from PyQt5.Qt import (Qt, QCheckBox, QComboBox, QFrame, QGridLayout,
+        QGroupBox, QIcon, QLabel, QLineEdit, QPushButton,
+        QRect, QThread, QTimer, QToolButton, QVBoxLayout, QWidget,
+        pyqtSignal)
+except ImportError as e:
+    from PyQt4 import QtGui
+    from PyQt4.Qt import (Qt, QCheckBox, QComboBox, QFrame, QGridLayout,
+        QGroupBox, QIcon, QLabel, QLineEdit, QPushButton,
+        QRect, QThread, QTimer, QToolButton, QVBoxLayout, QWidget,
+        pyqtSignal)
 
 from calibre.ebooks.BeautifulSoup import BeautifulSoup
 from calibre.gui2.dialogs.message_box import MessageBox
@@ -178,9 +185,10 @@ class ConfigWidget(QWidget, Logger):
         self.populate_annotations()
 
         # Hook changes to annotations_destination_combobox
-        self.connect(self.cfg_annotations_destination_comboBox,
-                     SIGNAL('currentIndexChanged(const QString &)'),
-                     self.annotations_destination_changed)
+#        self.connect(self.cfg_annotations_destination_comboBox,
+#                     pyqtSignal('currentIndexChanged(const QString &)'),
+#                     self.annotations_destination_changed)
+        self.cfg_annotations_destination_comboBox.currentIndexChanged.connect(self.annotations_destination_changed)
 
         # Hook changes to diagnostic checkboxes
         self.cfg_disable_caching_checkbox.stateChanged.connect(self.restart_required)
@@ -195,8 +203,9 @@ class ConfigWidget(QWidget, Logger):
         # Launch the annotated_books_scanner
         field = get_cc_mapping('annotations', 'field', 'Comments')
         self.annotated_books_scanner = InventoryAnnotatedBooks(self.gui, field)
-        self.connect(self.annotated_books_scanner, self.annotated_books_scanner.signal,
-            self.inventory_complete)
+        self.annotated_books_scanner.signal.connect(self.inventory_complete)
+#        self.connect(self.annotated_books_scanner, self.annotated_books_scanner.signal,
+#            self.inventory_complete)
         QTimer.singleShot(1, self.start_inventory)
 
     def annotations_destination_changed(self, qs_new_destination_name):
@@ -216,7 +225,8 @@ class ConfigWidget(QWidget, Logger):
         if old_destination_field is None:
             return
 
-        new_destination_name = unicode(qs_new_destination_name)
+#        new_destination_name = unicode(qs_new_destination_name)
+        new_destination_name = unicode(self.cfg_annotations_destination_comboBox.currentText())
         self._log("new_destination_name: %s" % new_destination_name)
 
         if old_destination_name == new_destination_name:
@@ -359,7 +369,7 @@ class ConfigWidget(QWidget, Logger):
                 cb.setCurrentIndex(idx)
 
             # Process the changed destination
-            self.annotations_destination_changed(QString(destination))
+            self.annotations_destination_changed(destination)
 
             cb.blockSignals(False)
 
@@ -479,6 +489,8 @@ class ConfigWidget(QWidget, Logger):
 
 class InventoryAnnotatedBooks(QThread, Logger):
 
+    signal = pyqtSignal(object)
+
     def __init__(self, gui, field, get_date_range=False):
         QThread.__init__(self, gui)
         self.annotation_map = []
@@ -487,13 +499,12 @@ class InventoryAnnotatedBooks(QThread, Logger):
         self.newest_annotation = 0
         self.oldest_annotation = mktime(datetime.today().timetuple())
         self.field = field
-        self.signal = SIGNAL("inventory_complete")
 
     def run(self):
         self.find_all_annotated_books()
         if self.get_date_range:
             self.get_annotations_date_range()
-        self.emit(self.signal, "inventory complete: %d annotated books" % len(self.annotation_map))
+        self.signal.emit("inventory complete: %d annotated books" % len(self.annotation_map))
 
     def find_all_annotated_books(self):
         '''

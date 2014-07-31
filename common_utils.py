@@ -12,6 +12,28 @@ import cStringIO, re, os, shutil, sys, tempfile, time, urlparse, zipfile
 from collections import defaultdict
 from time import sleep
 
+try:
+    from PyQt5.QtCore import pyqtSignal
+    from PyQt5.Qt import (Qt, QAction, QApplication,
+                QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox, QIcon,
+                QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar, QPlainTextEdit,
+                QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread, QUrl,
+                QVBoxLayout
+                )
+    from PyQt5.QtWebKitWidgets import QWebView
+    from PyQt5.uic import compileUi
+except ImportError as e:
+    from calibre.devices.usbms.driver import debug_print
+    debug_print("Error loading QT5: ", e)
+    from PyQt4.Qt import (Qt, QAction, QApplication,
+                QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox, QIcon,
+                QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar, QPlainTextEdit,
+                QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread, QUrl,
+                QVBoxLayout,
+                pyqtSignal)
+    from PyQt4.QtWebKit import QWebView
+    from PyQt4.uic import compileUi
+
 from calibre.constants import iswindows
 from calibre.devices.usbms.driver import debug_print
 from calibre.ebooks.BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
@@ -26,14 +48,22 @@ from calibre.utils.logging import Log
 from calibre_plugins.annotations.message_box_ui import Ui_Dialog, COVER_ICON_SIZE
 from calibre_plugins.annotations.reader_app_support import ReaderApp
 
-from PyQt4.Qt import (Qt, QAction, QApplication,
-    QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox, QIcon,
-    QKeySequence, QLabel, QLineEdit, QMenu, QPixmap, QProgressBar, QPlainTextEdit,
-    QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QString, QThread, QUrl,
-    QVBoxLayout,
-    SIGNAL)
-from PyQt4.QtWebKit import QWebView
-from PyQt4.uic import compileUi
+try:
+    from calibre.gui2 import QVariant
+    del QVariant
+except ImportError:
+    is_qt4 = False
+    convert_qvariant = lambda x: x
+else:
+    is_qt4 = True
+
+    def convert_qvariant(x):
+        vt = x.type()
+        if vt == x.String:
+            return unicode(x.toString())
+        if vt == x.List:
+            return [convert_qvariant(i) for i in x.toList()]
+        return x.toPyObject()
 
 # Stateful controls: (<class>,<list_name>,<get_method>,<default>,<set_method(s)>)
 # multiple set_methods are chained, i.e. the results of the first call are passed to the second
@@ -490,10 +520,10 @@ class IndexLibrary(QThread):
     {uuid: {'title':..., 'author':...}}
     {'title': {'uuid':..., 'author':...}}
     '''
+    signal = pyqtSignal(object)
 
     def __init__(self, parent):
         QThread.__init__(self, parent)
-        self.signal = SIGNAL("library_index_complete")
         self.cdb = parent.opts.gui.current_db
         self.title_map = None
         self.uuid_map = None
@@ -501,7 +531,7 @@ class IndexLibrary(QThread):
     def run(self):
         self.title_map = self.index_by_title()
         self.uuid_map = self.index_by_uuid()
-        self.emit(self.signal)
+        self.signal.emit("library_index_complete")
 
     def index_by_title(self):
         '''
@@ -1145,9 +1175,12 @@ def save_state(ui, save_position=False):
         for control in ui.controls[control_list]:
             # Intercept QString objects, coerce to unicode
             qt_type = getattr(getattr(ui, control), CONTROL_GET[index])()
-            if type(qt_type) is QString:
+            if CONTROL_GET[index] == 'isChecked':
+                pass
+            elif CONTROL_GET[index] == 'text':
                 qt_type = unicode(qt_type)
-            #print("control: %s qt_type: %s" % (control, qt_type))
+            else:
+                qt_type = convert_qvariant(qt_type)
             plugin_prefs.set(control, qt_type)
 
 

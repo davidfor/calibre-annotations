@@ -16,7 +16,11 @@ from calibre.gui2 import warning_dialog
 from calibre_plugins.annotations.common_utils import Logger
 from calibre_plugins.annotations.config import dialog_resources_path
 
-from PyQt4.Qt import (QDialog, QDialogButtonBox, QIcon, QPixmap,
+try:
+    from PyQt5.Qt import (QDialog, QDialogButtonBox, QIcon, QPixmap,
+                      QSize)
+except ImportError:
+    from PyQt4.Qt import (QDialog, QDialogButtonBox, QIcon, QPixmap,
                       QSize)
 
 # Import Ui_Form from form generated dynamically during initialization

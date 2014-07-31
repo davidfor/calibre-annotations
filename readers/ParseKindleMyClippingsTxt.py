@@ -272,8 +272,12 @@ def _getTitleAndAuthor(line):
 
 # read "My Clippings.txt" and extract all annotations
 def FromFileName(myClippingsFilePath):
-    with file( myClippingsFilePath, 'rb' ) as f: # file is UTF-8 => read binary!
-        return FromUtf8String( f.read() )
+    try:
+        with file( myClippingsFilePath, 'rb' ) as f: # file is UTF-8 => read binary!
+            return FromUtf8String( f.read() )
+    except Exception as e:
+        log('ERROR', "Error trying to read clippings file: %s" % (str(e),))
+        return []
 
 def FromUtf8String(myClippingsTxt):
     # remove BOM(s) a.k.a. zero width space

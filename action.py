@@ -13,8 +13,14 @@ import imp, inspect, os, re, sys, tempfile, threading, types, urlparse
 from functools import partial
 from zipfile import ZipFile
 
-from PyQt4.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QPixmap,
-                      QTimer, QToolButton)
+try:
+    from PyQt5.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QPixmap,
+                          QTimer, QToolButton, QUrl)
+except ImportError as e:
+    from calibre.devices.usbms.driver import debug_print
+    debug_print("Error loading QT5: ", e)
+    from PyQt4.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QPixmap,
+                          QTimer, QToolButton, QUrl)
 
 from calibre.constants import DEBUG, isosx, iswindows
 #from calibre_plugins.annotations.libimobiledevice import libiMobileDevice, libiMobileDeviceException
@@ -45,7 +51,6 @@ from calibre_plugins.annotations.find_annotations import FindAnnotationsDialog
 from calibre_plugins.annotations.message_box_ui import COVER_ICON_SIZE
 from calibre_plugins.annotations.reader_app_support import *
 
-from PyQt4.Qt import QUrl
 
 # The first icon is the plugin icon, referenced by position.
 # The rest of the icons are referenced by name
@@ -740,7 +745,7 @@ class AnnotationsAction(InterfaceAction, Logger):
         else:
             self._log_location("updating library index")
             self.library_scanner = IndexLibrary(self)
-            self.connect(self.library_scanner, self.library_scanner.signal, self.library_index_complete)
+            self.library_scanner.signal.connect(self.library_index_complete)
             QTimer.singleShot(1, self.start_library_indexing)
 
     # subclass override
