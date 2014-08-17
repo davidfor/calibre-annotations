@@ -166,7 +166,7 @@ class KindleReaderApp(USBReader):
         #  Add installed books to the database
         for book_id in resolved_path_map:
             mi = self._get_metadata(resolved_path_map[book_id])
-            self._log('Book on device title: %s', (mi.title))
+            self._log('Book on device title: %s' % (mi.title))
             if 'News' in mi.tags:
                 if not self.collect_news_clippings:
                     continue

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 try:
-    from PyQt5 import QtWidgets as QtGui
+    from PyQt5 import QtGui
     from PyQt5 import QtCore
 except ImportError as e:
     from PyQt4 import QtCore, QtGui
