@@ -980,7 +980,7 @@ class AnnotationsAction(InterfaceAction, Logger):
             else:
                 book_mi['cid'], confidence = self.generate_confidence(book_mi)
 
-            if confidence >= 3:
+            if confidence >= 3: # and False: # Uncomment this to force Kobo devices to go through the prompts.
                 self.add_annotations_to_calibre(book_mi, annotations_db, book_mi['cid'])
                 self._log(" '%s' (confidence: %d) annotations added automatically" % (book_mi['title'], confidence))
                 updated_annotations += 1

@@ -1,4 +1,10 @@
 Version history:
+1.4.3 - 28 Sep 2014
+• Fixed matched book dialog 
+1.4.2 - 01 Aug 2014
+• Fix error in logging for Kindle
+1.4.1 - 28 Jul 2014
+• Support for upcoming calibre 2.0
 1.4.0 [16 June 2014]
  • New developer.
  • Added support for Kobo ereaders.
