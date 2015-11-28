@@ -921,7 +921,7 @@ class AnnotationsAction(InterfaceAction, Logger):
         self.plugin_device_connection_changed.emit(is_connected)
         if is_connected:
             self.connected_device = self.gui.device_manager.device
-            self._log_location(self.connected_device.gui_name)
+            self._log_location(self.connected_device.name)
 
             # If iDevice, scan for installed reader apps
             if getattr(self.connected_device, 'VENDOR_ID', 0) == [0x05ac]:
@@ -1168,7 +1168,7 @@ class AnnotationsAction(InterfaceAction, Logger):
         suffix = " from 1 book "
         if updated_annotations > 1:
             suffix = " from %d books " % updated_annotations
-        msg = "<p>Annotations" + suffix + "added to <b>{0}</b>.</p>".format(get_cc_mapping('annotations', 'combobox'))
+        msg = "<p>Annotations" + suffix + "added to <b>{0}</b>.</p>".format(get_cc_mapping('annotations', 'combobox', 'Comments'))
         MessageBox(MessageBox.INFO,
                    '',
                    msg=msg,

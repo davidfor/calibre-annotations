@@ -155,7 +155,7 @@ class MarkupTableModel(QAbstractTableModel):
         self.layoutChanged.emit()
 
 
-class AnnotatedBooksDialog(QDialog):
+class AnnotatedBooksDialog(SizePersistedDialog):
     '''
     This dialog is shown when the user fetches or imports books
     self.fetch_single_annotations controls checkmark display, behavior of fetch button
@@ -175,7 +175,8 @@ class AnnotatedBooksDialog(QDialog):
         self.show_confidence_colors = self.opts.prefs.get('annotated_books_dialog_show_confidence_as_bg_color', True)
         self.source = source
 
-        QDialog.__init__(self, parent=self.opts.gui)
+#         QDialog.__init__(self, parent=self.opts.gui)
+        SizePersistedDialog.__init__(self, self.opts.gui, 'Annotations plugin:import annotations dialog')
         self.setWindowTitle(u'Import Annotations')
         self.setWindowIcon(self.opts.icon)
         self.l = QVBoxLayout(self)
@@ -332,6 +333,9 @@ class AnnotatedBooksDialog(QDialog):
 
         self.dialogButtonBox.clicked.connect(self.show_annotated_books_dialog_clicked)
         self.l.addWidget(self.dialogButtonBox)
+
+        # Cause our dialog size to be restored from prefs or created on first usage
+        self.resize_dialog()
 
     def capture_sort_column(self, sort_column):
         sort_order = self.tv.horizontalHeader().sortIndicatorOrder()

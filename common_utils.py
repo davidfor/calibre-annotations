@@ -38,7 +38,7 @@ from calibre.constants import iswindows
 from calibre.devices.usbms.driver import debug_print
 from calibre.ebooks.BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 from calibre.ebooks.metadata import MetaInformation
-from calibre.gui2 import Application
+from calibre.gui2 import Application, gprefs
 from calibre.gui2.dialogs.message_box import MessageBox
 from calibre.library import current_library_name
 from calibre.utils.config import config_dir
@@ -231,9 +231,11 @@ class SizePersistedDialog(QDialog):
     def __init__(self, parent, unique_pref_name):
         QDialog.__init__(self, parent, Qt.WindowStaysOnTopHint)
         self.unique_pref_name = unique_pref_name
-        self.geom = self.prefs.get(unique_pref_name, None)
+#         self.geom = self.prefs.get(unique_pref_name, None)
+        self.geom = gprefs.get(unique_pref_name, None)
         self.finished.connect(self.dialog_closing)
-
+        self.help_anchor = ''
+        
     def resize_dialog(self):
         if self.geom is None:
             self.resize(self.sizeHint())
@@ -242,7 +244,10 @@ class SizePersistedDialog(QDialog):
 
     def dialog_closing(self, result):
         geom = bytearray(self.saveGeometry())
-        self.prefs.set(self.unique_pref_name, geom)
+        gprefs[self.unique_pref_name] = geom
+
+    def help_link_activated(self, url):
+        self.plugin_action.show_help(anchor=self.help_anchor)
 
 
 '''     Exceptions      '''
@@ -558,8 +563,10 @@ class IndexLibrary(QThread):
         cids = self.cdb.search_getting_ids('', '')
         for cid in cids:
             title = self.cdb.title(cid, index_is_id=True)
+            authors = self.cdb.authors(cid, index_is_id=True)
+            authors = authors.split(',') if authors else []
             by_title[title] = {
-                'authors': self.cdb.authors(cid, index_is_id=True).split(','),
+                'authors': authors,
                 'id': cid,
                 'uuid': self.cdb.uuid(cid, index_is_id=True)
                 }
@@ -590,8 +597,10 @@ class IndexLibrary(QThread):
         cids = self.cdb.search_getting_ids('', '')
         for cid in cids:
             uuid = self.cdb.uuid(cid, index_is_id=True)
+            authors = self.cdb.authors(cid, index_is_id=True)
+            authors = authors.split(',') if authors else []
             by_uuid[uuid] = {
-                'authors': self.cdb.authors(cid, index_is_id=True).split(','),
+                'authors': authors,
                 'id': cid,
                 'title': self.cdb.title(cid, index_is_id=True),
                 }

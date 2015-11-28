@@ -1,4 +1,8 @@
 Version history:
+1.4.6 - 22 Nov 2015
+• The reported error when a Pocketbook device is connected
+• Remembering the size of the Import Annotations dialog.
+• Default to using the Comments column if one hasn't been configured. 
 1.4.3 - 28 Sep 2014
 • Fixed matched book dialog 
 1.4.2 - 01 Aug 2014
