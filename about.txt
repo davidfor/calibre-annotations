@@ -1,4 +1,6 @@
 Version history:
+1.4.7 - 28 Nov 2015
+• Handle if the libiMobileDevice library cannot be opened.
 1.4.6 - 22 Nov 2015
 • The reported error when a Pocketbook device is connected
 • Remembering the size of the Import Annotations dialog.

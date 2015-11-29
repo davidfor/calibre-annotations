@@ -361,8 +361,12 @@ class AnnotationsAction(InterfaceAction, Logger):
         set_plugin_icon_resources(self.name, icon_resources)
 
         # Instantiate libiMobileDevice
-        self.ios = libiMobileDevice(
-            verbose=plugin_prefs.get('cfg_libimobiledevice_debug_log_checkbox', False))
+        try:
+            self.ios = libiMobileDevice(
+                verbose=plugin_prefs.get('cfg_libimobiledevice_debug_log_checkbox', False))
+        except Exception as e:
+            self._log_location('ERROR', "Error loading library libiMobileDevice: %s" % (str(e)))
+            self.ios = None
 
         # Build an opts object
         self.opts = self.init_options()
