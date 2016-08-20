@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2014, David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2014-2016, David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import datetime, re, time, os
@@ -70,30 +70,30 @@ class KoboFetchingApp(USBReader):
         self.opts.pb.set_maximum(len(self.active_annotations))
 
         # Add annotations to the database
-        for annotation_id in sorted(self.active_annotations.iterkeys()):
+        for annotation in sorted(self.active_annotations.itervalues(), key=lambda k: (k['book_id'], k['last_modification'])):
             # Populate an AnnotationStruct with available data
             ann_mi = AnnotationStruct()
 
             # Required items
-            ann_mi.book_id = self.active_annotations[annotation_id]['book_id']
-            ann_mi.last_modification = self.active_annotations[annotation_id]['last_modification']
+            ann_mi.book_id = annotation['book_id']
+            ann_mi.last_modification = annotation['last_modification']
 
             # Optional items
-            if 'annotation_id' in self.active_annotations[annotation_id]:
-                ann_mi.annotation_id = self.active_annotations[annotation_id]['annotation_id']
-            if 'highlight_color' in self.active_annotations[annotation_id]:
-                ann_mi.highlight_color = self.active_annotations[annotation_id]['highlight_color']
-            if 'highlight_text' in self.active_annotations[annotation_id]:
-                self._log("get_active_annotations() - self.active_annotations[annotation_id]['highlight_text']={0}".format(self.active_annotations[annotation_id]['highlight_text']))
-                highlight_text = self.active_annotations[annotation_id]['highlight_text']
+            if 'annotation_id' in annotation:
+                ann_mi.annotation_id = annotation['annotation_id']
+            if 'highlight_color' in annotation:
+                ann_mi.highlight_color = annotation['highlight_color']
+            if 'highlight_text' in annotation:
+#                 self._log("get_active_annotations() - annotation['highlight_text']={0}".format(annotation['highlight_text']))
+                highlight_text = annotation['highlight_text']
                 ann_mi.highlight_text = highlight_text
-            if 'note_text' in self.active_annotations[annotation_id]:
-                note_text = self.active_annotations[annotation_id]['note_text']
+            if 'note_text' in annotation:
+                note_text = annotation['note_text']
                 ann_mi.note_text = note_text
-            if 'location' in self.active_annotations[annotation_id]:
-                ann_mi.location = self.active_annotations[annotation_id]['location']
-            if 'location_sort' in self.active_annotations[annotation_id]:
-                ann_mi.location_sort = self.active_annotations[annotation_id]['location_sort']
+            if 'location' in annotation:
+                ann_mi.location = annotation['location']
+            if 'location_sort' in annotation:
+                ann_mi.location_sort = annotation['location_sort']
 #            self._log(ann_mi)
 
             # Add annotation to annotations_db
@@ -102,7 +102,7 @@ class KoboFetchingApp(USBReader):
             # Increment the progress bar
             self.opts.pb.increment()
 
-            self._log("%s:get_active_annotations() - books_db=%s" % (self.app_name, self.books_db))
+#             self._log("%s:get_active_annotations() - books_db=%s" % (self.app_name, self.books_db))
             # Update last_annotation in books_db
             self.update_book_last_annotation(self.books_db, ann_mi.last_modification, ann_mi.book_id)
 
@@ -193,12 +193,6 @@ class KoboFetchingApp(USBReader):
             book_mi.reader_app = self.app_name
             book_mi.title = mi.title
 
-            # Optional items
-#            if mi.tags:
-#                book_mi.genre = ', '.join([tag for tag in mi.tags])
-#            if 'News' in mi.tags:
-#                book_mi.book_id = self.news_clippings_cid
-
             if hasattr(mi, 'author_sort'):
                 book_mi.author_sort = mi.author_sort
 
@@ -272,21 +266,32 @@ class KoboFetchingApp(USBReader):
     def _fetch_annotations(self):
         self._log_location("Start!!!!")
         
-        bookmark_query = ('SELECT bm.bookmarkid, bm.ContentID, bm.volumeid, '
-                                 'bm.text, bm.annotation, bm.ChapterProgress, '
-                                 'bm.StartContainerChildIndex, bm.StartOffset, c.BookTitle, '
-                                 'c.TITLE, c.volumeIndex, c.___NumPages, '
-                                 'IFNULL(bm.DateModified, bm.DateCreated) as DateModified, '
-                                 'c.MimeType, c.VolumeIndex, bm.DateCreated '
-                            'FROM Bookmark bm LEFT OUTER JOIN Content c ON '
-                                'bm.ContentID = c.ContentID '
-                            'WHERE bm.Hidden = "false" '
-                            'AND bm.volumeid = ? '
-                            'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress')
-        kepub_chapter_query = (
-                               'SELECT Title, volumeIndex '
-                               'FROM content '
-                               'WHERE ContentID LIKE ? '
+        count_bookmark_query = ('SELECT COUNT(*) AS num_bookmarks '
+                                'FROM Bookmark bm LEFT OUTER JOIN Content c ON '
+                                    'bm.ContentID = c.ContentID '
+                                'WHERE bm.Hidden = "false" ')
+        bookmark_query = (
+                        'SELECT bm.bookmarkid, bm.ContentID, bm.volumeid, bm.text, bm.annotation, bm.ChapterProgress, ' 
+                                'bm.StartContainerChildIndex, bm.StartOffset, c.BookTitle, c.TITLE, c.volumeIndex, '
+                                'c.___NumPages, IFNULL(bm.DateModified, bm.DateCreated) as DateModified, '
+                                'c.MimeType, c.VolumeIndex, bm.DateCreated '
+                        'FROM Bookmark bm LEFT OUTER JOIN Content c ON bm.ContentID = c.ContentID ' 
+                        'WHERE bm.Hidden = "false" '
+                        'AND MimeType NOT IN ("application/xhtml+xml", "application/x-kobo-epub+zip") '
+                        'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
+                        )
+        kepub_bookmark_query = (
+                               'SELECT bm.bookmarkid, bm.ContentID, bm.volumeid, bm.text, bm.annotation, bm.ChapterProgress, '
+                                    'bm.StartContainerChildIndex, bm.StartOffset, c.BookTitle, c.TITLE, c.volumeIndex, ' 
+                                    'c.___NumPages, IFNULL(bm.DateModified, bm.DateCreated) as DateModified, ' 
+                                    'c.MimeType, c.VolumeIndex, bm.DateCreated ' 
+                                'FROM Bookmark bm LEFT OUTER JOIN Content c '
+                                'WHERE bm.Hidden = "false" '
+                                'AND MimeType IN ("application/xhtml+xml", "application/x-kobo-epub+zip") '
+                                'AND ContentType = 899 '
+                                'AND c.ContentID LIKE bm.ContentID || "-%" '
+                                'AND bm.VolumeID = c.BookID '
+                                'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
                                )
         def _convert_calibre_ids_to_books(db, ids):
             books = []
@@ -337,7 +342,9 @@ class KoboFetchingApp(USBReader):
                     if len(paths) > 1:
                         if os.path.splitext(paths[0]) > 1: # No extension - is kepub
                             the_path = paths[1]
-                    path_map[_id] = dict(path=the_path, fmts=get_formats(_id))
+                    contentId = self.device.contentid_from_path(the_path, 6)
+#                     path_map[_id] = dict(path=the_path, fmts=get_formats(_id))
+                    path_map[contentId] = dict(path=the_path, fmts=get_formats(_id), book_id=_id)
             return path_map
 
         db = self.opts.gui.library_view.model().db
@@ -349,76 +356,74 @@ class KoboFetchingApp(USBReader):
 #        self._log("_fetch_annotations - onDeviceIds={0}".format(onDeviceIds))
         # Map ids to paths
         path_map = generate_annotation_paths(self.onDeviceIds, db, self.device)
-#        self._log("_fetch_annotations - path_map={0}".format(path_map))
+#         self._log("_fetch_annotations - path_map={0}".format(path_map))
 
         from contextlib import closing
-        import sqlite3 as sqlite
-        with closing(sqlite.connect(self.device.device_database_path())) as connection:
-            # return bytestrings if the content cannot the decoded as unicode
-            connection.text_factory = lambda x: unicode(x, "utf-8", "ignore")
+        import apsw
+        with closing(apsw.Connection(self.device.device_database_path())) as connection:
 
             cursor = connection.cursor()
-
-            for i, book_id in enumerate(path_map):
-#                mi = db.get_metadata(book_id, index_is_id=True)
-                contentId = self.device.contentid_from_path(path_map[book_id]['path'], 6)
-#                self._log("_fetch_annotations - contentId={0}".format(contentId))
-                bookmark_data = (contentId,)
-                cursor.execute(bookmark_query, bookmark_data)
-
-                for row in cursor:
-                    self._log("_fetch_annotations - row={0}".format(row))
-                    bookmark_timestamp = convert_kobo_date(row[12])
-                    if row[12]:
-#                        self._log("_fetch_annotations - bookmark_timestamp={0}".format(bookmark_timestamp))
-                        bookmark_timestamp = mktime(bookmark_timestamp.timetuple())
-                    annotation_id      = row[0]
-                    chapter_title      = row[9]
-                    current_chapter    = row[14]
-                    # For kepubs, the title needs to come from an 899 row.
-                    if not row[13] or row[13] == 'application/xhtml+xml' or row[13] == 'application/x-kobo-epub+zip':
-                        cursor2 = connection.cursor()
-                        self._log_location("Have a kepub - contentId={0}-%".format(row[1]))
-                        if row[1][0:1] == '/':
-                            kepub_chapter_data = ('{0}-%'.format(row[1]), )
-                        else:
-                            kepub_chapter_data = ('{0}/{1}-%'.format(row[2], row[1]), )
-                        self._log_location(kepub_chapter_data)
-                        cursor2.execute(kepub_chapter_query, kepub_chapter_data)
-                        kepub_chapter = cursor2.fetchone()
-                        if kepub_chapter:
-                            chapter_title = kepub_chapter[0]
-                            current_chapter = kepub_chapter[1]
-                            self._log_location("chapter_title = {0}".format(chapter_title))
-                        cursor2.close
-                        
-                    if current_chapter is None:
-                        current_chapter = 0
-
-#                    self.active_annotations[bookmark_timestamp] = {
-#                        'annotation_id': bookmark_timestamp,
-                    self.active_annotations[annotation_id] = {
-                        'annotation_id': annotation_id,
-                        'book_id': int(book_id),
-                        'highlight_color': 'Gray',
-                        'location': chapter_title,
-                        'location_sort': "%06d" % (current_chapter  * 1000 + row[5] * 100),
-                        'last_modification': bookmark_timestamp
-                        }
-                    self.active_annotations[annotation_id]['highlight_text'] = row[3]
-                    self.active_annotations[annotation_id]['note_text'] = row[4]
-#                    self._log(self.active_annotations[annotation_id])
+            cursor.execute(count_bookmark_query)
+            try:
+                result = cursor.next()
+                count_bookmarks = result[0]
+            except StopIteration:
+                count_bookmarks = 0
+            self._log("_fetch_annotations - Total number of bookmarks={0}".format(count_bookmarks))
+            
+            self._log("_fetch_annotations - About to get non-kepub annotations")
+            self._read_database_annotations(cursor, bookmark_query, path_map)
+            self._log("_fetch_annotations - Finished getting non-kepub annotations")
+            self._log("_fetch_annotations - About to get kepub annotations")
+            self._read_database_annotations(cursor, kepub_bookmark_query, path_map)
+            self._log("_fetch_annotations - Finished getting kepub annotations")
         
-        self._log_location("Finish!!!!")
+        self._log_location("Finished!!!!")
 
+    def _read_database_annotations(self, cursor, bookmark_query, path_map):
+            self._log("_read_database_annotations - Starting fetch of bookmarks")
+            cursor.execute(bookmark_query)
+
+            last_contentId = None
+            for row in cursor:
+                self._log("_read_database_annotations - row={0}".format(row))
+                contentId = row[2]
+                if not last_contentId == contentId:
+                    try: 
+                        book_id = path_map[contentId]['book_id']
+                    except:
+                        continue
+                bookmark_timestamp = convert_kobo_date(row[12])
+                if row[12]:
+                    bookmark_timestamp = mktime(bookmark_timestamp.timetuple())
+                annotation_id   = row[0]
+                chapter_title   = row[9]
+                current_chapter = row[14]
+                if current_chapter is None:
+                    current_chapter = 0
+
+                self.active_annotations[annotation_id] = {
+                    'annotation_id': annotation_id,
+                    'book_id': int(book_id),
+                    'highlight_color': 'Gray',
+                    'location': chapter_title,
+                    'location_sort': "%06d" % (current_chapter  * 1000 + row[5] * 100),
+                    'last_modification': bookmark_timestamp
+                    }
+                self.active_annotations[annotation_id]['highlight_text'] = row[3]
+                self.active_annotations[annotation_id]['note_text'] = row[4]
+#                    self._log(self.active_annotations[annotation_id])
+                last_contentId = contentId
 
     def get_device_paths_from_id(self, book_id):
         paths = []
         for x in ('memory', 'card_a', 'card_b'):
             x = getattr(self.opts.gui, x+'_view').model()
             paths += x.paths_for_db_ids(set([book_id]), as_map=True)[book_id]
-#        debug_print("get_device_paths_from_id - paths=", paths)
+#        self._log("get_device_paths_from_id - paths=", paths)
         return [r.path for r in paths]
+
+
 
 class KoboTouchFetchingApp(KoboFetchingApp):
     """
@@ -459,38 +464,40 @@ def convert_kobo_date(kobo_date):
     and what part of the firmware writes it. The following is overkill, but it handles all 
     the formats I have seen.
     """
-    from calibre.utils.date import utc_tz
+    from calibre.utils.date import utc_tz, local_tz
+    from calibre.devices.usbms.driver import debug_print
+#     debug_print("convert_kobo_date - start - kobo_date={0}'".format(kobo_date))
 
     try:
-        converted_date = datetime.strptime(kobo_date, "%Y-%m-%dT%H:%M:%S.%f")
-        converted_date = datetime.strptime(kobo_date[0:19], "%Y-%m-%dT%H:%M:%S")
-        converted_date = converted_date.replace(tzinfo=utc_tz)
-#            debug_print("convert_kobo_date - '%Y-%m-%dT%H:%M:%S.%f' - kobo_date={0}'".format(kobo_date))
-    except:
+        converted_date = datetime.datetime.strptime(kobo_date, "%Y-%m-%dT%H:%M:%S+00:00")
+#         debug_print("convert_kobo_date - '%Y-%m-%dT%H:%M:%S+00:00' - kobo_date=%s' - kobo_date={0}'".format(kobo_date))
+    except Exception as e:
+#         debug_print("convert_kobo_date - exception={0}'".format(e))
         try:
-            converted_date = datetime.strptime(kobo_date, "%Y-%m-%dT%H:%M:%S%+00:00")
-#                debug_print("convert_kobo_date - '%Y-%m-%dT%H:%M:%S+00:00' - kobo_date=%s' - kobo_date={0}'".format(kobo_date))
+            converted_date = datetime.datetime.strptime(kobo_date, "%Y-%m-%dT%H:%M:%SZ")
+#             debug_print("convert_kobo_date - '%Y-%m-%dT%H:%M:%SZ' - kobo_date={0}'".format(kobo_date))
         except:
             try:
-                converted_date = datetime.strptime(kobo_date.split('+')[0], "%Y-%m-%dT%H:%M:%S")
-                converted_date = converted_date.replace(tzinfo=utc_tz)
-#                    debug_print("convert_kobo_date - '%Y-%m-%dT%H:%M:%S' - kobo_date={0}'".format(kobo_date))
+                converted_date = datetime.datetime.strptime(kobo_date[0:19], "%Y-%m-%dT%H:%M:%S")
+#                 debug_print("convert_kobo_date - '%Y-%m-%dT%H:%M:%S' - kobo_date={0}'".format(kobo_date))
             except:
                 try:
-                    converted_date = datetime.strptime(kobo_date.split('+')[0], "%Y-%m-%d")
-                    converted_date = converted_date.replace(tzinfo=utc_tz)
-#                        debug_print("convert_kobo_date - '%Y-%m-%d' - kobo_date={0}'".format(kobo_date))
+                    converted_date = datetime.datetime.strptime(kobo_date.split('+')[0], "%Y-%m-%dT%H:%M:%S")
+#                     debug_print("convert_kobo_date - '%Y-%m-%dT%H:%M:%S' - kobo_date={0}'".format(kobo_date))
                 except:
                     try:
-                        from calibre.utils.date import parse_date
-                        converted_date = parse_date(kobo_date, assume_utc=True)
-#                            debug_print("convert_kobo_date - parse_date - kobo_date=%s' - kobo_date={0}'".format(kobo_date))
+                        converted_date = datetime.datetime.strptime(kobo_date.split('+')[0], "%Y-%m-%d")
+    #                     converted_date = converted_date.replace(tzinfo=utc_tz)
+#                         debug_print("convert_kobo_date - '%Y-%m-%d' - kobo_date={0}'".format(kobo_date))
                     except:
-#                        try:
-#                            converted_date = time.gmtime(os.path.getctime(self.path))
-#                            debug_print("convert_kobo_date - time.gmtime(os.path.getctime(self.path)) - kobo_date={0}'".format(kobo_date))
-#                        except:
-                        converted_date = time.gmtime()
-                        debug_print("convert_kobo_date - time.gmtime() - kobo_date={0}'".format(kobo_date))
+                        try:
+                            from calibre.utils.date import parse_date
+                            converted_date = parse_date(kobo_date)#, assume_utc=True)
+#                             debug_print("convert_kobo_date - parse_date - kobo_date={0}'".format(kobo_date))
+                        except:
+                            converted_date = time.gmtime()
+                            debug_print("convert_kobo_date - could not convert, using current time - kobo_date={0}'".format(kobo_date))
+    
+    converted_date = converted_date.replace(tzinfo=utc_tz).astimezone(local_tz)
     return converted_date
 

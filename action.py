@@ -329,8 +329,11 @@ class AnnotationsAction(InterfaceAction, Logger):
                                                 det_msg=self.SELECT_DESTINATION_DET_MSG)
         if not self.selected_mi:
             return
-
+        self.opts.pb.set_label("Fetch annotations from USB device")
+        self.opts.pb.set_value(0)
+        self.opts.pb.show()
         annotated_book_list = self.get_annotated_books_on_usb_device(reader_app)
+        self.opts.pb.hide()
         self.fetch_device_annotations(annotated_book_list, self.opts.device_name)
 
     def find_annotations(self):
@@ -511,7 +514,8 @@ class AnnotationsAction(InterfaceAction, Logger):
 
     def get_annotated_books_on_usb_device(self, reader_app):
         self._log_location()
-
+        self.opts.pb.set_label(_("Fetching annotations from device"))
+        self.opts.pb.set_value(0)
         annotated_book_list = []
 
         usb_readers = USBReader.get_usb_reader_classes()
@@ -532,6 +536,8 @@ class AnnotationsAction(InterfaceAction, Logger):
 
         #books = self.opts.db.get_books(books_db)
         if books is not None:
+            self.opts.pb.set_label(_("Compilng annotations for a book"))
+            self.opts.pb.set_value(0)
             # Get the books for this db
             this_book_list = []
             for book in books:

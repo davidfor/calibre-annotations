@@ -1,4 +1,10 @@
 Version history:
+1.4.11 - 20 Aug 2016
+• Kindle: Add second Spanish identifiers. 
+• KoboTouch: Fix "Last Annotation" timestamp in import dialog
+• KoboTouch: Annotation timestamp now shown in local time
+• KoboTouch: Change database queries to improve performance.
+• KoboTouch: Change to use apsw instead of sqlite3
 1.4.7 - 28 Nov 2015
 • Handle if the libiMobileDevice library cannot be opened.
 1.4.6 - 22 Nov 2015
