@@ -12,20 +12,24 @@ import imp, inspect, os, re, sys, tempfile, threading, types, urlparse
 
 from functools import partial
 from zipfile import ZipFile
+from calibre.devices.usbms.driver import debug_print
 
 try:
     from PyQt5.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QPixmap,
                           QTimer, QToolButton, QUrl)
 except ImportError as e:
-    from calibre.devices.usbms.driver import debug_print
     debug_print("Error loading QT5: ", e)
     from PyQt4.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QPixmap,
                           QTimer, QToolButton, QUrl)
 
 from calibre.constants import DEBUG, isosx, iswindows
-#from calibre_plugins.annotations.libimobiledevice import libiMobileDevice, libiMobileDeviceException
-from calibre.devices.idevice.libimobiledevice import libiMobileDevice
-from calibre.devices.usbms.driver import debug_print
+try:
+    from calibre.devices.idevice.libimobiledevice import libiMobileDevice
+    LIBIMOBILEDEVICE_AVAILABLE = True
+except ImportError as e:
+    debug_print("Annotations plugin: Error loading libiMobileDevice. This hasn't worked for a while, and is blacklisted in calibre v3.")
+    debug_print("Annotations plugin: Error is: ", e)
+    LIBIMOBILEDEVICE_AVAILABLE = False
 
 from calibre.ebooks.BeautifulSoup import BeautifulSoup
 from calibre.gui2 import Application, open_url
@@ -324,6 +328,20 @@ class AnnotationsAction(InterfaceAction, Logger):
         """
         Selectively import annotations from books on mounted USB device
         """
+        annotations_column = get_cc_mapping('annotations', 'field')
+        msg = None
+        if not annotations_column:
+            msg = ("<p>Unable to import annotations as the annotations column has not been configured..</p>")
+        elif annotations_column == 'Comments':
+            pass
+        elif not annotations_column in self.gui.current_db.custom_field_keys():
+            msg = ("<p>Unable to import annotations as the annotations column does not exist.</p>")
+        if msg:
+            title = "Unable to import annotations"
+            MessageBox(MessageBox.ERROR, title, msg, show_copy_button=False).exec_()
+            self._log_location("ERROR: %s" % msg)
+            return
+
         self.selected_mi = get_selected_book_mi(self.get_options(),
                                                 msg=self.SELECT_DESTINATION_MSG,
                                                 det_msg=self.SELECT_DESTINATION_DET_MSG)

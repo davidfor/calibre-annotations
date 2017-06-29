@@ -1,4 +1,8 @@
 Version history:
+1.5.0 - 29 Jun 2017
+• Fix: Handle that idevice.libimobiledevice doesn't work in calibre v3+ and is blacklisted. 
+• Fix: Problem opening config dialog of annotations column does not exist.
+• Fix: Display error if fetch annotations if annotations column has not been configured or does not exist. 
 1.4.11 - 20 Aug 2016
 • Kindle: Add second Spanish identifiers. 
 • KoboTouch: Fix "Last Annotation" timestamp in import dialog

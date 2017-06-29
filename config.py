@@ -36,6 +36,7 @@ from calibre.devices.usbms.driver import debug_print
 from calibre.utils.config import JSONConfig, config_dir
 from calibre.utils.logging import Log
 
+from calibre_plugins.annotations.action import LIBIMOBILEDEVICE_AVAILABLE
 from calibre_plugins.annotations.appearance import AnnotationsAppearance
 from calibre_plugins.annotations.common_utils import (Logger, Struct,
     existing_annotations, get_cc_mapping, get_icon, inventory_controls,
@@ -95,6 +96,7 @@ class ConfigWidget(QWidget, Logger):
         self.cfg_libimobiledevice_debug_log_checkbox.setObjectName('cfg_libimobiledevice_debug_log_checkbox')
         self.cfg_libimobiledevice_debug_log_checkbox.setToolTip('Print libiMobileDevice debug messages to console')
         self.cfg_libimobiledevice_debug_log_checkbox.setChecked(False)
+        self.cfg_libimobiledevice_debug_log_checkbox.setEnabled(LIBIMOBILEDEVICE_AVAILABLE)
         self.cfg_runtime_options_qvl.addWidget(self.cfg_libimobiledevice_debug_log_checkbox)
 
         # ~~~~~~~~ Create the Annotations options group box ~~~~~~~~
@@ -216,6 +218,8 @@ class ConfigWidget(QWidget, Logger):
         self._log("self.custom_fields: %s" % self.custom_fields)
 
         old_destination_field = get_cc_mapping('annotations', 'field', None)
+        if old_destination_field and not (old_destination_field in self.gui.current_db.custom_field_keys() or old_destination_field == 'Comments'):
+            return
         old_destination_name = get_cc_mapping('annotations', 'combobox', None)
 
         self._log("old_destination_field: %s" % old_destination_field)
@@ -479,9 +483,11 @@ class ConfigWidget(QWidget, Logger):
 
         # Save the annotation destination field
         ann_dest = unicode(self.cfg_annotations_destination_comboBox.currentText())
+        self._log_location("INFO: ann_dest=%s" % (ann_dest))
+        self._log_location("INFO: self.custom_fields=%s" % (self.custom_fields))
         if ann_dest == 'Comments':
             set_cc_mapping('annotations', field='Comments', combobox='Comments')
-        else:
+        elif ann_dest:
             set_cc_mapping('annotations', field=self.custom_fields[ann_dest]['field'], combobox=ann_dest)
 
     def start_inventory(self):
@@ -511,6 +517,10 @@ class InventoryAnnotatedBooks(QThread, Logger):
         Find all annotated books in library
         '''
         if not self.field:
+            self._log_location()
+            self._log("No custom column field specified, cannot find annotated books")
+            return
+        if not (self.field in self.cdb.custom_field_keys() or self.field == 'Comments'):
             self._log_location()
             self._log("No custom column field specified, cannot find annotated books")
             return
