@@ -1,4 +1,6 @@
 Version history:
+1.6.0 - 25 Aug 2017
+• Fix: Extra Spanish string for locations in Kindle 'My Clippings.txt'
 1.5.0 - 29 Jun 2017
 • Fix: Handle that idevice.libimobiledevice doesn't work in calibre v3+ and is blacklisted. 
 • Fix: Problem opening config dialog of annotations column does not exist.

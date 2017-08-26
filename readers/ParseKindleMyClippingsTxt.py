@@ -76,6 +76,7 @@ _LANG_AND_KIND_DETECT_BY_START_WORDS = {
     "Mi nota":      ('es', 'note'),
     "Mi marcador":  ('es', 'bookmark'),
     "Tu subrayado": ('es', 'highlight'),
+    "La subrayado": ('es', 'highlight'),
     "Tu nota":      ('es', 'note'),
     "Tu marcador":  ('es', 'bookmark'),
     "Votre surlignement": ('fr', 'highlight'),
