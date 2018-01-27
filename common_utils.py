@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import cStringIO, re, os, shutil, sys, tempfile, time, urlparse, zipfile
@@ -36,6 +36,7 @@ except ImportError as e:
 
 from calibre.constants import iswindows
 from calibre.devices.usbms.driver import debug_print
+from calibre.ebooks import normalize
 from calibre.ebooks.BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 from calibre.ebooks.metadata import MetaInformation
 from calibre.gui2 import Application, gprefs
@@ -47,6 +48,13 @@ from calibre.utils.logging import Log
 
 from calibre_plugins.annotations.message_box_ui import Ui_Dialog, COVER_ICON_SIZE
 from calibre_plugins.annotations.reader_app_support import ReaderApp
+
+try:
+    debug_print("Annotations::common_utils.py - loading translations")
+    load_translations()
+except NameError:
+    debug_print("Annotations::common_utils.py - exception when loading translations")
+    pass # load_translations() added in calibre 1.9
 
 try:
     from calibre.gui2 import QVariant
@@ -294,7 +302,7 @@ class ImportAnnotationsDialog(QDialog):
 
         self.dialogButtonBox = QDialogButtonBox(QDialogButtonBox.Cancel|QDialogButtonBox.Help)
         self.import_button = self.dialogButtonBox.addButton(self.dialogButtonBox.Ok)
-        self.import_button.setText('Import')
+        self.import_button.setText(_('Import'))
         self.dialogButtonBox.clicked.connect(self.import_annotations_dialog_clicked)
         l.addWidget(self.dialogButtonBox)
 
@@ -373,8 +381,7 @@ class CoverMessageBox(QDialog, Ui_Dialog):
         self.hide_det_msg = _('Hide &details')
         self.det_msg_toggle = self.bb.addButton(self.show_det_msg, self.bb.ActionRole)
         self.det_msg_toggle.clicked.connect(self.toggle_det_msg)
-        self.det_msg_toggle.setToolTip(
-                _('Show detailed information'))
+        self.det_msg_toggle.setToolTip(_('Show detailed information'))
 
         self.copy_action = QAction(self)
         self.addAction(self.copy_action)
@@ -477,8 +484,8 @@ class HelpView(SizePersistedDialog):
 
 
 class ProgressBar(QDialog):
-    def __init__(self, parent=None, max_items=100, window_title='Progress Bar',
-                 label='Label goes here', on_top=False):
+    def __init__(self, parent=None, max_items=100, window_title=_('Progress Bar'),
+                 label=_('Label goes here'), on_top=False):
         if on_top:
             QDialog.__init__(self, parent=parent, flags=Qt.WindowStaysOnTopHint)
         else:
@@ -562,7 +569,7 @@ class IndexLibrary(QThread):
 
         cids = self.cdb.search_getting_ids('', '')
         for cid in cids:
-            title = self.cdb.title(cid, index_is_id=True)
+            title = normalize(self.cdb.title(cid, index_is_id=True))
             authors = self.cdb.authors(cid, index_is_id=True)
             authors = authors.split(',') if authors else []
             by_title[title] = {
@@ -602,7 +609,7 @@ class IndexLibrary(QThread):
             by_uuid[uuid] = {
                 'authors': authors,
                 'id': cid,
-                'title': self.cdb.title(cid, index_is_id=True),
+                'title': normalize(self.cdb.title(cid, index_is_id=True)),
                 }
 
         return by_uuid
@@ -852,7 +859,7 @@ def get_selected_book_mi(opts, msg=None, det_msg=None):
 
     if len(rows) == 0 or len(rows) > 1:
         MessageBox(MessageBox.WARNING,
-                   'Select a book to receive annotations',
+                   _('Select a book to receive annotations'),
                    msg,
                    det_msg=det_msg,
                    show_copy_button=False,
@@ -900,7 +907,7 @@ def inventory_controls(ui, dump_controls=False):
 
 
 def move_annotations(parent, annotation_map, old_destination_field, new_destination_field,
-                     window_title="Moving annotations"):
+                     window_title=_("Moving annotations")):
     '''
     Move annotations from old_destination_field to new_destination_field
     annotation_map precalculated in thread in config.py
@@ -1028,7 +1035,7 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
 
         # same field -> same field - called from config:configure_appearance()
         elif (old_destination_field == new_destination_field):
-            pb.set_label('{:^100}'.format('Updating annotations for %d books' % total_books))
+            pb.set_label('{:^100}'.format(_('Updating annotations for {0} books').format(total_books)))
 
             if new_destination_field == 'Comments':
                 if mi.comments:
@@ -1105,15 +1112,16 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
                 break
 
     # Report what happened
-    if old_destination_field == new_destination_field:
-        msg = "<p>Annotations updated to new appearance settings for %d {0}.</p>" % len(annotation_map)
-    else:
-        msg = ("<p>Annotations for %d {0} moved from <b>%s</b> to <b>%s</b>.</p>" %
-                (len(annotation_map), old_destination_field, new_destination_field))
     if len(annotation_map) == 1:
-        msg = msg.format('book')
+        book_word = _('book')
     else:
-        msg = msg.format('books')
+        book_word = _('books')
+    if old_destination_field == new_destination_field:
+        msg = _("Annotations updated to new appearance settings for {0} {1}.</p>").formt(len(annotation_map), book_word)
+    else:
+        msg = _("Annotations for {0} {1} moved from <b>{2}</b> to <b>{3}</b>.").format(
+                len(annotation_map), book_word, old_destination_field, new_destination_field)
+    msg = "<p>{0}</p>".format(msg)
     MessageBox(MessageBox.INFO,
                '',
                msg=msg,

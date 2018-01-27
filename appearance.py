@@ -5,12 +5,14 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import re, time
 
 from functools import partial
+
+from calibre.devices.usbms.driver import debug_print
 
 try:
     from PyQt5 import QtCore
@@ -39,28 +41,43 @@ from calibre.utils.config import JSONConfig
 
 from calibre_plugins.annotations.common_utils import (HelpView, SizePersistedDialog)
 
+try:
+    debug_print("Annotations::appearance.py - loading translations")
+    load_translations()
+except NameError:
+    debug_print("Annotations::appearance.py - exception when loading translations")
+    pass # load_translations() added in calibre 1.9
+
+
 # Default timestamp format: National representation of time and date
 default_timestamp = '%c'
 
 default_elements = [
-                   {'ordinal':0,
-                       'name':'Timestamp',
-                        'css':"font-size:80%;\n" +
+                   {
+                    'ordinal':0,
+                    'name':'Timestamp',
+                    'css':"font-size:80%;\n" +
                               "font-weight:bold;\n" +
                               "margin:0;"
                    },
-                   {'ordinal':1,
-                       'name':'Text',
-                        'css':"margin:0;\n" +
+                   {
+                    'ordinal':1,
+                    'name':'Text',
+                    'css':"margin:0;\n" +
                               "text-indent:0.5em;"
                    },
-                   {'ordinal':2,
-                       'name':'Note',
-                        'css':"font-size:90%;\n" +
+                   {
+                    'ordinal':2,
+                    'name':'Note',
+                    'css':"font-size:90%;\n" +
                               "font-style:italic;\n" +
                               "margin:0;"
                    }]
-
+translatable_element_names = {
+                              'Timestamp':_('Timestamp'),
+                              'Text':_('Text'),
+                              'Note':_('Note')
+                              }
 
 class CheckableTableWidgetItem(QTableWidgetItem):
     '''
@@ -132,15 +149,16 @@ class AnnotationElementsTable(QTableWidget):
         FONT.setStyleHint(QFont.TypeWriter)
 
     COLUMNS = {
-                'ELEMENT':   {'ordinal': 0, 'name': 'Element'},
-                'CSS':  {'ordinal': 1, 'name': 'CSS'},
+                'ELEMENT_NAME': {'ordinal': 0, 'name': 'Element Name'},
+                'ELEMENT':      {'ordinal': 1, 'name': _('Element')},
+                'CSS':          {'ordinal': 2, 'name': _('CSS')},
                 }
 
     sample_ann_1 = {
         'text': ['Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean placerat condimentum semper. Aliquam hendrerit nisl mauris, nec laoreet orci. Donec rutrum consequat ultricies.',
                  'Curabitur sollicitudin euismod felis, vitae mollis magna vestibulum id.'],
-        'note': ['This is a note appended to the highlight.',
-                 'And additional comments after a linebreak.'],
+        'note': [_('This is a note appended to the highlight.'),
+                 _('And additional comments after a linebreak.')],
         'highlightcolor': 'Yellow',
         'timestamp': time.mktime(time.localtime()),
         'location': 'Chapter 4',
@@ -156,8 +174,8 @@ class AnnotationElementsTable(QTableWidget):
     sample_ann_3 = {
         'text': ['Morbi massa tellus, laoreet id pretium sed, volutpat in felis.',
                  'Donec massa nulla, malesuada vitae volutpat quis, accumsan ut tellus.'],
-        'note': ['This is a note appended to the highlight.',
-                 'And additional comments after a linebreak.'],
+        'note': [_('This is a note appended to the highlight.'),
+                 _('And additional comments after a linebreak.')],
         'highlightcolor': 'Purple',
         'timestamp': time.mktime(time.localtime()),
         'location': 'Chapter 53',
@@ -169,8 +187,10 @@ class AnnotationElementsTable(QTableWidget):
         self.parent = parent
         self.prefs = parent.prefs
         self.elements = self.prefs.get('appearance_css', None)
+        debug_print("AnnotationElementsTable::__init__ - self.elements", self.elements)
         if not self.elements:
             self.elements = default_elements
+            debug_print("AnnotationElementsTable::__init__ - self.elements", self.elements)
 
         QTableWidget.__init__(self)
         self.setObjectName(object_name)
@@ -193,28 +213,28 @@ class AnnotationElementsTable(QTableWidget):
         vbl = QVBoxLayout()
         self.move_element_up_tb = QToolButton()
         self.move_element_up_tb.setObjectName("move_element_up_tb")
-        self.move_element_up_tb.setToolTip('Move element up')
+        self.move_element_up_tb.setToolTip(_('Move element up'))
         self.move_element_up_tb.setIcon(QIcon(I('arrow-up.png')))
         self.move_element_up_tb.clicked.connect(self.move_row_up)
         vbl.addWidget(self.move_element_up_tb)
 
         self.undo_css_tb = QToolButton()
         self.undo_css_tb.setObjectName("undo_css_tb")
-        self.undo_css_tb.setToolTip('Restore CSS to last saved')
+        self.undo_css_tb.setToolTip(_('Restore CSS to last saved'))
         self.undo_css_tb.setIcon(QIcon(I('edit-undo.png')))
         self.undo_css_tb.clicked.connect(partial(self.undo_reset_button_clicked, 'undo'))
         vbl.addWidget(self.undo_css_tb)
 
         self.reset_css_tb = QToolButton()
         self.reset_css_tb.setObjectName("reset_css_tb")
-        self.reset_css_tb.setToolTip('Reset CSS to default')
+        self.reset_css_tb.setToolTip(_('Reset CSS to default'))
         self.reset_css_tb.setIcon(QIcon(I('trash.png')))
         self.reset_css_tb.clicked.connect(partial(self.undo_reset_button_clicked, 'reset'))
         vbl.addWidget(self.reset_css_tb)
 
         self.move_element_down_tb = QToolButton()
         self.move_element_down_tb.setObjectName("move_element_down_tb")
-        self.move_element_down_tb.setToolTip('Move element down')
+        self.move_element_down_tb.setToolTip(_('Move element down'))
         self.move_element_down_tb.setIcon(QIcon(I('arrow-down.png')))
         self.move_element_down_tb.clicked.connect(self.move_row_down)
         vbl.addWidget(self.move_element_down_tb)
@@ -237,7 +257,8 @@ class AnnotationElementsTable(QTableWidget):
     def convert_row_to_data(self, row):
         data = {}
         data['ordinal'] = row
-        data['name'] = unicode(self.cellWidget(row, self.COLUMNS['ELEMENT']['ordinal']).text()).strip()
+#         data['name'] = unicode(self.cellWidget(row, self.COLUMNS['ELEMENT']['ordinal']).text()).strip()
+        data['name'] = unicode(self.cellWidget(row, self.COLUMNS['ELEMENT_NAME']['ordinal']).text()).strip()
         data['css'] = unicode(self.cellWidget(row, self.COLUMNS['CSS']['ordinal']).toPlainText()).strip()
         return data
 
@@ -250,7 +271,7 @@ class AnnotationElementsTable(QTableWidget):
         for line in css.split('\n'):
             lines.append(re.sub('^\s*', '', line))
         self.resize_row_height(lines, row)
-        self.prefs.set('appearance_css', self.get_data())
+#         self.prefs.set('appearance_css', self.get_data())
         widget.setFocus()
         self.preview_css()
 
@@ -261,6 +282,7 @@ class AnnotationElementsTable(QTableWidget):
             data_items.append(
                                {'ordinal': data['ordinal'],
                                 'name': data['name'],
+#                                 'translatable_name': translatable_element_names[data['name']],
                                 'css': data['css'],
                                 })
         return data_items
@@ -280,6 +302,7 @@ class AnnotationElementsTable(QTableWidget):
         self.blockSignals(True)
         # Save the contents of the destination row
         saved_data = self.convert_row_to_data(dest)
+        debug_print("Annotations::appearance.py::move_row - saved_data", saved_data)
 
         # Remove the destination row
         self.removeRow(dest)
@@ -322,10 +345,13 @@ class AnnotationElementsTable(QTableWidget):
             self.select_and_scroll_to_row(row)
             self.populate_table_row(row, element)
         self.selectRow(0)
+        self.setColumnHidden(0, True)
 
     def populate_table_row(self, row, data):
         self.blockSignals(True)
-        self.set_element_name_in_row(row, self.COLUMNS['ELEMENT']['ordinal'], data['name'])
+        self.setCellWidget(row, self.COLUMNS['ELEMENT_NAME']['ordinal'], QLabel(data['name']))
+        translatable_name = translatable_element_names[data['name']]
+        self.set_element_name_in_row(row, self.COLUMNS['ELEMENT']['ordinal'], translatable_name)
         self.set_css_in_row(row, self.COLUMNS['CSS']['ordinal'], data['css'])
         self.blockSignals(False)
 
@@ -335,7 +361,7 @@ class AnnotationElementsTable(QTableWidget):
         '''
         from calibre_plugins.annotations.annotations import Annotation, Annotations
 
-        pas = Annotations(None, title="Preview")
+        pas = Annotations(None, title=_("Preview"))
         pas.annotations.append(Annotation(self.sample_ann_1))
         pas.annotations.append(Annotation(self.sample_ann_2))
         pas.annotations.append(Annotation(self.sample_ann_3))
@@ -380,8 +406,10 @@ class AnnotationElementsTable(QTableWidget):
         Figure out which element is being reset
         Reset to last save or default
         """
+        debug_print("undo_reset_button_clicked - mode=", mode)
         row = self.currentRow()
         data = self.convert_row_to_data(row)
+        debug_print("undo_reset_button_clicked - data=", data)
 
         # Get default
         default_css = None
@@ -394,11 +422,15 @@ class AnnotationElementsTable(QTableWidget):
         last_saved_css = None
         saved_elements = self.prefs.get('appearance_css', None)
         last_saved_css = default_css
+        debug_print("undo_reset_button_clicked - saved_elements=", saved_elements)
+        debug_print("undo_reset_button_clicked - last_saved_css=", last_saved_css)
         if saved_elements:
             for se in saved_elements:
                 if se['name'] == data['name']:
+                    debug_print("undo_reset_button_clicked - se=", se)
                     last_saved_css = se
                     break
+        debug_print("undo_reset_button_clicked - last_saved_css=", last_saved_css)
 
         # Restore css
         if mode == 'reset':
@@ -429,18 +461,18 @@ class AnnotationsAppearance(SizePersistedDialog):
         self.prefs = prefs
         self.icon = icon
         super(AnnotationsAppearance, self).__init__(parent, 'appearance_dialog')
-        self.setWindowTitle('Modify appearance')
+        self.setWindowTitle(_('Modify appearance'))
         self.setWindowIcon(icon)
         self.l = QVBoxLayout(self)
         self.setLayout(self.l)
 
         # Add a label for description
-        #self.description_label = QLabel("Descriptive text here")
+        #self.description_label = QLabel(_("Descriptive text here"))
         #self.l.addWidget(self.description_label)
 
         # Add a group box, vertical layout for preview window
         self.preview_gb = QGroupBox(self)
-        self.preview_gb.setTitle("Preview")
+        self.preview_gb.setTitle(_("Preview"))
         self.preview_vl = QVBoxLayout(self.preview_gb)
         self.l.addWidget(self.preview_gb)
 
@@ -454,7 +486,7 @@ class AnnotationsAppearance(SizePersistedDialog):
 
         # Create a group box, horizontal layout for the table
         self.css_table_gb = QGroupBox(self)
-        self.css_table_gb.setTitle("Annotation elements")
+        self.css_table_gb.setTitle(_("Annotation elements"))
         self.elements_hl = QHBoxLayout(self.css_table_gb)
         self.l.addWidget(self.css_table_gb)
 
@@ -465,14 +497,14 @@ class AnnotationsAppearance(SizePersistedDialog):
 
         # Options
         self.options_gb = QGroupBox(self)
-        self.options_gb.setTitle("Options")
+        self.options_gb.setTitle(_("Options"))
         self.options_gl = QGridLayout(self.options_gb)
         self.l.addWidget(self.options_gb)
         current_row = 0
 
         # <hr/> separator
         # addWidget(widget, row, col, rowspan, colspan)
-        self.hr_checkbox = QCheckBox('Add horizontal rule between annotations')
+        self.hr_checkbox = QCheckBox(_('Add horizontal rule between annotations'))
         self.hr_checkbox.stateChanged.connect(self.hr_checkbox_changed)
         self.hr_checkbox.setCheckState(
             JSONConfig('plugins/annotations').get('appearance_hr_checkbox', False))
@@ -480,7 +512,7 @@ class AnnotationsAppearance(SizePersistedDialog):
         current_row += 1
 
         # Timestamp
-        self.timestamp_fmt_label = QLabel("Timestamp format:")
+        self.timestamp_fmt_label = QLabel(_("Timestamp format:"))
         self.options_gl.addWidget(self.timestamp_fmt_label, current_row, 0)
 
         self.timestamp_fmt_le = QLineEdit(
@@ -489,19 +521,19 @@ class AnnotationsAppearance(SizePersistedDialog):
         self.timestamp_fmt_le.textEdited.connect(self.timestamp_fmt_changed)
         self.timestamp_fmt_le.setFont(self.FONT)
         self.timestamp_fmt_le.setObjectName('timestamp_fmt_le')
-        self.timestamp_fmt_le.setToolTip('Format string for timestamp')
+        self.timestamp_fmt_le.setToolTip(_('Format string for timestamp'))
         self.timestamp_fmt_le.setMaximumWidth(16777215)
         self.timestamp_fmt_le.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.options_gl.addWidget(self.timestamp_fmt_le, current_row, 1)
 
         self.timestamp_fmt_reset_tb = QToolButton(self)
-        self.timestamp_fmt_reset_tb.setToolTip("Reset to default")
+        self.timestamp_fmt_reset_tb.setToolTip(_("Reset to default"))
         self.timestamp_fmt_reset_tb.setIcon(QIcon(I('trash.png')))
         self.timestamp_fmt_reset_tb.clicked.connect(self.reset_timestamp_to_default)
         self.options_gl.addWidget(self.timestamp_fmt_reset_tb, current_row, 2)
 
         self.timestamp_fmt_help_tb = QToolButton(self)
-        self.timestamp_fmt_help_tb.setToolTip("Format string reference")
+        self.timestamp_fmt_help_tb.setToolTip(_("Format string reference"))
         self.timestamp_fmt_help_tb.setIcon(QIcon(I('help.png')))
         self.timestamp_fmt_help_tb.clicked.connect(self.show_help)
         self.options_gl.addWidget(self.timestamp_fmt_help_tb, current_row, 3)
@@ -538,7 +570,7 @@ class AnnotationsAppearance(SizePersistedDialog):
         Display strftime help file
         '''
         hv = HelpView(self, self.icon, self.prefs,
-            html=get_resources('help/timestamp_formats.html'), title="Timestamp formats")
+            html=get_resources('help/timestamp_formats.html'), title=_("Timestamp formats"))
         hv.show()
 
     def sizeHint(self):

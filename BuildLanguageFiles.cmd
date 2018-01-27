@@ -1,0 +1,7 @@
+rem Generate the translation files
+rem "C:\Program Files (x86)\Poedit\GettextTools\bin\xgettext.exe" -j --output=translations\es.po action.py annotated_books.py appearance.py common_utils.py config.py find_annotations.py dialogs/cc_wizard.py
+"C:\Program Files (x86)\Poedit\GettextTools\bin\xgettext.exe" -j --package-name="Annotations Plugin" --output=translations\es.po      action.py annotated_books.py appearance.py common_utils.py config.py find_annotations.py dialogs/cc_wizard.py
+"C:\Program Files (x86)\Poedit\GettextTools\bin\xgettext.exe" -j --package-name="Annotations Plugin" --output=translations\fr.po      action.py annotated_books.py appearance.py common_utils.py config.py find_annotations.py dialogs/cc_wizard.py
+"C:\Program Files (x86)\Poedit\GettextTools\bin\xgettext.exe" -j --package-name="Annotations Plugin" --output=translations\it.po      action.py annotated_books.py appearance.py common_utils.py config.py find_annotations.py dialogs/cc_wizard.py
+"C:\Program Files (x86)\Poedit\GettextTools\bin\xgettext.exe" -j --package-name="Annotations Plugin" --output=translations\de.po      action.py annotated_books.py appearance.py common_utils.py config.py find_annotations.py dialogs/cc_wizard.py
+"C:\Program Files (x86)\Poedit\GettextTools\bin\xgettext.exe"    --package-name="Annotations Plugin" --output=translations\default.po action.py annotated_books.py appearance.py common_utils.py config.py find_annotations.py dialogs/cc_wizard.py

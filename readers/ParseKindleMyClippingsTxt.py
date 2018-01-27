@@ -72,6 +72,9 @@ _LANG_AND_KIND_DETECT_BY_START_WORDS = {
     "Ihre Markierung": ('de', 'highlight'),
     "Ihre Notiz":      ('de', 'note'),
     "Ihr Lesezeichen": ('de', 'bookmark'),
+    "Markierung":  ('de', 'highlight'),
+    "Notiz":       ('de', 'note'),
+    "Lesezeichen": ('de', 'bookmark'),
     "Mi subrayado": ('es', 'highlight'),
     "Mi nota":      ('es', 'note'),
     "Mi marcador":  ('es', 'bookmark'),
@@ -85,6 +88,9 @@ _LANG_AND_KIND_DETECT_BY_START_WORDS = {
     "La mia evidenziazione": ('it', 'highlight'),
     "Le mie note":           ('it', 'note'),
     "Il mio segnalibro":     ('it', 'bookmark'),
+    "La tua evidenziazione": ('it', 'highlight'),
+    "La tua nota":           ('it', 'note'),
+    "Il tuo segnalibro":     ('it', 'bookmark'),
     "ハイライト":  ('jp', 'highlight'),
     "メモ":      ('jp', 'note'),
     "ブックマーク": ('jp', 'bookmark'),
@@ -100,11 +106,13 @@ _MAX_NR_OF_START_WORDS = 3
 _LOCATION_REGEX = {
     'en': (r"\sLocation\s*%s",
            r"\sLoc\.\s*%s",),
-    'de': (r"\sPosition\s*%s",),
+    'de': (r"\sPosition\s*%s",
+           r"\sPos\.\s*%s"),
     'es': (r"\sPosición\s*%s",
            r"\sposición\s*%s",),
     'fr': (r"\sEmplacement\s*%s",),
-    'it': (r"\sPosizione\s*%s",),
+    'it': (r"\sPosizione\s*%s",
+           r"\sposizione\s*%s",),
     'jp': (r"\s位置No.\s*%s",),
     'pt': (r"\sPosição\s*%s",),
     'ch': (r"\s位置\s*%s",),
@@ -115,7 +123,8 @@ _PAGE_REGEX = {
     'de': (r"\sSeite\s*%s",),
     'es': (r"\spágina\s*%s",),
     'fr': (r"\spage\s*%s",),
-    'it': (r"\spagina\s*%s",),
+    'it': (r"\spagina\s*%s",
+           r"\spagina\s*%s",),
     'jp': (r"\sジ\s*%s",),
     'pt': (r"\spágina\s*%s",),
     'ch': (r"\s第\s*%s\s*页",),
@@ -196,7 +205,8 @@ def _getDateTime(status, language):
     year = month = day = hour = minute = second = micro = 0
     
     # time is handled relatively consistent among all used languages
-    date_time_re = r'([0-2]?[0-9]):([0-5][0-9])(?::([0-5][0-9])(?:\.([0-9]+))?)?\s*([AP]\.?M)?\s*(?:[A-Z]{3}?([+-][0-2]?[0-9](?::[0-5][0-9])?))?'
+    #date_time_re = r'([0-2]?[0-9]):([0-5][0-9])(?::([0-5][0-9])(?:\.([0-9]+))?)?\s*([AP]\.?M)?\s*(?:[A-Z]{3}?([+-][0-2]?[0-9](?::[0-5][0-9])?))?'
+    date_time_re = r'([0-2]?[0-9])[.:]([0-5][0-9])(?::([0-5][0-9])(?:\.([0-9]+))?)?\s*([AP]\.?M|Uhr)?\s*(?:[A-Z]{3}?([+-][0-2]?[0-9](?::[0-5][0-9])?))?'
     match = re.search(date_time_re, status, re.IGNORECASE)
     if match:
         hour = int(match.group(1))
@@ -236,6 +246,16 @@ def _getDateTime(status, language):
             for word in words:
                 if _MONTH_NAMES_SHORT[language].has_key(word):
                     month = _MONTH_NAMES_SHORT[language][word]
+                    break
+        if not month: # Some languages should be lower case, but Amazon seems to have capitalized the month.
+            for word in words:
+                if _MONTH_NAMES[language].has_key(word.lower()):
+                    month = _MONTH_NAMES[language][word.lower()]
+                    break
+        if not month:
+            for word in words:
+                if _MONTH_NAMES_SHORT[language].has_key(word.lower()):
+                    month = _MONTH_NAMES_SHORT[language][word.lower()]
                     break
         if month:
             # now there should be only two numbers left
@@ -1004,3 +1024,4 @@ if __debug__ and __name__ == '__main__':
         assert level.lower().upper() != 'ERROR', message
     log = testLog
     _runTests()
+

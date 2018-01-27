@@ -1,4 +1,18 @@
 Version history:
+1.7.0 - 27 Jan 2018
+• New: Add support for translations
+• New: Add German translation. Thanks to schnesim.
+• New: Add Spanish translation. Thanks to Terisa de Morgan. 
+• New: Add Italian translation. Thanks to dsestero.
+• New: Add French translation. Thanks to Nicolas F.
+• Fix: Extra Italian, German and Polish strings for the locations in Kindle 'My Clippings.txt'
+• New: Add German name of 'My Clippings.txt' file.
+• New: Add support for KindleXRay driver.
+• Fix: Normalize title collected by scanner for matching title and when comparing for confidence calculation.
+• New: Added support for newer formats for Kindles - kfx and awz3
+• Fix: Update regex for getting timestamp from My Clippings.txt
+• Fix: Some of the icons weren't valid and displayed an error in the debug log. Fixed by Nicolas F.
+
 1.6.0 - 25 Aug 2017
 • Fix: Extra Spanish string for locations in Kindle 'My Clippings.txt'
 1.5.0 - 29 Jun 2017

@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import re
@@ -40,6 +40,11 @@ from calibre_plugins.annotations.common_utils import (Logger, SizePersistedDialo
 from calibre_plugins.annotations.config import InventoryAnnotatedBooks, plugin_prefs
 
 from calibre_plugins.annotations.reader_app_support import ReaderApp
+
+try:
+    load_translations()
+except NameError:
+    pass # load_translations() added in calibre 1.9
 
 utc_tz = tzutc()
 EPOCH = datetime(1969,12,31, tzinfo=tzlocal())
@@ -89,26 +94,26 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         self.opts = opts
         self.prefs = opts.prefs
         super(FindAnnotationsDialog, self).__init__(self.opts.gui, 'find_annotations_dialog')
-        self.setWindowTitle('Find Annotations')
+        self.setWindowTitle(_('Find Annotations'))
         self.setWindowIcon(self.opts.icon)
         self.l = QVBoxLayout(self)
         self.setLayout(self.l)
 
         self.search_criteria_gb = QGroupBox(self)
-        self.search_criteria_gb.setTitle("Search criteria")
+        self.search_criteria_gb.setTitle(_("Search criteria"))
         self.scgl = QGridLayout(self.search_criteria_gb)
         self.l.addWidget(self.search_criteria_gb)
         # addWidget(widget, row, col, rowspan, colspan)
 
         row = 0
         # ~~~~~~~~ Create the Readers comboBox ~~~~~~~~
-        self.reader_label = QLabel('Reader')
+        self.reader_label = QLabel(_('Reader'))
         self.reader_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
         self.scgl.addWidget(self.reader_label, row, 0, 1, 1)
 
         self.find_annotations_reader_comboBox = QComboBox()
         self.find_annotations_reader_comboBox.setObjectName('find_annotations_reader_comboBox')
-        self.find_annotations_reader_comboBox.setToolTip('Reader annotations to search for')
+        self.find_annotations_reader_comboBox.setToolTip(_('Reader annotations to search for'))
 
         self.find_annotations_reader_comboBox.addItem(self.GENERIC_READER)
         racs = ReaderApp.get_reader_app_classes()
@@ -118,13 +123,13 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         row += 1
 
         # ~~~~~~~~ Create the Styles comboBox ~~~~~~~~
-        self.style_label = QLabel('Style')
+        self.style_label = QLabel(_('Style'))
         self.style_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
         self.scgl.addWidget(self.style_label, row, 0, 1, 1)
 
         self.find_annotations_color_comboBox = QComboBox()
         self.find_annotations_color_comboBox.setObjectName('find_annotations_color_comboBox')
-        self.find_annotations_color_comboBox.setToolTip('Annotation style to search for')
+        self.find_annotations_color_comboBox.setToolTip(_('Annotation style to search for'))
 
         self.find_annotations_color_comboBox.addItem(self.GENERIC_STYLE)
         all_colors = COLOR_MAP.keys()
@@ -135,7 +140,7 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         row += 1
 
         # ~~~~~~~~ Create the Text LineEdit control ~~~~~~~~
-        self.text_label = QLabel('Text')
+        self.text_label = QLabel(_('Text'))
         self.text_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
         self.scgl.addWidget(self.text_label, row, 0, 1, 1)
         self.find_annotations_text_lineEdit = MyLineEdit()
@@ -143,14 +148,14 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         self.scgl.addWidget(self.find_annotations_text_lineEdit, row, 1, 1, 3)
         self.reset_text_tb = QToolButton()
         self.reset_text_tb.setObjectName('reset_text_tb')
-        self.reset_text_tb.setToolTip('Clear search criteria')
+        self.reset_text_tb.setToolTip(_('Clear search criteria'))
         self.reset_text_tb.setIcon(QIcon(I('trash.png')))
         self.reset_text_tb.clicked.connect(self.clear_text_field)
         self.scgl.addWidget(self.reset_text_tb, row, 4, 1, 1)
         row += 1
 
         # ~~~~~~~~ Create the Note LineEdit control ~~~~~~~~
-        self.note_label = QLabel('Note')
+        self.note_label = QLabel(_('Note'))
         self.note_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
         self.scgl.addWidget(self.note_label, row, 0, 1, 1)
         self.find_annotations_note_lineEdit = MyLineEdit()
@@ -158,14 +163,14 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         self.scgl.addWidget(self.find_annotations_note_lineEdit, row, 1, 1, 3)
         self.reset_note_tb = QToolButton()
         self.reset_note_tb.setObjectName('reset_note_tb')
-        self.reset_note_tb.setToolTip('Clear search criteria')
+        self.reset_note_tb.setToolTip(_('Clear search criteria'))
         self.reset_note_tb.setIcon(QIcon(I('trash.png')))
         self.reset_note_tb.clicked.connect(self.clear_note_field)
         self.scgl.addWidget(self.reset_note_tb, row, 4, 1, 1)
         row += 1
 
         # ~~~~~~~~ Create the Date range controls ~~~~~~~~
-        self.date_range_label = QLabel('Date range')
+        self.date_range_label = QLabel(_('Date range'))
         self.date_range_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
         self.scgl.addWidget(self.date_range_label, row, 0, 1, 1)
 
@@ -195,7 +200,7 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         row += 1
 
         # ~~~~~~~~ Create the results label field ~~~~~~~~
-        self.result_label = QLabel('<p style="color:red">scanning…</p>')
+        self.result_label = QLabel('<p style="color:red">{0}</p>'.format(_('scanning…')))
         self.result_label.setAlignment(Qt.AlignCenter)
         self.result_label.setWordWrap(False)
 
@@ -212,14 +217,14 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         self.dialogButtonBox = QDialogButtonBox(self)
         self.dialogButtonBox.setOrientation(Qt.Horizontal)
         if False:
-            self.update_button = QPushButton('Update results')
+            self.update_button = QPushButton(_('Update results'))
             self.update_button.setDefault(True)
             self.update_button.setVisible(False)
             self.dialogButtonBox.addButton(self.update_button, QDialogButtonBox.ActionRole)
 
         self.cancel_button = self.dialogButtonBox.addButton(self.dialogButtonBox.Cancel)
         self.find_button = self.dialogButtonBox.addButton(self.dialogButtonBox.Ok)
-        self.find_button.setText('Find Matching Books')
+        self.find_button.setText(_('Find Matching Books'))
 
         self.l.addWidget(self.dialogButtonBox)
         self.dialogButtonBox.clicked.connect(self.find_annotations_dialog_clicked)
@@ -444,11 +449,11 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
                 if len(matched_titles) == 1:
                     results = first_match
                 else:
-                    results = first_match + (" and %d more." % (len(matched_titles) - 1))
+                    results = first_match + (_(" and {0} more.").format(len(matched_titles) - 1))
                 self.result_label.setText('<p style="color:blue">{0}</p>'.format(results))
             else:
-                self.result_label.setText('<p style="color:red">no matches</p>')
+                self.result_label.setText('<p style="color:red">{0}</p>'.format(_('no matches')))
         else:
-            self.result_label.setText('<p style="color:red">no annotated books in library</p>')
+            self.result_label.setText('<p style="color:red">{0}</p>'.format(_('no annotated books in library')))
 
         self.resize_dialog()

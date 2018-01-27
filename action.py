@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import imp, inspect, os, re, sys, tempfile, threading, types, urlparse
@@ -32,6 +32,7 @@ except ImportError as e:
     LIBIMOBILEDEVICE_AVAILABLE = False
 
 from calibre.ebooks.BeautifulSoup import BeautifulSoup
+from calibre.ebooks import normalize
 from calibre.gui2 import Application, open_url
 from calibre.gui2.device import device_signals
 from calibre.gui2.dialogs.message_box import MessageBox
@@ -69,6 +70,13 @@ PLUGIN_ICONS = ['images/annotations.png', 'images/apple.png',
                 'images/stanza.png']
 
 
+try:
+    debug_print("Annotations::action.py - loading translations")
+    load_translations()
+except NameError:
+    debug_print("Annotations::action.py - exception when loading translations")
+    pass # load_translations() added in calibre 1.9
+
 class AnnotationsAction(InterfaceAction, Logger):
 
     accepts_drops = True
@@ -76,8 +84,8 @@ class AnnotationsAction(InterfaceAction, Logger):
     mount_point = None
     name = 'Annotations'
 
-    SELECT_DESTINATION_MSG = ("Select a book to receive annotations when annotation metadata cannot be matched with library metadata.")
-    SELECT_DESTINATION_DET_MSG = (
+    SELECT_DESTINATION_MSG = _("Select a book to receive annotations when annotation metadata cannot be matched with library metadata.")
+    SELECT_DESTINATION_DET_MSG = _(
         "To determine which book will receive incoming annotations, annotation metadata (Title, Author, UUID) is compared to library metadata.\n\n"
         "Annotations whose metadata completely matches library metadata will be added automatically to the corresponding book.\n\n"
         "For partial metadata matches, you will be prompted to confirm the book receiving the annotations.\n\n"
@@ -85,7 +93,7 @@ class AnnotationsAction(InterfaceAction, Logger):
 
     # Declare the main action associated with this plugin
     action_spec = ('Annotations', None,
-                   'Import annotations from eBook reader', None)
+                   _('Import annotations from eBook reader'), None)
     action_menu_clone_qaction = True
     popup_type = QToolButton.InstantPopup
 
@@ -167,28 +175,28 @@ class AnnotationsAction(InterfaceAction, Logger):
 
     def describe_confidence(self, confidence, book_mi, library_mi):
         def _title_mismatch():
-            msg = "TITLE MISMATCH:\n"
-            msg += " library: %s\n" % library_mi.title
-            msg += " imported: %s\n" % book_mi.title
+            msg = _("TITLE MISMATCH:") + "\n"
+            msg += _(" library:") + " %s\n" % library_mi.title
+            msg += _(" imported:") + " %s\n" % book_mi.title
             #msg += "Mismatches can occur if the book's metadata has been edited outside of calibre.\n\n"
             return msg
 
         def _author_mismatch():
-            msg = "AUTHOR MISMATCH:\n"
-            msg += " library: %s\n" % ', '.join(library_mi.authors)
-            msg += " imported: %s\n" % book_mi.author
+            msg = _("AUTHOR MISMATCH:") + "\n"
+            msg += _(" library:") + " %s\n" % ', '.join(library_mi.authors)
+            msg += _(" imported:") + " %s\n" % book_mi.author
             #msg += "Mismatches can occur if the book's metadata has been edited outside of calibre.\n\n"
             return msg
 
         def _uuid_mismatch():
-            msg = "UUID MISMATCH:\n"
-            msg += " library: %s\n" % library_mi.uuid
-            msg += " imported: %s\n" % (book_mi.uuid if book_mi.uuid else 'uuid unavailable')
+            msg = _("UUID MISMATCH:") + "\n"
+            msg += _(" library:") + " %s\n" % library_mi.uuid
+            msg += _(" imported:") + " %s\n" % (book_mi.uuid if book_mi.uuid else 'uuid unavailable')
             #msg += "Mismatches can occur if the book was added from a different installation of calibre.\n\n"
             return msg
 
         if confidence < 5:
-            det_msg = '{:-^45}\n'.format('  confidence: %d  ' % confidence)
+            det_msg = '{:-^45}\n'.format(_('confidence:') + ' %d' % confidence)
             if confidence == 4:
                 det_msg = _author_mismatch()
             elif confidence == 3:
@@ -204,7 +212,7 @@ class AnnotationsAction(InterfaceAction, Logger):
                     det_msg += _author_mismatch()
                     det_msg += _uuid_mismatch()
         else:
-            det_msg = "Metadata matches"
+            det_msg = _("Metadata matches")
         return det_msg
 
     # subclass override
@@ -263,8 +271,8 @@ class AnnotationsAction(InterfaceAction, Logger):
                     pass
                 break
             else:
-                title = "Unable to import annotations"
-                msg = ("<p>Unable to import anotations from <tt>{0}</tt>.</p>".format(os.path.basename(path)))
+                title = _("Unable to import annotations")
+                msg = "<p>{0}</p>".format(("Unable to import anotations from <tt>{0}</tt>.".format(os.path.basename(path))))
                 MessageBox(MessageBox.INFO, title, msg, show_copy_button=False).exec_()
                 self._log_location("INFO: %s" % msg)
 
@@ -280,7 +288,7 @@ class AnnotationsAction(InterfaceAction, Logger):
                     self.opts.pb.set_maximum(book_count)
 
                     # Update the progress bar
-                    self.opts.pb.set_label("Adding annotations to calibre")
+                    self.opts.pb.set_label(_("Adding annotations to calibre"))
                     self.opts.pb.set_value(0)
                     self.opts.pb.show()
 
@@ -294,8 +302,8 @@ class AnnotationsAction(InterfaceAction, Logger):
                     except:
                         import traceback
                         traceback.print_exc()
-                        title = "Error fetching annotations"
-                        msg = ('<p>Unable to fetch annotations from {0}.</p>'.format(source))
+                        title = _("Error fetching annotations")
+                        msg = self.format_as_paragraph(_("Unable to fetch annotations from {0}.").format(source))
                         det_msg = traceback.format_exc()
                         MessageBox(MessageBox.ERROR, title, msg, det_msg, show_copy_button=False).exec_()
                         self._log_location("ERROR: %s" % msg)
@@ -304,8 +312,8 @@ class AnnotationsAction(InterfaceAction, Logger):
                         self.report_updated_annotations(updated_annotations)
 
         else:
-            title = "No annotated books found on device"
-            msg = ('<p>Unable to find any annotations on {0} matching books in your library.</p>'.format(source))
+            title = _("No annotated books found on device")
+            msg = self.format_as_paragraph(_('Unable to find any annotations on {0} matching books in your library.').format(source))
             MessageBox(MessageBox.INFO, title, msg, show_copy_button=False).exec_()
             self._log_location("INFO: %s" % msg)
 
@@ -331,13 +339,13 @@ class AnnotationsAction(InterfaceAction, Logger):
         annotations_column = get_cc_mapping('annotations', 'field')
         msg = None
         if not annotations_column:
-            msg = ("<p>Unable to import annotations as the annotations column has not been configured..</p>")
+            msg = self.format_as_paragraph(_('Unable to import annotations as the annotations column has not been configured...'))
         elif annotations_column == 'Comments':
             pass
         elif not annotations_column in self.gui.current_db.custom_field_keys():
-            msg = ("<p>Unable to import annotations as the annotations column does not exist.</p>")
+            msg = self.format_as_paragraph(_('Unable to import annotations as the annotations column does not exist.'))
         if msg:
-            title = "Unable to import annotations"
+            title = _("Unable to import annotations")
             MessageBox(MessageBox.ERROR, title, msg, show_copy_button=False).exec_()
             self._log_location("ERROR: %s" % msg)
             return
@@ -347,7 +355,7 @@ class AnnotationsAction(InterfaceAction, Logger):
                                                 det_msg=self.SELECT_DESTINATION_DET_MSG)
         if not self.selected_mi:
             return
-        self.opts.pb.set_label("Fetch annotations from USB device")
+        self.opts.pb.set_label(_("Fetch annotations from USB device"))
         self.opts.pb.set_value(0)
         self.opts.pb.show()
         annotated_book_list = self.get_annotated_books_on_usb_device(reader_app)
@@ -440,15 +448,17 @@ class AnnotationsAction(InterfaceAction, Logger):
         uuid_map = self.library_scanner.uuid_map
         confidence = 0
         cid = None
+        
+        title = normalize(book_mi['title'])
 
         # Check uuid_map
         if (book_mi['uuid'] in uuid_map and
-                book_mi['title'] == uuid_map[book_mi['uuid']]['title'] and
+                title == uuid_map[book_mi['uuid']]['title'] and
                 book_mi['author'] in uuid_map[book_mi['uuid']]['authors']):
             cid = uuid_map[book_mi['uuid']]['id']
             confidence = 5
         elif (book_mi['uuid'] in uuid_map and
-              book_mi['title'] == uuid_map[book_mi['uuid']]['title']):
+              title == uuid_map[book_mi['uuid']]['title']):
             cid = uuid_map[book_mi['uuid']]['id']
             confidence = 4
         elif book_mi['uuid'] in uuid_map:
@@ -456,13 +466,13 @@ class AnnotationsAction(InterfaceAction, Logger):
             confidence = 3
 
         # Check title_map
-        elif (book_mi['title'] in title_map and
-              book_mi['author'] in title_map[book_mi['title']]['authors']):
-                cid = title_map[book_mi['title']]['id']
+        elif (title in title_map and
+              book_mi['author'] in title_map[title]['authors']):
+                cid = title_map[title]['id']
                 confidence = 2
         else:
-            if book_mi['title'] in title_map:
-                cid = title_map[book_mi['title']]['id']
+            if title in title_map:
+                cid = title_map[title]['id']
                 confidence = 1
 
         return cid, confidence
@@ -523,8 +533,8 @@ class AnnotationsAction(InterfaceAction, Logger):
             self.opts.pb.hide()
             import traceback
             traceback.print_exc()
-            title = "Error fetching annotations"
-            msg = ('<p>Unable to fetch annotations from {0}.</p>'.format(reader_app))
+            title = _("Error fetching annotations")
+            msg = self.format_as_paragraph(_('Unable to fetch annotations from {0}.').format(reader_app))
             MessageBox(MessageBox.ERROR, title, msg, show_copy_button=False).exec_()
             self._log_location("ERROR: %s" % msg)
 
@@ -554,7 +564,7 @@ class AnnotationsAction(InterfaceAction, Logger):
 
         #books = self.opts.db.get_books(books_db)
         if books is not None:
-            self.opts.pb.set_label(_("Compilng annotations for a book"))
+            self.opts.pb.set_label(_("Compiling annotations for a book"))
             self.opts.pb.set_value(0)
             # Get the books for this db
             this_book_list = []
@@ -694,7 +704,7 @@ class AnnotationsAction(InterfaceAction, Logger):
         pref_map = {
             #'cfg_annotations_destination_comboBox': 'Comments',
             #'cfg_annotations_destination_field': 'Comments',
-            'cfg_news_clippings_lineEdit': 'My News Clippings',
+            'cfg_news_clippings_lineEdit': _('My News Clippings'),
             'developer_mode': False,
             'COMMENTS_DIVIDER': '&middot;  &middot;  &bull;  &middot;  &#x2726;  &middot;  &bull;  &middot; &middot;',
             'HORIZONTAL_RULE': "<hr width='80%' />",
@@ -860,10 +870,9 @@ class AnnotationsAction(InterfaceAction, Logger):
         fields.sort()
 
         # Warn the user that we're going to do it
-        title = 'Remove annotations?'
-        msg = ("<p>All existing annotations will be removed from %s.</p>" %
-               ', '.join(fields) +
-               "<p>Proceed?</p>")
+        title = _('Remove annotations?')
+        msg = self.format_as_paragraph(_("All existing annotations will be removed from {0}.").format(
+               ', '.join(fields))) + self.format_as_paragraph(_("Proceed?"))
         d = MessageBox(MessageBox.QUESTION,
                        title, msg,
                        show_copy_button=False)
@@ -872,16 +881,16 @@ class AnnotationsAction(InterfaceAction, Logger):
         self._log_location("QUESTION: %s" % msg)
 
         # Show progress
-        pb = ProgressBar(parent=self.gui, window_title="Removing annotations", on_top=True)
+        pb = ProgressBar(parent=self.gui, window_title=_("Removing annotations"), on_top=True)
         total_books = len(db.data)
         pb.set_maximum(total_books)
         pb.set_value(0)
-        pb.set_label('{:^100}'.format("Scanning 0 of %d" % (total_books)))
+        pb.set_label('{:^100}'.format(_("Scanning {0} of {1}").format(0, total_books)))
         pb.show()
 
         for i, record in enumerate(db.data.iterall()):
             mi = db.get_metadata(record[id], index_is_id=True)
-            pb.set_label('{:^100}'.format("Scanning %d of %d" % (i, total_books)))
+            pb.set_label('{:^100}'.format(_("Scanning {0} of {1}").format(i, total_books)))
 
             # Remove user_annotations from Comments
             if mi.comments:
@@ -970,7 +979,7 @@ class AnnotationsAction(InterfaceAction, Logger):
         if d.exec_():
             if d.selected_books:
                 self.opts.pb.set_maximum(len(d.selected_books[rac.app_name]))
-                self.opts.pb.set_label("Adding annotations to calibre")
+                self.opts.pb.set_label(_("Adding annotations to calibre"))
                 self.opts.pb.set_value(0)
                 self.opts.pb.show()
                 try:
@@ -978,8 +987,8 @@ class AnnotationsAction(InterfaceAction, Logger):
                 except:
                     import traceback
                     traceback.print_exc()
-                    title = "Error importing annotations"
-                    msg = ('<p>Unable to import annotations from {0}.</p>'.format(rac.app_name))
+                    title = _("Error importing annotations")
+                    msg = self.format_as_paragraph(_('Unable to import annotations from {0}').format(rac.app_name))
                     det_msg = traceback.format_exc()
                     MessageBox(MessageBox.ERROR, title, msg, det_msg, show_copy_button=False).exec_()
                     self._log_location("ERROR: %s" % msg)
@@ -987,6 +996,9 @@ class AnnotationsAction(InterfaceAction, Logger):
                 if updated_annotations:
                     self.report_updated_annotations(updated_annotations)
 
+    def format_as_paragraph(self, msg):
+        return '<p>{0}</p>'.format(msg)
+    
     def process_selected_books(self, selected_books, reader_app, annotations_db):
         '''
         Add annotations arriving from importing classes.
@@ -1017,7 +1029,7 @@ class AnnotationsAction(InterfaceAction, Logger):
                 if confidence == 0:
                     book_mi['cid'] = self.selected_mi.id
                 proposed_mi = self.opts.gui.current_db.get_metadata(int(book_mi['cid']), index_is_id=True)
-                title = 'Import annotations • Mismatched metadata'
+                title = _('Import annotations • Mismatched metadata')
                 msg = ''
                 grey = '#ddd'
                 if False:
@@ -1059,10 +1071,14 @@ class AnnotationsAction(InterfaceAction, Logger):
                         <hr />
                         '''.format(author_color=author_color, title_color=title_color, uuid_color=uuid_color,
                                    author_status=author_status, title_status=title_status, uuid_status=uuid_status)
-                msg += (
-                    "<p>Add {1} annotations from '{0}' to '{2}' by {3}?</p>".format(
-                    book_mi['title'], book_mi['reader_app'],
-                    proposed_mi.title, ', '.join(proposed_mi.authors)))
+                msg += self.format_as_paragraph(
+                        _("Add {1} annotations from '{0}' to '{2}' by {3}?").format(
+                                    book_mi['title'], 
+                                    book_mi['reader_app'],
+                                    proposed_mi.title, 
+                                    ', '.join(proposed_mi.authors)
+                                    )
+                        )
 
                 det_msg = self.describe_confidence(confidence, book_mi, proposed_mi)
 
@@ -1103,7 +1119,7 @@ class AnnotationsAction(InterfaceAction, Logger):
 
             # Add 'About…'
             #ac = self.create_menu_item(m, 'About' + '…', image=I("help.png"))
-            ac = self.create_menu_item(m, 'About' + '…')
+            ac = self.create_menu_item(m, _('About') + '…')
             ac.triggered.connect(self.show_about)
             m.addSeparator()
 
@@ -1116,8 +1132,8 @@ class AnnotationsAction(InterfaceAction, Logger):
                 if getattr(self.connected_device, 'VENDOR_ID', 0) == [0x05ac]:
                     # Add the fetching options per reader app
                     self.add_sub_menu = m.addMenu(get_icon('images/apple.png'),
-                                                  'Fetch annotations from…')
-                    self.add_sub_menu.setToolTip('Fetch annotations from iOS reader apps')
+                                                  _('Fetch annotations from…'))
+                    self.add_sub_menu.setToolTip(_('Fetch annotations from iOS reader apps'))
 
                     if self.installed_app_aliases:
                         for an in self.installed_app_aliases:
@@ -1144,7 +1160,7 @@ class AnnotationsAction(InterfaceAction, Logger):
                     usb_reader_classes = USBReader.get_usb_reader_classes().keys()
                     primary_name = self.connected_device.name.split()[0]
                     if primary_name in usb_reader_classes:
-                        ac = self.create_menu_item(m, 'Fetch annotations from %s' % self.connected_device.gui_name,
+                        ac = self.create_menu_item(m, _('Fetch annotations from {0}').format(self.connected_device.gui_name),
                                                    image=get_icon('images/device.png'))
                         ac.triggered.connect(partial(self.fetch_usb_device_annotations, primary_name))
 
@@ -1152,8 +1168,8 @@ class AnnotationsAction(InterfaceAction, Logger):
 
             # Add the import options
             self.add_sub_menu = m.addMenu(get_icon('images/exporting_app.png'),
-                                          'Import annotations from…')
-            self.add_sub_menu.setToolTip("Import annotations from iOS reader apps")
+                                          _('Import annotations from…'))
+            self.add_sub_menu.setToolTip(_("Import annotations from iOS reader apps"))
             exporting_apps = ReaderApp.get_exporting_app_classes()
 
             for ios_app_class in exporting_apps:
@@ -1170,16 +1186,16 @@ class AnnotationsAction(InterfaceAction, Logger):
             m.addSeparator()
 
             # Add 'Find annotations'
-            ac = self.create_menu_item(m, 'Find annotations', image=get_icon('images/magnifying_glass.png'))
+            ac = self.create_menu_item(m, _('Find annotations'), image=get_icon('images/magnifying_glass.png'))
             ac.triggered.connect(self.find_annotations)
             m.addSeparator()
 
             # Add 'Customize plugin…'
-            ac = self.create_menu_item(m, 'Customize plugin' + '…', image=I("config.png"))
+            ac = self.create_menu_item(m, _('Customize plugin') + '…', image=I("config.png"))
             ac.triggered.connect(self.show_configuration)
 
             # Add 'Help'
-            ac = self.create_menu_item(m, 'Help', image=I('help.png'))
+            ac = self.create_menu_item(m, _('Help'), image=I('help.png'))
             ac.triggered.connect(self.show_help)
 
             # If Alt/Option key pressed, show Developer submenu
@@ -1187,16 +1203,16 @@ class AnnotationsAction(InterfaceAction, Logger):
             if bool(modifiers & Qt.AltModifier):
                 m.addSeparator()
                 self.developer_menu = m.addMenu(QIcon(I('config.png')),
-                                                "Developer…")
+                                                _("Developer") + "…")
                 action = 'Remove all annotations'
                 ac = self.create_menu_item(self.developer_menu, action, image=I('list_remove.png'))
                 ac.triggered.connect(self.nuke_annotations)
 
     def report_updated_annotations(self, updated_annotations):
-        suffix = " from 1 book "
+        suffix = _(" from 1 book ")
         if updated_annotations > 1:
-            suffix = " from %d books " % updated_annotations
-        msg = "<p>Annotations" + suffix + "added to <b>{0}</b>.</p>".format(get_cc_mapping('annotations', 'combobox', 'Comments'))
+            suffix = _(" from {0} books ").format(updated_annotations)
+        msg = "<p>" + _("Annotations") + suffix + _("added to") + " <b>{0}</b>.</p>".format(get_cc_mapping('annotations', 'combobox', 'Comments'))
         MessageBox(MessageBox.INFO,
                    '',
                    msg=msg,
@@ -1210,9 +1226,9 @@ class AnnotationsAction(InterfaceAction, Logger):
     def show_about(self):
         version = self.interface_action_base_plugin.version
         title = "%s v %d.%d.%d" % (self.name, version[0], version[1], version[2])
-        msg = ('<p>To learn more about this plugin, visit the '
+        msg = self.format_as_paragraph(_('To learn more about this plugin, visit the '
                '<a href="http://www.mobileread.com/forums/showthread.php?p=2853161">Annotations plugin thread</a> '
-               'at MobileRead’s Calibre forum.</p>')
+               'at MobileRead’s Calibre forum.'))
         text = get_resources('about.txt')
         text = text.decode('utf-8')
         d = MessageBox(MessageBox.INFO, title, msg, det_msg=text, show_copy_button=False)
@@ -1233,13 +1249,15 @@ class AnnotationsAction(InterfaceAction, Logger):
         supported_reader_apps = sorted(iOSReaderApp.get_reader_app_classes().keys(),
                                        key=lambda s: s.lower())
 
-        title = "Supported iOS reader apps"
+        title = _("Supported iOS reader apps")
         if len(supported_reader_apps) > 1:
-            msg = ("The %s plugin supports fetching from %s and %s." %
-                   (self.name, ', '.join(supported_reader_apps[:-1]), supported_reader_apps[-1]))
+            msg = _("The {0} plugin supports fetching from {1} and {2}.").format(
+                                                            self.name, 
+                                                            ', '.join(supported_reader_apps[:-1]), 
+                                                            supported_reader_apps[-1]
+                                                            )
         else:
-            msg = ("The %s plugin supports fetching from %s." %
-                   (self.name, supported_reader_apps[0]))
+            msg = _("The {0} plugin supports fetching from {1}.").format(self.name, supported_reader_apps[0])
         MessageBox(MessageBox.INFO, title, msg, show_copy_button=False).exec_()
         self._log_location("INFO: %s" % msg)
 

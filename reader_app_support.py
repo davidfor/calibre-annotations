@@ -31,6 +31,13 @@ from calibre.utils.zipfile import ZipFile
 from calibre.utils.config import JSONConfig
 plugin_prefs = JSONConfig('plugins/annotations')
 
+try:
+    debug_print("Annotations::reader_app_support.py - loading translations")
+    load_translations()
+except NameError:
+    debug_print("Annotations::reader_app_support.py - exception when loading translations")
+    pass # load_translations() added in calibre 1.9
+
 
 class ClassNotImplementedException(Exception):
     ''' '''
@@ -785,8 +792,8 @@ class USBReader(ReaderApp):
         # Get the list of ids in the library
         ids = get_ids_from_selected_rows()
         if not ids:
-            return error_dialog(self.opts.gui, 'No books selected',
-                                'No books selected to fetch annotations from',
+            return error_dialog(self.opts.gui, _('No books selected'),
+                                _('No books selected to fetch annotations from'),
                                 show=True)
 
         # Map ids to paths

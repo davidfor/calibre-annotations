@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2010, Gregory Riker'
+__copyright__ = '2010, Gregory Riker, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import sys
@@ -23,6 +23,11 @@ except ImportError:
     from PyQt4.Qt import (QDialog, QDialogButtonBox, QIcon, QPixmap,
                           QSize)
 
+try:
+    load_translations()
+except NameError:
+    pass # load_translations() added in calibre 1.9
+
 # Import Ui_Form from form generated dynamically during initialization
 if True:
     sys.path.insert(0, dialog_resources_path)
@@ -32,7 +37,7 @@ if True:
 
 class CustomColumnWizard(QDialog, Ui_Dialog, Logger):
 
-    STEP_ONE = "Name your '{0}' column:"
+    STEP_ONE = _("Name your '{0}' column:")
 
     YELLOW_BG = '<font style="background:#FDFF99">{0}</font>'
 
@@ -131,8 +136,8 @@ class CustomColumnWizard(QDialog, Ui_Dialog, Logger):
             if requested_name in self.get_custom_column_names():
                 self._log("'%s' already in use" % requested_name)
                 warning_dialog(self.gui,
-                               "Already in use",
-                               "<p>'%s' is an existing custom column.</p><p>Pick a different name.</p>" % requested_name,
+                               _("Already in use"),
+                               _("<p>'{0}' is an existing custom column.</p><p>Pick a different name.</p>").format(requested_name),
                                show=True, show_copy_button=False)
 
                 self.calibre_destination_le.selectAll()
@@ -178,10 +183,10 @@ class CustomColumnWizard(QDialog, Ui_Dialog, Logger):
         '''
         self.accept_button.setObjectName(action)
         if action == "add_button":
-            self.accept_button.setText('Add custom column')
+            self.accept_button.setText(_('Add custom column'))
             self.accept_button.setIcon(QIcon(I('plus.png')))
         elif action == "rename_button":
-            self.accept_button.setText("Rename custom column")
+            self.accept_button.setText(_("Rename custom column"))
             self.accept_button.setIcon(QIcon(I('edit_input.png')))
         self.accept_button.setEnabled(enabled)
 

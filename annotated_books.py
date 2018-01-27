@@ -2,7 +2,7 @@
 # coding: utf-8
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import operator
@@ -38,6 +38,13 @@ from calibre_plugins.annotations.common_utils import (
 
 from calibre_plugins.annotations.config import plugin_prefs
 from calibre_plugins.annotations.reader_app_support import ReaderApp
+
+try:
+    debug_print("Annotations::annotated_books.py - loading translations")
+    load_translations()
+except NameError:
+    debug_print("Annotations::annotated_books.py - exception when loading translations")
+    pass # load_translations() added in calibre 1.9
 
 
 class SortableTableWidgetItem(QTableWidgetItem):
@@ -177,7 +184,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
 
 #         QDialog.__init__(self, parent=self.opts.gui)
         SizePersistedDialog.__init__(self, self.opts.gui, 'Annotations plugin:import annotations dialog')
-        self.setWindowTitle(u'Import Annotations')
+        self.setWindowTitle(_('Import Annotations'))
         self.setWindowIcon(self.opts.icon)
         self.l = QVBoxLayout(self)
         self.setLayout(self.l)
@@ -243,8 +250,8 @@ class AnnotatedBooksDialog(SizePersistedDialog):
 
         self.tv = QTableView(self)
         self.l.addWidget(self.tv)
-        self.annotations_header = ['uuid', 'book_id', 'genre', '', 'Reader App', 'Title',
-                                   'Author', 'Last Annotation', 'Annotations', 'Confidence']
+        self.annotations_header = ['uuid', 'book_id', 'genre', '', _('Reader App'), _('Title'),
+                                   _('Author'), _('Last Annotation'), _('Annotations'), _('Confidence')]
         self.ENABLED_COL = 3
         self.READER_APP_COL = 4
         self.TITLE_COL = 5
@@ -273,12 +280,13 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         self.tv.hideColumn(self.annotations_header.index('uuid'))
         self.tv.hideColumn(self.annotations_header.index('book_id'))
         self.tv.hideColumn(self.annotations_header.index('genre'))
-        self.tv.hideColumn(self.annotations_header.index('Confidence'))
+#         self.tv.hideColumn(self.annotations_header.index(_('Confidence')))
+        self.tv.hideColumn(self.CONFIDENCE_COL)
 
         # Set horizontal self.header props
         self.tv.horizontalHeader().setStretchLastSection(True)
 
-        narrow_columns = ['Last Annotation', 'Reader App', 'Annotations']
+        narrow_columns = [_('Last Annotation'), _('Reader App'), _('Annotations')]
         extra_width = 10
         breathing_space = 20
 
@@ -303,7 +311,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
 
         self.tv.setSortingEnabled(True)
         sort_column = self.opts.prefs.get('annotated_books_dialog_sort_column',
-                                          self.annotations_header.index('Confidence'))
+                                          self.CONFIDENCE_COL)
         sort_order = self.opts.prefs.get('annotated_books_dialog_sort_order',
                                          Qt.DescendingOrder)
         self.tv.sortByColumn(sort_column, sort_order)
@@ -312,15 +320,15 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         self.dialogButtonBox = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Help)
         self.dialogButtonBox.setOrientation(Qt.Horizontal)
         self.import_button = self.dialogButtonBox.addButton(self.dialogButtonBox.Ok)
-        self.import_button.setText('Import Annotations')
+        self.import_button.setText(_('Import Annotations'))
 
         # Action buttons
-        self.toggle_checkmarks_button = self.dialogButtonBox.addButton('Clear All', QDialogButtonBox.ActionRole)
+        self.toggle_checkmarks_button = self.dialogButtonBox.addButton(_('Clear All'), QDialogButtonBox.ActionRole)
         self.toggle_checkmarks_button.setObjectName('toggle_checkmarks_button')
 
-        scb_text = 'Show match status'
+        scb_text = _('Show match status')
         if self.show_confidence_colors:
-            scb_text = "Hide match status"
+            scb_text = _("Hide match status")
         self.show_confidence_button = self.dialogButtonBox.addButton(scb_text, QDialogButtonBox.ActionRole)
         self.show_confidence_button.setObjectName('confidence_button')
         if self.show_confidence_colors:
@@ -328,7 +336,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         else:
             self.show_confidence_button.setIcon(get_icon('images/matches_show.png'))
 
-        self.preview_button = self.dialogButtonBox.addButton('Preview', QDialogButtonBox.ActionRole)
+        self.preview_button = self.dialogButtonBox.addButton(_('Preview'), QDialogButtonBox.ActionRole)
         self.preview_button.setObjectName('preview_button')
 
         self.dialogButtonBox.clicked.connect(self.show_annotated_books_dialog_clicked)
@@ -357,14 +365,14 @@ class AnnotatedBooksDialog(SizePersistedDialog):
             if not enabled:
                 continue
 
-            reader_app = str(self.tm.arraydata[i][self.annotations_header.index('Reader App')].text())
+            reader_app = str(self.tm.arraydata[i][self.READER_APP_COL].text())
             if not reader_app in self.selected_books:
                 self.selected_books[reader_app] = []
 
-            author = str(self.tm.arraydata[i][self.annotations_header.index('Author')].text())
+            author = str(self.tm.arraydata[i][self.AUTHOR_COL].text())
             book_id = self.tm.arraydata[i][self.annotations_header.index('book_id')]
             genre = self.tm.arraydata[i][self.annotations_header.index('genre')]
-            title = str(self.tm.arraydata[i][self.annotations_header.index('Title')].text())
+            title = str(self.tm.arraydata[i][self.TITLE_COL].text())
             uuid = self.tm.arraydata[i][self.annotations_header.index('uuid')]
 
             book_mi = BookStruct()
@@ -385,8 +393,8 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         AnnotationsDB:annotations_to_HTML() needs title, book_id, reader_app
         """
         i = self.tvSelectionModel.currentIndex().row()
-        reader_app = str(self.tm.arraydata[i][self.annotations_header.index('Reader App')].text())
-        title = str(self.tm.arraydata[i][self.annotations_header.index('Title')].text())
+        reader_app = str(self.tm.arraydata[i][self.READER_APP_COL].text())
+        title = str(self.tm.arraydata[i][self.TITLE_COL].text())
 
         book_mi = BookStruct()
         book_mi.book_id = self.tm.arraydata[i][self.annotations_header.index('book_id')]
@@ -424,7 +432,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         Display help file
         '''
         hv = HelpView(self, self.opts.icon, self.opts.prefs,
-                      html=get_resources('help/import_annotations.html'), title="Import Annotations")
+                      html=get_resources('help/import_annotations.html'), title=_("Import Annotations"))
         hv.show()
 
     def size_hint(self):
@@ -435,26 +443,26 @@ class AnnotatedBooksDialog(SizePersistedDialog):
 
     def toggle_checkmarks(self):
         button_text = str(self.toggle_checkmarks_button.text())
-        if button_text == 'Clear All':
+        if button_text == _('Clear All'):
             for i in range(len(self.tabledata)):
                 self.tm.arraydata[i][self.ENABLED_COL].setCheckState(False)
-            self.toggle_checkmarks_button.setText(' Set All ')
+            self.toggle_checkmarks_button.setText(_('Set All'))
         else:
             for i in range(len(self.tabledata)):
                 self.tm.arraydata[i][self.ENABLED_COL].setCheckState(True)
-            self.toggle_checkmarks_button.setText('Clear All')
+            self.toggle_checkmarks_button.setText(_('Clear All'))
         self.tm.refresh(self.show_confidence_colors)
 
     def toggle_confidence_colors(self):
         self.show_confidence_colors = not self.show_confidence_colors
         self.opts.prefs.set('annotated_books_dialog_show_confidence_as_bg_color', self.show_confidence_colors)
         if self.show_confidence_colors:
-            self.show_confidence_button.setText("Hide match status")
+            self.show_confidence_button.setText(_("Hide match status"))
             self.show_confidence_button.setIcon(get_icon('images/matches_hide.png'))
-            self.tv.sortByColumn(self.annotations_header.index('Confidence'), Qt.DescendingOrder)
-            self.capture_sort_column(self.annotations_header.index('Confidence'))
+            self.tv.sortByColumn(self.CONFIDENCE_COL, Qt.DescendingOrder)
+            self.capture_sort_column(self.CONFIDENCE_COL)
         else:
-            self.show_confidence_button.setText("Show match status")
+            self.show_confidence_button.setText(_("Show match status"))
             self.show_confidence_button.setIcon(get_icon('images/matches_show.png'))
         self.tv.setAlternatingRowColors(not self.show_confidence_colors)
         self.tm.refresh(self.show_confidence_colors)
@@ -472,7 +480,7 @@ class PreviewDialog(SizePersistedDialog):
         self.setLayout(self.pl)
 
         self.label = QLabel()
-        self.label.setText("<b>%s annotations &middot; %s</b>" % (book_mi.reader_app, book_mi.title))
+        self.label.setText("<b>" + _("{0} annotations &middot; {1})").format(book_mi.reader_app, book_mi.title) + "</b>")
         self.label.setAlignment(Qt.AlignHCenter)
         self.pl.addWidget(self.label)
 

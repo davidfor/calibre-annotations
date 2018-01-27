@@ -1,0 +1,632 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Annotations Plugin\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-09-07 22:22+1000\n"
+"PO-Revision-Date: 2017-10-12 19:04+0200\n"
+"Last-Translator: Terisa de morgan <terisam@gmail.com>\n"
+"Language-Team: \n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.0.4\n"
+
+#: action.py:86
+msgid ""
+"Select a book to receive annotations when annotation metadata cannot be "
+"matched with library metadata."
+msgstr ""
+"Selecciona un libro para recibir las anotaciones cuando los metadatos de la "
+"anotación no se pueden emparejar con metadatos de la biblioteca."
+
+#: action.py:88
+msgid ""
+"To determine which book will receive incoming annotations, annotation "
+"metadata (Title, Author, UUID) is compared to library metadata.\n"
+"\n"
+"Annotations whose metadata completely matches library metadata will be added "
+"automatically to the corresponding book.\n"
+"\n"
+"For partial metadata matches, you will be prompted to confirm the book "
+"receiving the annotations.\n"
+"\n"
+"If no metadata matches, you will be prompted to confirm the currently "
+"selected book to receive the annotations.\n"
+msgstr ""
+"Para determinar qué libro recibirá las anotaciones que se reciban, los "
+"metadatos de las anotaciones (Título, Autor, UUID) se comparan con los "
+"metadatos de la biblioteca.\n"
+"\n"
+"Las anotaciones cuyos metadatos coincidan completamente con los metadatos de "
+"la biblioteca se añadirán automáticamente al libro correspondiente.\n"
+"\n"
+"En el caso de coincidencia parcial de metadatos, se te pedirá que confirmes "
+"el libro que recibirá las anotaciones.\n"
+"\n"
+"Si no coincide ningún metadato, se te pedirá que confirmes al libro actual "
+"como receptor de las anotaciones.\n"
+
+#: action.py:95
+msgid "Import annotations from eBook reader"
+msgstr "Importa anotaciones del lector"
+
+#: action.py:177
+msgid "TITLE MISMATCH:"
+msgstr "DISCREPANCIA DE TÍTULO:"
+
+#: action.py:178 action.py:185 action.py:192
+msgid " library:"
+msgstr " biblioteca:"
+
+#: action.py:179 action.py:186 action.py:193
+msgid " imported:"
+msgstr " importado:"
+
+#: action.py:184
+msgid "AUTHOR MISMATCH:"
+msgstr "DISCREPANCIA DE AUTOR:"
+
+#: action.py:191
+msgid "UUID MISMATCH:"
+msgstr "DISCREPANCIA DE UUID:"
+
+#: action.py:198
+msgid "confidence:"
+msgstr "confianza:"
+
+#: action.py:214
+msgid "Metadata matches"
+msgstr "Coincidencia de metadatos"
+
+#: action.py:273 action.py:347
+msgid "Unable to import annotations"
+msgstr "Imposible importar annotaciones"
+
+#: action.py:290 action.py:979
+msgid "Adding annotations to calibre"
+msgstr "Añadiendo anotaciones a calibre"
+
+#: action.py:304 action.py:533
+msgid "Error fetching annotations"
+msgstr "Error recuperando anotaciones"
+
+#: action.py:305 action.py:534
+#, python-brace-format
+msgid "Unable to fetch annotations from {0}."
+msgstr "Incapaz de recuperar las anotaciones de {0}."
+
+#: action.py:314
+msgid "No annotated books found on device"
+msgstr "No se han encontrado libros anotados en el dispositivo"
+
+#: action.py:315
+#, python-brace-format
+msgid "Unable to find any annotations on {0} matching books in your library."
+msgstr ""
+"Imposible encontrar ninguna anotación en {0} que encaje con libros en tu "
+"biblioteca."
+
+#: action.py:341
+msgid ""
+"Unable to import annotations as the annotations column has not been "
+"configured..."
+msgstr ""
+"Imposible importar anotaciones ya que la columna de anotaciones no se ha "
+"configurado..."
+
+#: action.py:345
+msgid "Unable to import annotations as the annotations column does not exist."
+msgstr ""
+"Imposible importar anotaciones ya que la columna de anotaciones no existe."
+
+#: action.py:357
+msgid "Fetch annotations from USB device"
+msgstr "Recuperar anotaciones de dispositivo USB"
+
+#: action.py:542
+msgid "Fetching annotations from device"
+msgstr "Recuperando anotaciones del dispositivo"
+
+#: action.py:564
+msgid "Compiling annotations for a book"
+msgstr "Compilando anotaciones para un libro"
+
+#: action.py:704
+msgid "My News Clippings"
+msgstr "Mis Recortes de Noticias"
+
+#: action.py:870
+msgid "Remove annotations?"
+msgstr "¿Borrar anotaciones?"
+
+#: action.py:871
+#, python-brace-format
+msgid "All existing annotations will be removed from {0}."
+msgstr "Se borrarán todas las anotaciones existentes de {0}."
+
+#: action.py:872
+msgid "Proceed?"
+msgstr "¿Seguir?"
+
+#: action.py:881
+msgid "Removing annotations"
+msgstr "Borrando anotaciones"
+
+#: action.py:885 action.py:890
+#, python-brace-format
+msgid "Scanning {0} of {1}"
+msgstr "Escaneando {0} de {1}"
+
+#: action.py:987
+msgid "Error importing annotations"
+msgstr "Error importando anotaciones"
+
+#: action.py:988
+#, python-brace-format
+msgid "Unable to import annotations from {0}"
+msgstr "Imposible importar anotaciones de {0}"
+
+#: action.py:1029
+msgid "Import annotations • Mismatched metadata"
+msgstr "Importar anotaciones • Metadatos disparejos"
+
+#: action.py:1072
+#, python-brace-format
+msgid "Add {1} annotations from '{0}' to '{2}' by {3}?"
+msgstr "¿Añadir {1} anotaciones de '{0}' a '{2}' por {3}?"
+
+#: action.py:1119
+msgid "About"
+msgstr "Acerca de"
+
+#: action.py:1132
+msgid "Fetch annotations from…"
+msgstr "Recuperar anotaciones de…"
+
+#: action.py:1133
+msgid "Fetch annotations from iOS reader apps"
+msgstr "Recuperar anotaciones de aplicaciones de lectura de iOS"
+
+#: action.py:1160
+#, python-brace-format
+msgid "Fetch annotations from {0}"
+msgstr "Recuperar anotaciones de {0}"
+
+#: action.py:1168
+msgid "Import annotations from…"
+msgstr "Importar anotaciones de…"
+
+#: action.py:1169
+msgid "Import annotations from iOS reader apps"
+msgstr "Importar anotaciones de aplicaciones de lectura de iOS"
+
+#: action.py:1186
+msgid "Find annotations"
+msgstr "Encontrar anotaciones"
+
+#: action.py:1191
+msgid "Customize plugin"
+msgstr "Configurar plugin"
+
+#: action.py:1195
+msgid "Help"
+msgstr "Ayuda"
+
+#: action.py:1203
+msgid "Developer"
+msgstr "Desarrollador"
+
+#: action.py:1209
+msgid " from 1 book "
+msgstr " de 1 libro "
+
+#: action.py:1211
+#, python-brace-format
+msgid " from {0} books "
+msgstr " de {0} libros "
+
+#: action.py:1212 annotated_books.py:254 annotated_books.py:289
+msgid "Annotations"
+msgstr "Anotaciones"
+
+#: action.py:1212
+msgid "added to"
+msgstr "añadido a"
+
+#: action.py:1226
+msgid ""
+"To learn more about this plugin, visit the <a href=\"http://www.mobileread."
+"com/forums/showthread.php?p=2853161\">Annotations plugin thread</a> at "
+"MobileRead’s Calibre forum."
+msgstr ""
+"Para saber más de este plugin, visita el <a href=\"http://www.mobileread.com/"
+"forums/showthread.php?p=2853161\">hilo Annotations plugin</a> en el for de "
+"Calibre en MobileRead."
+
+#: action.py:1249
+msgid "Supported iOS reader apps"
+msgstr "Aplicaciones de lectura de iOS soportadas"
+
+#: action.py:1251
+#, python-brace-format
+msgid "The {0} plugin supports fetching from {1} and {2}."
+msgstr "El plugin {0} soporta recuperar de {1} y {2}."
+
+#: action.py:1257
+#, python-brace-format
+msgid "The {0} plugin supports fetching from {1}."
+msgstr "El plugin {0} soporta recuperar de {1}."
+
+#: annotated_books.py:187 annotated_books.py:323 annotated_books.py:435
+msgid "Import Annotations"
+msgstr "Importar Anotaciones"
+
+#: annotated_books.py:253 annotated_books.py:289
+msgid "Reader App"
+msgstr "Aplicación de lectura"
+
+#: annotated_books.py:253
+msgid "Title"
+msgstr "Título"
+
+#: annotated_books.py:254
+msgid "Author"
+msgstr "Autor"
+
+#: annotated_books.py:254 annotated_books.py:289
+msgid "Last Annotation"
+msgstr "Última Anotación"
+
+#: annotated_books.py:254
+msgid "Confidence"
+msgstr "Confianza"
+
+#: annotated_books.py:326 annotated_books.py:446 annotated_books.py:453
+msgid "Clear All"
+msgstr "Limpiar todo"
+
+#: annotated_books.py:329 annotated_books.py:465
+msgid "Show match status"
+msgstr "Mostrar estatus de coincidencias"
+
+#: annotated_books.py:331 annotated_books.py:460
+msgid "Hide match status"
+msgstr "Ocultar estatus de coincidencia"
+
+#: annotated_books.py:339 appearance.py:364 appearance.py:475
+msgid "Preview"
+msgstr "Previsualizar"
+
+#: annotated_books.py:449
+msgid "Set All"
+msgstr "Establecer todo"
+
+#: annotated_books.py:483
+#, python-brace-format
+msgid "{0} annotations &middot; {1})"
+msgstr "{0} anotaiones &middot; {1})"
+
+#: appearance.py:77
+msgid "Timestamp"
+msgstr "Hora"
+
+#: appearance.py:78 find_annotations.py:143
+msgid "Text"
+msgstr "Texto"
+
+#: appearance.py:79 find_annotations.py:158
+msgid "Note"
+msgstr "Nota"
+
+#: appearance.py:153
+msgid "Element"
+msgstr "Elemento"
+
+#: appearance.py:154
+msgid "CSS"
+msgstr "CSS"
+
+#: appearance.py:160 appearance.py:177
+msgid "This is a note appended to the highlight."
+msgstr "Esta es una nota añadida al subrayado."
+
+#: appearance.py:161 appearance.py:178
+msgid "And additional comments after a linebreak."
+msgstr "Y comentarios adicionales después de un salto de línea."
+
+#: appearance.py:216
+msgid "Move element up"
+msgstr "Mueve el elemento hacia arriba"
+
+#: appearance.py:223
+msgid "Restore CSS to last saved"
+msgstr "Revierte el CSS al último salvado"
+
+#: appearance.py:230
+msgid "Reset CSS to default"
+msgstr "Revierte el CSS al valor por defecto"
+
+#: appearance.py:237
+msgid "Move element down"
+msgstr "Mover elemento hacia abajo"
+
+#: appearance.py:464
+msgid "Modify appearance"
+msgstr "Modificar apariencia"
+
+#: appearance.py:489
+msgid "Annotation elements"
+msgstr "Elmentos de anotación"
+
+#: appearance.py:500
+msgid "Options"
+msgstr "Opciones"
+
+#: appearance.py:507
+msgid "Add horizontal rule between annotations"
+msgstr "Añade una línea horizontal entre anotacione"
+
+#: appearance.py:515
+msgid "Timestamp format:"
+msgstr "Formato de la hora:"
+
+#: appearance.py:524
+msgid "Format string for timestamp"
+msgstr "Cadena de formato para la hora"
+
+#: appearance.py:530
+msgid "Reset to default"
+msgstr "Volver al valor por defecto"
+
+#: appearance.py:536
+msgid "Format string reference"
+msgstr "Referencia de la cadena de formato"
+
+#: appearance.py:573
+msgid "Timestamp formats"
+msgstr "Formatos de hora"
+
+#: common_utils.py:304
+msgid "Import"
+msgstr "Importar"
+
+#: common_utils.py:375
+msgid "&Copy to clipboard"
+msgstr "&Copiar al portapapeles"
+
+#: common_utils.py:379
+msgid "Show &details"
+msgstr "Mostrar &detalles"
+
+#: common_utils.py:380
+msgid "Hide &details"
+msgstr "Ocultar &detalles"
+
+#: common_utils.py:383
+msgid "Show detailed information"
+msgstr "Mostrar información detallada"
+
+#: common_utils.py:424
+msgid "Copied"
+msgstr "Copiado"
+
+#: common_utils.py:486
+msgid "Progress Bar"
+msgstr "Barra de progreso"
+
+#: common_utils.py:487
+msgid "Label goes here"
+msgstr "La etiqueta va aquí"
+
+#: common_utils.py:861
+msgid "Select a book to receive annotations"
+msgstr "Selecciona un libro para recibir las anotaciones"
+
+#: common_utils.py:909
+msgid "Moving annotations"
+msgstr "Moviendo anotaciones"
+
+#: common_utils.py:1037
+#, python-brace-format
+msgid "Updating annotations for {0} books"
+msgstr "Actualizando anotaciones para {0} libros"
+
+#: common_utils.py:1115
+msgid "book"
+msgstr "libro"
+
+#: common_utils.py:1117
+msgid "books"
+msgstr "libros"
+
+#: common_utils.py:1119
+#, python-brace-format
+msgid "Annotations updated to new appearance settings for {0} {1}.</p>"
+msgstr ""
+"Anotaciones actualizada de acuerdo con la nueva configuración de "
+"presentación para {0} {1}.</p>"
+
+#: common_utils.py:1121
+#, python-brace-format
+msgid "Annotations for {0} {1} moved from <b>{2}</b> to <b>{3}</b>."
+msgstr "Anotaciones para {0} {1} movidas de  <b>{2}</b> a <b>{3}</b>."
+
+#: config.py:83
+msgid "Runtime options"
+msgstr "Opciones de ejecución"
+
+#: config.py:88
+msgid "Disable caching"
+msgstr "Desactivar caché"
+
+#: config.py:90
+msgid "Force reload of reader database"
+msgstr "Forzar recarga de la base de datos del lector"
+
+#: config.py:95
+msgid "Enable debug logging for Annotations plugin"
+msgstr "Activar las trazas de depuración para el plugin Annotations"
+
+#: config.py:97
+msgid "Print plugin diagnostic messages to console"
+msgstr "Imprimir los mensajes de diagnóstico del plugin a la consola"
+
+#: config.py:102
+msgid "Enable debug logging for libiMobileDevice"
+msgstr "Activar las trazas de depuración para libiMovileDevice"
+
+#: config.py:104
+msgid "Print libiMobileDevice debug messages to console"
+msgstr "Imprimir los mensajes de depuración de libiMovileDevice a la consola"
+
+#: config.py:111
+msgid "Annotation options"
+msgstr "Opciones de anotación"
+
+#: config.py:118
+msgid "<b>Add fetched annotations to<b>"
+msgstr "<b>Añadir anotaciones recuperadas a<b>"
+
+#: config.py:125
+msgid "Custom field to store annotations"
+msgstr "Campo personalizado para almacenar las anotaciones"
+
+#: config.py:145
+msgid "Create a custom column to store annotations"
+msgstr "Crea una columna personalizada para almacenar las anotaciones"
+
+#: config.py:160
+msgid "Modify appearance…"
+msgstr "Modificar apariencia…"
+
+#: config.py:170
+msgid "Compilations"
+msgstr "Compilaciones"
+
+#: config.py:176
+msgid "Collect News clippings"
+msgstr "Recoge Recortes de Noticias"
+
+#: config.py:183
+msgid "Title for collected news clippings"
+msgstr "Título para los recortes de noticias extraídos"
+
+#: config.py:342
+msgid "Update annotations?"
+msgstr "¿Actualizo anotaciones?"
+
+#: config.py:343
+msgid "<p>Update existing annotations to new appearance settings?</p>"
+msgstr ""
+"<p>¿Actualizar las anotaciones existentes a la nueva configuración de "
+"presentación?</p>"
+
+#: config.py:353
+msgid "Updating appearance"
+msgstr "Actualizando presentación"
+
+#: config.py:453
+msgid "Invalid title for News clippings"
+msgstr "Título inválido para los recortes de Noticias"
+
+#: config.py:454
+msgid ""
+"Supply a valid title for News clippings, for example 'My News Clippings'."
+msgstr ""
+"Incluye un título válido para los recortes de Noticias, por ejemplo 'My News "
+"Clippings'."
+
+#: config.py:480
+msgid "Restart required"
+msgstr "Se requiere reinicio"
+
+#: config.py:481
+msgid "To apply changes, restart calibre."
+msgstr "Para aplicar los cambios reinicia calibre."
+
+#: find_annotations.py:97
+msgid "Find Annotations"
+msgstr "Encontrar anotaciones"
+
+#: find_annotations.py:103
+msgid "Search criteria"
+msgstr "Criterio de búsqueda"
+
+#: find_annotations.py:110
+msgid "Reader"
+msgstr "Lector"
+
+#: find_annotations.py:116
+msgid "Reader annotations to search for"
+msgstr "Anotaciones en el lector que buscar"
+
+#: find_annotations.py:126
+msgid "Style"
+msgstr "Estilo"
+
+#: find_annotations.py:132
+msgid "Annotation style to search for"
+msgstr "Estilo de anotación que buscar"
+
+#: find_annotations.py:151 find_annotations.py:166
+msgid "Clear search criteria"
+msgstr "Borrar criterios de búsqueda"
+
+#: find_annotations.py:173
+msgid "Date range"
+msgstr "Rango de fechas"
+
+#: find_annotations.py:203
+msgid "scanning…"
+msgstr "escaneando…"
+
+#: find_annotations.py:220
+msgid "Update results"
+msgstr "Actualizar resultados"
+
+#: find_annotations.py:227
+msgid "Find Matching Books"
+msgstr "Encontrar Libros Coincidentes"
+
+#: find_annotations.py:452
+#, python-brace-format
+msgid " and {0} more."
+msgstr " y {0} más."
+
+#: find_annotations.py:455
+msgid "no matches"
+msgstr "sin coincidencia"
+
+#: find_annotations.py:457
+msgid "no annotated books in library"
+msgstr "no hay libros anotados en la biblioteca"
+
+#: dialogs/cc_wizard.py:40
+#, python-brace-format
+msgid "Name your '{0}' column:"
+msgstr "Nombra tu columna '{0}':"
+
+#: dialogs/cc_wizard.py:139
+msgid "Already in use"
+msgstr "Ya en uso"
+
+#: dialogs/cc_wizard.py:140
+#, python-brace-format
+msgid "<p>'{0}' is an existing custom column.</p><p>Pick a different name.</p>"
+msgstr ""
+"<p>'{0}' es una columna personalizada que ya existe.</p><p>Elige un nombre "
+"diferente.</p>"
+
+#: dialogs/cc_wizard.py:186
+msgid "Add custom column"
+msgstr "Añadir columna personalizada"
+
+#: dialogs/cc_wizard.py:189
+msgid "Rename custom column"
+msgstr "Renombrar columna personalizada"

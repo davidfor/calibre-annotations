@@ -8,7 +8,7 @@ from __future__ import (unicode_literals, division, absolute_import,
 # calibre-debug -e __init__.py
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 from datetime import datetime
@@ -42,6 +42,13 @@ from calibre_plugins.annotations.common_utils import (Logger, Struct,
     existing_annotations, get_cc_mapping, get_icon, inventory_controls,
     move_annotations, restore_state, save_state, set_cc_mapping)
 
+try:
+    debug_print("Annotations::config.py - loading translations")
+    load_translations()
+except NameError:
+    debug_print("Annotations::config.py - exception when loading translations")
+    pass # load_translations() added in calibre 1.9
+
 plugin_prefs = JSONConfig('plugins/annotations')
 
 dialog_resources_path = os.path.join(config_dir, 'plugins', 'annotations_resources', 'dialogs')
@@ -73,49 +80,49 @@ class ConfigWidget(QWidget, Logger):
 
         # ~~~~~~~~ Create the runtime options group box ~~~~~~~~
         self.cfg_runtime_options_gb = QGroupBox(self)
-        self.cfg_runtime_options_gb.setTitle('Runtime options')
+        self.cfg_runtime_options_gb.setTitle(_('Runtime options'))
         self.l.addWidget(self.cfg_runtime_options_gb)
         self.cfg_runtime_options_qvl = QVBoxLayout(self.cfg_runtime_options_gb)
 
         # ~~~~~~~~ Disable caching checkbox ~~~~~~~~
-        self.cfg_disable_caching_checkbox = QCheckBox('Disable caching')
+        self.cfg_disable_caching_checkbox = QCheckBox(_('Disable caching'))
         self.cfg_disable_caching_checkbox.setObjectName('cfg_disable_caching_checkbox')
-        self.cfg_disable_caching_checkbox.setToolTip('Force reload of reader database')
+        self.cfg_disable_caching_checkbox.setToolTip(_('Force reload of reader database'))
         self.cfg_disable_caching_checkbox.setChecked(False)
         self.cfg_runtime_options_qvl.addWidget(self.cfg_disable_caching_checkbox)
 
         # ~~~~~~~~ plugin logging checkbox ~~~~~~~~
-        self.cfg_plugin_debug_log_checkbox = QCheckBox('Enable debug logging for Annotations plugin')
+        self.cfg_plugin_debug_log_checkbox = QCheckBox(_('Enable debug logging for Annotations plugin'))
         self.cfg_plugin_debug_log_checkbox.setObjectName('cfg_plugin_debug_log_checkbox')
-        self.cfg_plugin_debug_log_checkbox.setToolTip('Print plugin diagnostic messages to console')
+        self.cfg_plugin_debug_log_checkbox.setToolTip(_('Print plugin diagnostic messages to console'))
         self.cfg_plugin_debug_log_checkbox.setChecked(False)
         self.cfg_runtime_options_qvl.addWidget(self.cfg_plugin_debug_log_checkbox)
 
         # ~~~~~~~~ libiMobileDevice logging checkbox ~~~~~~~~
-        self.cfg_libimobiledevice_debug_log_checkbox = QCheckBox('Enable debug logging for libiMobileDevice')
+        self.cfg_libimobiledevice_debug_log_checkbox = QCheckBox(_('Enable debug logging for libiMobileDevice'))
         self.cfg_libimobiledevice_debug_log_checkbox.setObjectName('cfg_libimobiledevice_debug_log_checkbox')
-        self.cfg_libimobiledevice_debug_log_checkbox.setToolTip('Print libiMobileDevice debug messages to console')
+        self.cfg_libimobiledevice_debug_log_checkbox.setToolTip(_('Print libiMobileDevice debug messages to console'))
         self.cfg_libimobiledevice_debug_log_checkbox.setChecked(False)
         self.cfg_libimobiledevice_debug_log_checkbox.setEnabled(LIBIMOBILEDEVICE_AVAILABLE)
         self.cfg_runtime_options_qvl.addWidget(self.cfg_libimobiledevice_debug_log_checkbox)
 
         # ~~~~~~~~ Create the Annotations options group box ~~~~~~~~
         self.cfg_annotation_options_gb = QGroupBox(self)
-        self.cfg_annotation_options_gb.setTitle('Annotation options')
+        self.cfg_annotation_options_gb.setTitle(_('Annotation options'))
         self.l.addWidget(self.cfg_annotation_options_gb)
 
         self.cfg_annotation_options_qgl = QGridLayout(self.cfg_annotation_options_gb)
         current_row = 0
 
         # Add the label/combobox for annotations destination
-        self.cfg_annotations_destination_label = QLabel('<b>Add fetched annotations to<b>')
+        self.cfg_annotations_destination_label = QLabel(_('<b>Add fetched annotations to<b>'))
         self.cfg_annotations_destination_label.setAlignment(Qt.AlignLeft)
         self.cfg_annotation_options_qgl.addWidget(self.cfg_annotations_destination_label, current_row, 0)
         current_row += 1
 
         self.cfg_annotations_destination_comboBox = QComboBox(self.cfg_annotation_options_gb)
         self.cfg_annotations_destination_comboBox.setObjectName('cfg_annotations_destination_comboBox')
-        self.cfg_annotations_destination_comboBox.setToolTip('custom field to store annotations')
+        self.cfg_annotations_destination_comboBox.setToolTip(_('Custom field to store annotations'))
         self.cfg_annotation_options_qgl.addWidget(self.cfg_annotations_destination_comboBox, current_row, 0)
 
         # Populate annotations_field combobox
@@ -135,7 +142,7 @@ class ConfigWidget(QWidget, Logger):
         # Add CC Wizard
         self.cfg_annotations_wizard = QToolButton()
         self.cfg_annotations_wizard.setIcon(QIcon(I('wizard.png')))
-        self.cfg_annotations_wizard.setToolTip("Create a custom column to store annotations")
+        self.cfg_annotations_wizard.setToolTip(_("Create a custom column to store annotations"))
         self.cfg_annotations_wizard.clicked.connect(partial(self.launch_cc_wizard, 'Annotations'))
         self.cfg_annotation_options_qgl.addWidget(self.cfg_annotations_wizard, current_row, 2)
 
@@ -150,7 +157,7 @@ class ConfigWidget(QWidget, Logger):
         current_row += 1
 
         # ~~~~~~~~ Add the Modify… button ~~~~~~~~
-        self.cfg_annotations_appearance_pushbutton = QPushButton("Modify appearance…")
+        self.cfg_annotations_appearance_pushbutton = QPushButton(_("Modify appearance…"))
         self.cfg_annotations_appearance_pushbutton.clicked.connect(self.configure_appearance)
         self.cfg_annotation_options_qgl.addWidget(self.cfg_annotations_appearance_pushbutton, current_row, 0)
         current_row += 1
@@ -160,20 +167,20 @@ class ConfigWidget(QWidget, Logger):
 
         # ~~~~~~~~ Compilations group box ~~~~~~~~
         self.cfg_compilation_options_gb = QGroupBox(self)
-        self.cfg_compilation_options_gb.setTitle('Compilations')
+        self.cfg_compilation_options_gb.setTitle(_('Compilations'))
         self.l.addWidget(self.cfg_compilation_options_gb)
         self.cfg_compilation_options_qgl = QGridLayout(self.cfg_compilation_options_gb)
         current_row = 0
 
         #   News clippings
-        self.cfg_news_clippings_checkbox = QCheckBox('Collect News clippings')
+        self.cfg_news_clippings_checkbox = QCheckBox(_('Collect News clippings'))
         self.cfg_news_clippings_checkbox.setObjectName('cfg_news_clippings_checkbox')
         self.cfg_compilation_options_qgl.addWidget(self.cfg_news_clippings_checkbox,
             current_row, 0)
 
         self.cfg_news_clippings_lineEdit = QLineEdit()
         self.cfg_news_clippings_lineEdit.setObjectName('cfg_news_clippings_lineEdit')
-        self.cfg_news_clippings_lineEdit.setToolTip('Title for collected news clippings')
+        self.cfg_news_clippings_lineEdit.setToolTip(_('Title for collected news clippings'))
         self.cfg_compilation_options_qgl.addWidget(self.cfg_news_clippings_lineEdit,
             current_row, 1)
 
@@ -332,8 +339,8 @@ class ConfigWidget(QWidget, Logger):
         # If there were changes, and there are existing annotations, offer to re-render
         field = get_cc_mapping('annotations', 'field', None)
         if osh.digest() != nsh.digest() and existing_annotations(self.opts.parent,field):
-            title = 'Update annotations?'
-            msg = '<p>Update existing annotations to new appearance settings?</p>'
+            title = _('Update annotations?')
+            msg = _('<p>Update existing annotations to new appearance settings?</p>')
             d = MessageBox(MessageBox.QUESTION,
                            title, msg,
                            show_copy_button=False)
@@ -343,7 +350,7 @@ class ConfigWidget(QWidget, Logger):
                 if self.annotated_books_scanner.isRunning():
                     self.annotated_books_scanner.wait()
                 move_annotations(self, self.annotated_books_scanner.annotation_map,
-                    field, field, window_title="Updating appearance")
+                    field, field, window_title=_("Updating appearance"))
 
     def inventory_complete(self, msg):
         self._log_location(msg)
@@ -443,8 +450,8 @@ class ConfigWidget(QWidget, Logger):
         qs_new_destination_name = self.cfg_news_clippings_lineEdit.text()
         if not re.match(r'^\S+[A-Za-z0-9 ]+$', qs_new_destination_name):
             # Complain about News clippings title
-            title = 'Invalid title for News clippings'
-            msg = "Supply a valid title for News clippings, for example 'My News Clippings'."
+            title = _('Invalid title for News clippings')
+            msg = _("Supply a valid title for News clippings, for example 'My News Clippings'.")
             d = MessageBox(MessageBox.WARNING,
                            title, msg,
                            show_copy_button=False)
@@ -470,8 +477,8 @@ class ConfigWidget(QWidget, Logger):
         self.cfg_annotations_destination_comboBox.setCurrentIndex(ci)
 
     def restart_required(self, state):
-        title = 'Restart required'
-        msg = 'To apply changes, restart calibre.'
+        title = _('Restart required')
+        msg = _('To apply changes, restart calibre.')
         d = MessageBox(MessageBox.WARNING,
                        title, msg,
                        show_copy_button=False)

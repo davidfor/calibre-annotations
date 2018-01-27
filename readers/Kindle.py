@@ -17,6 +17,9 @@ from calibre.utils.date import parse_date
 from calibre_plugins.annotations.reader_app_support import USBReader
 from calibre_plugins.annotations.common_utils import (AnnotationStruct, BookStruct)
 
+KINDLE_FORMATS = [u'azw', u'azw1', u'azw3', 'kfx', u'mobi']
+KINDLE_TEMPLATES = ['*.azw', '*.azw3', '*.kfx', '*.mobi', '*.pobi']
+MY_CLIPPINGS_FILENAMES = ['My Clippings.txt', 'Meine Clippings.txt']
 
 class KindleReaderApp(USBReader):
     """
@@ -165,8 +168,14 @@ class KindleReaderApp(USBReader):
 
         #  Add installed books to the database
         for book_id in resolved_path_map:
-            mi = self._get_metadata(resolved_path_map[book_id])
-            self._log('Book on device title: %s' % (mi.title))
+            try:
+                mi = self._get_metadata(resolved_path_map[book_id])
+            except Exception as e:
+                self._log("Unable to get metadata from book. path='%s'" % (resolved_path_map[book_id]))
+                self._log(" Exception thrown was=%s" % (str(e)))
+                continue
+
+            self._log("Book on device title: '%s'" % (mi.title))
             if 'News' in mi.tags:
                 if not self.collect_news_clippings:
                     continue
@@ -193,7 +202,7 @@ class KindleReaderApp(USBReader):
 
             book_mi.book_id = book_id
             book_mi.reader_app = self.app_name
-            book_mi.title = mi.title
+            book_mi.title = mi.title.strip()
 
             # Optional items
             if mi.tags:
@@ -216,7 +225,7 @@ class KindleReaderApp(USBReader):
             self.add_to_books_db(self.books_db, book_mi)
 
             # Add book to indexed_books
-            self.installed_books_by_title[mi.title] = {'book_id': book_id, 'author_sort': mi.author_sort}
+            self.installed_books_by_title[mi.title.strip()] = {'book_id': book_id, 'author_sort': mi.author_sort}
 
             # Increment the progress bar
             self.opts.pb.increment()
@@ -230,24 +239,28 @@ class KindleReaderApp(USBReader):
 
     # Helpers
     def _get_installed_books(self, path_map):
-        KINDLE_FORMATS = [u'azw', u'azw1', u'azw3', u'mobi']
         kindle_formats = set(KINDLE_FORMATS)
 
         def resolve_paths(storage, path_map):
             resolved_path_map = {}
             for id in path_map:
+                self._log("resolve_paths. id=%s, path=%s" % (id, path_map[id]['path']))
                 # Generate a set of this book's formats in calibre
                 file_fmts = set()
                 for fmt in path_map[id]['fmts']:
+                    self._log("resolve_paths. fmt=%s" % (fmt))
                     file_fmts.add(fmt)
 
                 for vol in storage:
                     book_path = path_map[id]['path'].replace(os.path.abspath('/<storage>'), vol)
+                    self._log("resolve_paths. looking for book on device: book_path=%s" % (book_path))
                     book_extensions = file_fmts.intersection(kindle_formats)
                     found = False
                     for extension in book_extensions:
                         this_fmt = book_path.replace('bookmark', extension)
+                        self._log("resolve_paths. looking for book on device: this_fmt=%s" % (this_fmt))
                         if os.path.exists(this_fmt):
+                            self._log("resolve_paths. found format: this_fmt=%s" % (this_fmt))
                             resolved_path_map[id] = this_fmt
                             found = True
                             break
@@ -259,17 +272,16 @@ class KindleReaderApp(USBReader):
         return resolve_paths(storage, path_map)
 
     def _get_metadata(self, path):
-        from calibre.ebooks.metadata.mobi import get_metadata
-        with open(path, 'rb') as f:
-            mi = get_metadata(f)
+        mi = self.device.metadata_from_path(path)
         return mi
 
     def _get_my_clippings(self):
         storage = self.get_storage()
         for vol in storage:
-            mc_path = os.path.join(vol, 'My Clippings.txt')
-            if os.path.exists(mc_path):
-                return mc_path
+            for filename in MY_CLIPPINGS_FILENAMES:
+                mc_path = os.path.join(vol, filename)
+                if os.path.exists(mc_path):
+                    return mc_path
         return None
 
     def _get_imported_books(self, resolved_path_map):
@@ -282,11 +294,18 @@ class KindleReaderApp(USBReader):
         unrecognized_index = -1
         storage = self.get_storage()
         for vol in storage:
-            templates = ['*.azw', '*.mobi', '*.pobi']
+            templates = KINDLE_TEMPLATES
             for template in templates:
+                self._log("    Searching for books on vol=%s using template=%s" % (vol,template))
                 imported_books = glob.iglob(os.path.join(vol, template))
                 for path in imported_books:
-                    book_mi = self._get_metadata(path)
+                    self._log("    Have possible book with path=%s" % (path))
+                    try:
+                        book_mi = self._get_metadata(path)
+                    except Exception as e:
+                        self._log("    Unable to get metadata from book. path=%s" % (path))
+                        self._log("    Exception thrown was=%s" % (str(e)))
+                        continue
 
                     if 'News' in book_mi.tags:
                         if self.collect_news_clippings:
@@ -309,23 +328,24 @@ class KindleReaderApp(USBReader):
             self._log('ParseKindleMyClippingsTxt '+level+': '+msg)
         ParseKindleMyClippingsTxt.log = log
         annos = ParseKindleMyClippingsTxt.FromFileName(self._get_my_clippings())
-        self._log(" Number of entries retreived from 'My Clippings.txt'=%d" % (len(annos)))
+        self._log(" Number of entries retrieved from 'My Clippings.txt'=%d" % (len(annos)))
         for anno in annos:
             title = anno.title.decode('utf-8')
-            self._log("  title==%s" % (title))
+            self._log("  Annotation for Title=='%s'" % (title))
             # If title/author_sort match book in library,
             # consider this an active annotation
             book_id = None
+            title = title.strip()
             if title in self.installed_books_by_title.keys():
                 book_id = self.installed_books_by_title[title]['book_id']
-                self._log("   Found book_id=%d" % (book_id))
+                self._log("    Found book_id=%d" % (book_id))
             if not book_id:
-                self._log("  Title not found in books on device")
+                self._log("    Title not found in books on device")
                 continue
             if anno.time:
                 timestamp = mktime(anno.time.timetuple())
             else:
-                self._log(" Unable to parse entries from 'My Clippings.txt'")
+                self._log("    Unable to parse entries from 'My Clippings.txt'")
                 timestamp = mktime(localtime())
             while timestamp in self.active_annotations:
                 timestamp += 1
@@ -341,7 +361,7 @@ class KindleReaderApp(USBReader):
             elif anno.kind == 'note':
                 self.active_annotations[timestamp]['note_text'] = anno.text.decode('utf-8').split(u'\n')
             else:
-                self._log("  Clipping is not a highlight or note")
+                self._log("    Clipping is not a highlight or note")
 
     def _parse_my_clippings_original(self):
         '''
@@ -463,3 +483,20 @@ class KindleReaderApp(USBReader):
                     import traceback
                     traceback.print_exc()
                     return
+                
+class KindleXRayReaderApp(KindleReaderApp):
+    """
+    Fetching annotations takes place in two stages:
+    1) get_installed_books():
+        add the installed books' metadata to the database
+    2) get_active_annotations():
+        add the annotations for installed books to the database
+    """
+    # The app name should be the first word from the
+    # device's name property, e.g., 'Kindle' or 'SONY'. Drivers are located in
+    # calibre.devices.<device>
+    # For example, the name declared in the Kindle class
+    # is 'Kindle 2/3/4/Touch/PaperWhite Device Interface',
+    # so app_name would be the first word, 'Kindle'
+    app_name = 'KindleXRay'
+
