@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2018 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import cStringIO, re, os, shutil, sys, tempfile, time, urlparse, zipfile
@@ -1117,7 +1117,7 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
     else:
         book_word = _('books')
     if old_destination_field == new_destination_field:
-        msg = _("Annotations updated to new appearance settings for {0} {1}.</p>").formt(len(annotation_map), book_word)
+        msg = _("Annotations updated to new appearance settings for {0} {1}.</p>").format(len(annotation_map), book_word)
     else:
         msg = _("Annotations for {0} {1} moved from <b>{2}</b> to <b>{3}</b>.").format(
                 len(annotation_map), book_word, old_destination_field, new_destination_field)

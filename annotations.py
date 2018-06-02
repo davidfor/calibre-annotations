@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2018 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import hashlib, re
@@ -205,7 +205,7 @@ class Annotations(Annotation, Logger):
                             'ts_style': datetime_style.format(dt_bgcolor, dt_fgcolor),
                             'unix_timestamp': agroup.timestamp,
                             }
-                divTag.insert(0, comments_body.format(**content_args))
+                divTag.insert(0, BeautifulSoup(comments_body.format(**content_args)))
                 divTag['class'] = "annotation"
                 divTag['genre'] = ''
                 if agroup.genre:
@@ -218,7 +218,7 @@ class Annotations(Annotation, Logger):
                 dtc += 1
                 if i < len(self.annotations) - 1 and \
                     plugin_prefs.get('appearance_hr_checkbox', False):
-                    soup.div.insert(dtc, plugin_prefs.get('HORIZONTAL_RULE', '<hr width="80%" />'))
+                    soup.div.insert(dtc, BeautifulSoup(plugin_prefs.get('HORIZONTAL_RULE', '<hr width="80%" />')))
                     dtc += 1
 
         else:
@@ -397,7 +397,7 @@ def sort_merged_annotations(merged_soup):
         sorted_soup.div.insert(dtc, next_div)
         dtc += 1
         if include_hr and i < len(locs) - 1:
-            sorted_soup.div.insert(dtc, plugin_prefs.get('HORIZONTAL_RULE', '<hr width="80%" />'))
+            sorted_soup.div.insert(dtc, BeautifulSoup(plugin_prefs.get('HORIZONTAL_RULE', '<hr width="80%" />')))
             dtc += 1
 
     return sorted_soup

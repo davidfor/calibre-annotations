@@ -1,4 +1,7 @@
 Version history:
+1.8.0 - 2 Jun 2018
+• Fix: Version of BeautifulSoup was updated in calibre 3.24.0 and the plugins usage needed to change. 
+• Fix: Error when moving/updating annotations. 
 1.7.0 - 27 Jan 2018
 • New: Add support for translations
 • New: Add German translation. Thanks to schnesim.
