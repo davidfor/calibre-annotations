@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2018 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import cStringIO, re, os, shutil, sys, tempfile, time, urlparse, zipfile
@@ -924,7 +924,7 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
     total_books = len(annotation_map)
     pb.set_maximum(total_books)
     pb.set_value(1)
-    pb.set_label('{:^100}'.format('Moving annotations for %d books' % total_books))
+    pb.set_label('{:^100}'.format('%s for %d books' % (window_title, total_books)))
     pb.show()
 
     transient_db = 'transient'

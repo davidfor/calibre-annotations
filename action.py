@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import imp, inspect, os, re, sys, tempfile, threading, types, urlparse
@@ -55,6 +55,7 @@ from calibre_plugins.annotations.config import plugin_prefs
 from calibre_plugins.annotations.find_annotations import FindAnnotationsDialog
 from calibre_plugins.annotations.message_box_ui import COVER_ICON_SIZE
 from calibre_plugins.annotations.reader_app_support import *
+from calibre.constants import numeric_version as calibre_version
 
 
 # The first icon is the plugin icon, referenced by position.
@@ -93,8 +94,9 @@ class AnnotationsAction(InterfaceAction, Logger):
 
     # Declare the main action associated with this plugin
     action_spec = ('Annotations', None,
-                   _('Import annotations from eBook reader'), None)
+                   _('Import annotations from eBook reader'), ())
     action_menu_clone_qaction = True
+    action_add_menu = True
     popup_type = QToolButton.InstantPopup
 
     plugin_device_connection_changed = pyqtSignal(object)
@@ -171,6 +173,14 @@ class AnnotationsAction(InterfaceAction, Logger):
         if image:
             ac.setIcon(QIcon(image))
         m.addAction(ac)
+        return ac
+
+
+    def create_menu_item_ex(self, m, unique_name, menu_text, image=None, tooltip=None, shortcut=None, triggered=None, enabled=True):
+        ac = self.create_menu_action(m, unique_name, menu_text, icon=image, shortcut=shortcut,
+            description=tooltip, triggered=triggered)
+        ac.setEnabled(enabled)
+        self.menu_actions.append(ac)
         return ac
 
     def describe_confidence(self, confidence, book_mi, library_mi):
@@ -332,6 +342,14 @@ class AnnotationsAction(InterfaceAction, Logger):
         if annotated_book_list:
             self.fetch_device_annotations(annotated_book_list, self.ios.device_name)
 
+    def fetch_usb_connected_device_annotations(self):
+        self._log_location("Start")
+        if self.connected_device is not None:
+            self._log_location("Have device")
+            self.launch_library_scanner()
+            primary_name = self.connected_device.name.split()[0]
+            self.fetch_usb_device_annotations(primary_name)
+
     def fetch_usb_device_annotations(self, reader_app):
         """
         Selectively import annotations from books on mounted USB device
@@ -359,6 +377,7 @@ class AnnotationsAction(InterfaceAction, Logger):
         self.opts.pb.set_value(0)
         self.opts.pb.show()
         annotated_book_list = self.get_annotated_books_on_usb_device(reader_app)
+        self._log_location("DEBUG: %s" % annotated_book_list)
         self.opts.pb.hide()
         self.fetch_device_annotations(annotated_book_list, self.opts.device_name)
 
@@ -406,6 +425,12 @@ class AnnotationsAction(InterfaceAction, Logger):
         self.qaction.setIcon(get_icon(PLUGIN_ICONS[0]))
         #self.qaction.triggered.connect(self.main_menu_button_clicked)
         self.menu.aboutToShow.connect(self.about_to_show_menu)
+        self.menu_actions           = []
+        
+#         spec = self.action_spec[:3]
+#         spec.append(())
+#         ac = self.create_action(spec=spec)
+#         ac.triggered.connect(self.fetch_usb_connected_device_annotations)
 
         # Instantiate the database
         db = AnnotationsDB(self.opts, path=os.path.join(config_dir, 'plugins', 'annotations.db'))
@@ -450,6 +475,7 @@ class AnnotationsAction(InterfaceAction, Logger):
         cid = None
         
         title = normalize(book_mi['title'])
+        self._log_location("DEBUG: book_mi=%s" % book_mi)
 
         # Check uuid_map
         if (book_mi['uuid'] in uuid_map and
@@ -968,7 +994,8 @@ class AnnotationsAction(InterfaceAction, Logger):
         else:
             self._log_location("device disconnected")
             self.connected_device = None
-            self.rebuild_menus()
+
+        self.rebuild_menus()
 
     def present_annotated_books(self, rac, source):
         '''
@@ -1017,6 +1044,7 @@ class AnnotationsAction(InterfaceAction, Logger):
             if 'News' in genres and collect_news_clippings:
                 book_mi['cid'] = get_clippings_cid(self, news_clippings_destination)
                 confidence = 5
+#             elif not book_mi.get('confidence', None):
             else:
                 book_mi['cid'], confidence = self.generate_confidence(book_mi)
 
@@ -1117,6 +1145,15 @@ class AnnotationsAction(InterfaceAction, Logger):
             m = self.menu
             m.clear()
 
+            for action in self.menu_actions:
+                self.gui.keyboard.unregister_shortcut(action.calibre_shortcut_unique_name)
+                # starting in calibre 2.10.0, actions are registers at
+                # the top gui level for OSX' benefit.
+                if calibre_version >= (2,10,0):
+                    self.gui.removeAction(action)
+            self.menu_actions = []
+
+
             # Add 'About…'
             #ac = self.create_menu_item(m, 'About' + '…', image=I("help.png"))
             ac = self.create_menu_item(m, _('About') + '…')
@@ -1125,6 +1162,8 @@ class AnnotationsAction(InterfaceAction, Logger):
 
             # Add the supported reading apps for the connected device
             gui_name = None
+            haveDevice = False
+            fetch_tootip = _('Fetch annotations from a supported device when it is connected')
             if self.connected_device:
                 gui_name = self.connected_device.gui_name
 
@@ -1160,10 +1199,27 @@ class AnnotationsAction(InterfaceAction, Logger):
                     usb_reader_classes = USBReader.get_usb_reader_classes().keys()
                     primary_name = self.connected_device.name.split()[0]
                     if primary_name in usb_reader_classes:
-                        ac = self.create_menu_item(m, _('Fetch annotations from {0}').format(self.connected_device.gui_name),
-                                                   image=get_icon('images/device.png'))
-                        ac.triggered.connect(partial(self.fetch_usb_device_annotations, primary_name))
-
+                        haveDevice = True
+                        fetch_tootip = _('Fetch annotations from {0}').format(self.connected_device.gui_name)
+#                         ac = self.create_menu_item_ex(
+#                                         m, 
+#                                         'Fetch annotations from {0}'.format(self.connected_device.gui_name),
+#                                         _('Fetch annotations from {0}').format(self.connected_device.gui_name),
+#                                         image=get_icon('images/device.png'),
+#                                         triggered=partial(self.fetch_usb_device_annotations, primary_name)
+#                                         )
+#                         ac.triggered.connect(partial(self.fetch_usb_device_annotations, primary_name))
+            ac = self.create_menu_item_ex(
+                            m, 
+                            'Fetch annotations from connected device',
+                            _('Fetch annotations from connected device'),
+                            image=get_icon('images/device.png'),
+                            tooltip=fetch_tootip,
+                            shortcut=(),
+                            triggered=self.fetch_usb_connected_device_annotations,
+                            enabled=haveDevice
+                            )
+#             ac.setVisible(False)
             m.addSeparator()
 
             # Add the import options
@@ -1186,7 +1242,7 @@ class AnnotationsAction(InterfaceAction, Logger):
             m.addSeparator()
 
             # Add 'Find annotations'
-            ac = self.create_menu_item(m, _('Find annotations'), image=get_icon('images/magnifying_glass.png'))
+            ac = self.create_menu_item(m, _('Find annotations'), image=get_icon('images/magnifying_glass.png'), shortcut=())
             ac.triggered.connect(self.find_annotations)
             m.addSeparator()
 
@@ -1207,6 +1263,8 @@ class AnnotationsAction(InterfaceAction, Logger):
                 action = 'Remove all annotations'
                 ac = self.create_menu_item(self.developer_menu, action, image=I('list_remove.png'))
                 ac.triggered.connect(self.nuke_annotations)
+
+        self.gui.keyboard.finalize()
 
     def report_updated_annotations(self, updated_annotations):
         suffix = _(" from 1 book ")

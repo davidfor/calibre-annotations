@@ -3,7 +3,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013-2017, David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013-2019, David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 from calibre.customize import InterfaceActionBase
@@ -13,7 +13,7 @@ class AnnotationsPlugin(InterfaceActionBase):
     description         = 'Import annotations'
     supported_platforms = ['linux', 'osx', 'windows']
     author              = 'David Forrester'
-    version             = (1, 8, 0)
+    version             = (1, 9, 0)
     minimum_calibre_version = (1, 0, 0)
 
     actual_plugin       = 'calibre_plugins.annotations.action:AnnotationsAction'

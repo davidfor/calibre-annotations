@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 assert '…' == '\xe2\x80\xa6', "file encoding error"
 
-# Copyright 2013 Axel Walthelm
+# Copyright 2013 Axel Walthelm, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import datetime
 global log
 def log(level, message):
     assert level.upper() in ('INFO', 'WARNING', 'ERROR')
-    print "%s: %s" % (level, message)
+    print("%s: %s" % (level, message))
 
 # all strings are utf-8 encoded
 class MyClippingsAnnotation:
@@ -42,9 +42,9 @@ class MyClippingsAnnotation:
         self.author = None
         # original human-readable location and date/time line
         self.statusline = None
-        # language of annotion; None if language detection failed
+        # language of annotation; None if language detection failed
         self.language = None
-        # type of annotion; one of ['highlight', 'note', 'bookmark']
+        # type of annotation; one of ['highlight', 'note', 'bookmark']
         self.kind = None
         # parsed creation time as a python datetime.datetime object; may be None
         self.time = None
@@ -105,6 +105,7 @@ _MAX_NR_OF_START_WORDS = 3
     
 _LOCATION_REGEX = {
     'en': (r"\sLocation\s*%s",
+           r"\slocation\s*%s",
            r"\sLoc\.\s*%s",),
     'de': (r"\sPosition\s*%s",
            r"\sPos\.\s*%s"),
@@ -119,7 +120,8 @@ _LOCATION_REGEX = {
 }
 
 _PAGE_REGEX = {
-    'en': (r"\sPage\s*%s",),
+    'en': (r"\sPage\s*%s",
+           r"\spage\s*%s",),
     'de': (r"\sSeite\s*%s",),
     'es': (r"\spágina\s*%s",),
     'fr': (r"\spage\s*%s",),
@@ -370,7 +372,7 @@ if __debug__ and __name__ == '__main__':
         # to check for grammatical variations of the month name we generate
         # it for all days in a leap year.
         # However this still does not cover chinese and japanese (even when not using chinese calender)
-        print "Getting names for months from locale"
+        print("Getting names for months from locale")
         import locale
         #monthNames[(language, {name: number})
         names = {}
@@ -404,11 +406,11 @@ if __debug__ and __name__ == '__main__':
                                 else:
                                     dic[name] = month
                             except:
-                                print "No name for", language, month, day, timeFormat
+                                print("No name for", language, month, day, timeFormat)
                                 raise
 
         for longNames in (True, False):
-            print "_MONTH_NAMES = {" if longNames else "_MONTH_NAMES_SHORT = {"
+            print("_MONTH_NAMES = {" if longNames else "_MONTH_NAMES_SHORT = {")
             for langs in localeNameTuples:
                 lang = langs[0]
                 if not names.has_key(lang):
@@ -418,37 +420,37 @@ if __debug__ and __name__ == '__main__':
                     if value > 6 and not '\n' in line:
                         line = re.sub(r"\s*$", "\n"+" "*11, line)
                     line += "'%s': %s, " % (key, value)
-                print re.sub(r",\s*$", "},", line)
-            print "}"
+                print(re.sub(r",\s*$", "},", line))
+            print("}")
 
         locale.setlocale(locale.LC_TIME, 'C')
-        print "END"
+        print("END")
+        
+    def pformatAnno(anno):
+        return (
+         "ordernr = %r\n" % anno.ordernr +
+         "language = %r\n" % anno.language +
+         "kind = %r\n" % anno.kind +
+         "title = %r\n" % anno.title +
+         "author = %r\n" % anno.author +
+         "begin = %r\n" % anno.begin +
+         "end = %r\n" % anno.end +
+         "page = %r\n" % anno.page +
+         "time = %r\n" % anno.time +
+         "text = %r\n" % anno.text)
+    def pformatAnnos(annos):
+        return '----------\n'.join([pformatAnno(a) for a in (annos if annos else [])])
         
     def _testParse(clipText, expectedResult):
-        def pformatAnno(anno):
-            return (
-             "ordernr = %r\n" % anno.ordernr +
-             "language = %r\n" % anno.language +
-             "kind = %r\n" % anno.kind +
-             "title = %r\n" % anno.title +
-             "author = %r\n" % anno.author +
-             "begin = %r\n" % anno.begin +
-             "end = %r\n" % anno.end +
-             "page = %r\n" % anno.page +
-             "time = %r\n" % anno.time +
-             "text = %r\n" % anno.text)
-        def pformatAnnos(annos):
-            return '----------\n'.join([pformatAnno(a) for a in (annos if annos else [])])
-            
         result = pformatAnnos( FromUtf8String(clipText) )
         if not expectedResult or expectedResult.strip() != result.strip():
-            print "######################################"
-            print "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
-            print clipText
-            print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-            print "######################################"
-            print result
-            print "######################################"
+            print("######################################")
+            print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv")
+            print(clipText)
+            print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+            print("######################################")
+            print(result)
+            print("######################################")
             if expectedResult and expectedResult.strip():
                 import difflib
                 from pprint import pprint
@@ -456,15 +458,17 @@ if __debug__ and __name__ == '__main__':
             assert False, "expectedResult differs"
 
     def _runTests():
-        print "Test"
+        print("Test")
         
         # empty
+        print("Test: empty")
         _testParse(
 r"""""",
 r"""
 """)
 
         # basic English
+        print("Test: basic English")
         _testParse(
 r"""Kindle-Benutzerhandbuch (German Edition) (Amazon)
 - Your Highlight Location 449-449 | Added on Thursday, 25 April 13 23:45:11
@@ -535,6 +539,7 @@ text = 'song'
 """)
 
         # basic German
+        print("Test: basic German")
         _testParse(
 r"""Mein Clipboard  
 - Ihre Markierung Position 14-14 | Hinzugefügt am Freitag, 26. April 2013 um 00:49:32 Uhr
@@ -589,6 +594,7 @@ text = 'Notiz Zeile 1\nZeile 2'
 """)
 
         # basic Spanish
+        print("Test: basic Spanish")
         _testParse(
 r"""Willkommen Axel  
 - Mi nota Posición 6 | Añadido el viernes 26 de abril de 2013, 0:04:34
@@ -642,6 +648,7 @@ text = ''
 """)
 
         # basic French
+        print("Test: basic French")
         _testParse(
 r"""Willkommen Axel  
 - Votre surlignement Emplacement 12-12 | Ajouté le vendredi 26 avril 2013 à 00:18:27
@@ -694,6 +701,7 @@ text = ''
 """)
 
         # basic Italian
+        print("Test: basic Italian")
         _testParse(
 r"""Willkommen Axel  
 - La mia evidenziazione Posizione 22-22 | Aggiunto il venerdì 6 aprile 12, 00:25:08
@@ -746,6 +754,7 @@ text = ''
 """)
 
         # basic Japanese
+        print("Test: basic Japanese")
         _testParse(
 r"""The Café (Hans Glück)
 - ハイライト ページ222 | 位置No. 3396-3396 | 追加日： 2013年6月17日 (月曜日) 20:31:09
@@ -799,6 +808,7 @@ text = ''
 """)
 
         # basic Brazilian
+        print("Test: basic Brazilian")
         _testParse(
 r"""The Café (Hans Glück)
 - Seu destaque na página 222 | Posição 3396-3396 | Adicionado na data segunda-feira, 17 de junho de 2013, 20:39:30
@@ -852,6 +862,7 @@ text = ''
 """)
 
         # basic Chinese
+        print("Test: basic Chinese")
         _testParse(
 r"""The Café (Hans Glück)
 - 我的标注 第222页 | 位置3397-3397 | 已添加至 2013年6月17日 星期一 22:27:30
@@ -904,6 +915,7 @@ text = ''
 """)
 
         # exotic English
+        print("Test: exotic English")
         _testParse(
 r"""EGC Spanish to English Dictionary V0.1 (Dave Slusher)
 - Bookmark on Page 415 | Loc. 6353  | Added on Saturday, April 30, 2011, 08:37 AM
@@ -957,6 +969,7 @@ text = ''
 """)
 
         # exotic/synthetic cases, German
+        print("Test: exotic/synthetic cases, German")
         _testParse(
 r"""Kindle-Benutzerhandbuch (German Edition) (Amazon)
 - Ihre Markierung Position 5-6 | Hinzugefügt am Donnerstag, 25. April 2013 um 23:38:23.1 Uhr
@@ -1014,14 +1027,25 @@ time = datetime.datetime(2013, 4, 25, 23, 40, 4)
 text = 'Inhalte Kapitel 2'
 """)
 
-        print "OK"
+
+        print("OK")
 
 if __debug__ and __name__ == '__main__':
+    import sys
     #_PrintMonthAndWeekDayNamesDict()
     def testLog(level, message):
         if level.upper() != 'INFO':
-            print "%s: %s" % (level, message)
+            print("%s: %s" % (level, message))
         assert level.lower().upper() != 'ERROR', message
     log = testLog
-    _runTests()
+    print 'Number of arguments:', len(sys.argv), 'arguments.'
+    print 'Argument List:', str(sys.argv)
+    if len(sys.argv) == 1:
+        _runTests()
+    else:
+        my_clippings_text = sys.argv[1]
+        print("Testing file: %s" % my_clippings_text)
+        annos = FromFileName(my_clippings_text)
+        print("Parsed result:")
+        print(pformatAnnos(annos))
 

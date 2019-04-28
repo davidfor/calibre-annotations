@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2018 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import hashlib, re
@@ -167,6 +167,7 @@ class Annotations(Annotation, Logger):
                 text = ''
                 if agroup.text:
                     for agt in agroup.text:
+                        self._log_location(agt)
                         text += '<p class="highlight" style="{0}">{1}</p>'.format(text_style, agt)
 
                 note = ''
@@ -195,7 +196,8 @@ class Annotations(Annotation, Logger):
                     m.update(note)
                     hash = m.hexdigest()
 
-                divTag = Tag(BeautifulSoup(), 'div')
+                ka_soup = BeautifulSoup()
+                divTag = ka_soup.new_tag('div')
                 content_args = {
                             'color': agroup.highlightcolor,
                             'friendly_timestamp': friendly_timestamp,

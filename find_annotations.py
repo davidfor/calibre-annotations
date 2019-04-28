@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import re
@@ -418,8 +418,7 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
                     highlight_text = ''
                     try:
                         pels = ua.findAll('p', 'highlight')
-                        for pel in pels:
-                            highlight_text += pel.string + '\n'
+                        highlight_text = '\n'.join([p.string for p in pels])
                     except:
                         pass
                     if text_to_match > '':
@@ -429,8 +428,7 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
                     note_text = ''
                     try:
                         nels = ua.findAll('p', 'note')
-                        for nel in nels:
-                            note_text += nel.string + '\n'
+                        note_text = '\n'.join([n.string for n in nels])
                     except:
                         pass
                     if note_to_match > '':

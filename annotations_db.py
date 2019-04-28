@@ -2,7 +2,7 @@
 # coding: utf-8
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import os, sqlite3, sys
@@ -225,6 +225,7 @@ class AnnotationsDB(Logger):
         Store a set of annotations to the transient table
         '''
         self.create_annotations_transient_table(transient_db)
+        self._log_location(book_id, uas)
         for ua in uas:
             if isinstance(ua, NavigableString):
                 continue
@@ -238,8 +239,15 @@ class AnnotationsDB(Logger):
             except:
                 this_ua.genre = None
 
-            this_ua.highlight_color = ua.find('table')['color']
-            this_ua.reader = ua['reader']
+            try:
+                this_ua.highlight_color = ua.find('table')['color']
+            except:
+                this_ua.highlight_color = 'gray'
+            
+            try:
+                this_ua.reader = ua['reader']
+            except:
+                this_ua.reader = ''
 
             try:
                 this_ua.last_modification = ua.find('td', 'timestamp')['uts']
@@ -258,17 +266,17 @@ class AnnotationsDB(Logger):
 
             try:
                 pels = ua.findAll('p', 'highlight')
-                this_ua.highlight_text = ''
-                for pel in pels:
-                    this_ua.highlight_text += pel.string + '\n'
+                self._log_location(book_id, "highlight pels={0}".format(pels))
+                this_ua.highlight_text = '\n'.join([p.string for p in pels])
+                self._log_location(book_id, "highlight - this_ua.highlight_text={0}".format(this_ua.highlight_text))
             except:
                 pass
 
             try:
                 nels = ua.findAll('p', 'note')
-                this_ua.note_text = ''
-                for nel in nels:
-                    this_ua.note_text += nel.string + '\n'
+                self._log_location(book_id, "note nels={0}".format(nels))
+                this_ua.note_text = '\n'.join([n.string for n in nels])
+                self._log_location(book_id, "highlight - this_ua.note_text={0}".format(this_ua.note_text))
             except:
                 pass
 
@@ -380,6 +388,7 @@ class AnnotationsDB(Logger):
         return len(annotations)
 
     def get_annotations(self, annotations_db, book_id):
+        self._log_location(book_id)
         """
         Get annotations from annotations_db for book_id
         """
@@ -455,6 +464,7 @@ class AnnotationsDB(Logger):
         '''
         Models get_annotations()
         '''
+        self._log_location(book_id)
         annotations = self.get('''SELECT
                                    genre,
                                    hash,
@@ -566,6 +576,7 @@ class AnnotationsDB(Logger):
                 elif key in ['note_text', 'highlight_text']:
                     # Store text/notes as lists, split on line breaks
                     if ann[key]:
+                        self._log_location(key, ann[key])
                         ann_dict[new_key] = ann[key].split('\n')
                     else:
                         ann_dict[new_key] = None
@@ -576,6 +587,7 @@ class AnnotationsDB(Logger):
         # Create an Annotations object to hold the re-rendered annotations
         rerendered_annotations = Annotations(self.opts)
         annotations = self.get_transient_annotations(transient_table, book_id)
+        self._log_location(book_id, annotations)
         for ann in annotations:
             ann = _row_to_dict(ann)
             this_annotation = Annotation(ann)
