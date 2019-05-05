@@ -196,8 +196,12 @@ class Annotations(Annotation, Logger):
                     m.update(note)
                     hash = m.hexdigest()
 
-                ka_soup = BeautifulSoup()
-                divTag = ka_soup.new_tag('div')
+                try:
+                    ka_soup = BeautifulSoup()
+                    divTag = ka_soup.new_tag('div')
+                except:
+                    divTag = Tag(BeautifulSoup(), 'div')
+
                 content_args = {
                             'color': agroup.highlightcolor,
                             'friendly_timestamp': friendly_timestamp,

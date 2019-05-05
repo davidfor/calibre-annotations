@@ -1,4 +1,7 @@
 Version history:
+1.9.1 - 5 May 2019
+• Update: Small change to make plugin backwardly compatible with older versions of calibre.
+
 1.9.0 - 22 April 2019
 • New: Add support for tolino devices.
 • Fix: Parsing error when annotations in library missing color attribute. 
