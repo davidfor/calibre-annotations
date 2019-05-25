@@ -64,11 +64,9 @@ class Annotations(Annotation, Logger):
     annotations: [{title:, path:, timestamp:, genre:, highlightcolor:, text:} ...]
     Inherits Annotation solely to share style characteristics for agroups
     '''
-    @dynamic_property
+    @property
     def annotations(self):
-        def fget(self):
-            return self.__annotations
-        return property(fget=fget)
+        return self.__annotations
 
     def __init__(self, opts, title=None, annotations=None, cid=None, genre=None):
 
