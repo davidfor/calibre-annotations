@@ -300,8 +300,8 @@ msgstr "Alles setzen"
 
 #: annotated_books.py:483
 #, python-brace-format
-msgid "{0} annotations &middot; {1})"
-msgstr "{0} Annotationen &middot; {1})"
+msgid "{0} annotations &middot; {1}"
+msgstr "{0} Annotationen &middot; {1}"
 
 #: appearance.py:57 appearance.py:77
 msgid "Timestamp"

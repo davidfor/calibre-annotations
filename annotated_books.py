@@ -480,7 +480,7 @@ class PreviewDialog(SizePersistedDialog):
         self.setLayout(self.pl)
 
         self.label = QLabel()
-        self.label.setText("<b>" + _("{0} annotations &middot; {1})").format(book_mi.reader_app, book_mi.title) + "</b>")
+        self.label.setText("<b>" + _("{0} annotations &middot; {1}").format(book_mi.reader_app, book_mi.title) + "</b>")
         self.label.setAlignment(Qt.AlignHCenter)
         self.pl.addWidget(self.label)
 

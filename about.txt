@@ -1,4 +1,10 @@
 Version history:
+1.10.0 - 4 October 2019
+• Change: Add PDF as supported format for Kindle devices.  
+• Fix Kobo: Not getting annotations for kepubs if filename contains spaces. 
+• Internal Change: Use rowfactory and names in database. 
+• Fix: Some issues with merging with existing annotations.
+
 1.9.2 - 25 May 2019
 • Update: Remove dynamic_property in preparation for change in calibre.
 

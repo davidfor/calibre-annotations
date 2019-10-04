@@ -17,8 +17,8 @@ from calibre.utils.date import parse_date
 from calibre_plugins.annotations.reader_app_support import USBReader
 from calibre_plugins.annotations.common_utils import (AnnotationStruct, BookStruct)
 
-KINDLE_FORMATS = [u'azw', u'azw1', u'azw3', 'kfx', u'mobi']
-KINDLE_TEMPLATES = ['*.azw', '*.azw3', '*.kfx', '*.mobi', '*.pobi']
+KINDLE_FORMATS = [u'azw', u'azw1', u'azw3', 'kfx', u'mobi', u'pdf']
+KINDLE_TEMPLATES = ['*.azw', '*.azw3', '*.kfx', '*.mobi', '*.pobi', '*.pdf']
 MY_CLIPPINGS_FILENAMES = ['My Clippings.txt', 'Meine Clippings.txt']
 
 class KindleReaderApp(USBReader):

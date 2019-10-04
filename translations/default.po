@@ -287,7 +287,7 @@ msgstr ""
 
 #: annotated_books.py:483
 #, python-brace-format
-msgid "{0} annotations &middot; {1})"
+msgid "{0} annotations &middot; {1}"
 msgstr ""
 
 #: appearance.py:77

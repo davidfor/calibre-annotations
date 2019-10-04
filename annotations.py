@@ -237,6 +237,9 @@ def merge_annotations(parent, cid, old_soup, new_soup):
     with optional interleaved <hr> elements.
     '''
     TRANSIENT_DB = 'transient'
+    debug_print("merge_annotations - cid=", cid)
+    debug_print("merge_annotations - old_soup=", old_soup)
+    debug_print("merge_annotations - new_soup=", new_soup)
 
     # Fetch preferred merge index technique
     merge_index = getattr(parent.reader_app_class, 'MERGE_INDEX', 'hash')
@@ -245,39 +248,61 @@ def merge_annotations(parent, cid, old_soup, new_soup):
         # Get the hashes of any existing annotations
         oiuas = old_soup.findAll('div', 'annotation')
         old_hashes = set([ua['hash'] for ua in oiuas])
+        debug_print("old hashes=", old_hashes)
 
         # Extract old user_annotations
         ouas = old_soup.find('div', 'user_annotations')
         if ouas:
+            debug_print("Getting old annotations - count=", len(ouas))
+            debug_print("Getting old annotations - old_soup=", old_soup)
+            debug_print("Getting old annotations - ouas=", ouas)
             ouas.extract()
+            debug_print("Getting old annotations - ouas after extract=", ouas)
+            debug_print("Getting old annotations - old_soup after extract=", old_soup)
 
             # Capture existing annotations
             parent.opts.db.capture_content(ouas, cid, TRANSIENT_DB)
 
             # Regurgitate old_soup with current CSS
             regurgitated_soup = BeautifulSoup(parent.opts.db.rerender_to_html(TRANSIENT_DB, cid))
+            debug_print("Getting old annotations - regurgitated_soup=", regurgitated_soup)
 
         # Find new annotations
         uas = new_soup.findAll('div', 'annotation')
         new_hashes = set([ua['hash'] for ua in uas])
+        debug_print("new_hashes=", sorted(new_hashes))
+        debug_print("old hashes=", sorted(old_hashes))
+        debug_print("new_hashes.difference(old_hashes)=", new_hashes.difference(old_hashes))
 
         updates = list(new_hashes.difference(old_hashes))
+        debug_print("differences between old and new hashs - updates=", updates)
         if len(updates) and ouas is not None:
+            debug_print("have updates and ouas")
             # Append new to regurgitated
             dtc = len(regurgitated_soup.div)
+            debug_print("length regurgitated_soup - dtc=", dtc)
             for new_annotation_id in updates:
+                debug_print("extending regurgitated_soup - new_annotation_id=", new_annotation_id)
                 new_annotation = new_soup.find('div', {'hash': new_annotation_id})
                 regurgitated_soup.div.insert(dtc, new_annotation)
                 dtc += 1
-            if old_soup:
-                merged_soup = unicode(old_soup) + unicode(sort_merged_annotations(regurgitated_soup))
-            else:
-                merged_soup = unicode(sort_merged_annotations(regurgitated_soup))
+#             if old_soup:
+#                 debug_print("adding old_soup and new_soup")
+#                 merged_soup = unicode(old_soup) + unicode(sort_merged_annotations(regurgitated_soup))
+#             else:
+#                 debug_print("just new_soup")
+            merged_soup = unicode(sort_merged_annotations(regurgitated_soup))
         else:
-            if old_soup:
-                merged_soup = unicode(old_soup) + unicode(new_soup)
+            debug_print("have updates and ouas")
+            if regurgitated_soup:
+                debug_print("adding old_soup and new_soup")
+                debug_print("unicode(regurgitated_soup)=", unicode(regurgitated_soup))
+                debug_print("unicode(new_soup)=", unicode(new_soup))
+                merged_soup = unicode(regurgitated_soup)# + unicode(new_soup)
             else:
+                debug_print("just new_soup")
                 merged_soup = unicode(new_soup)
+        debug_print("merged_soup=", merged_soup)
         return merged_soup
 
     elif merge_index == 'timestamp':

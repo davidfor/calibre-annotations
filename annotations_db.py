@@ -227,9 +227,10 @@ class AnnotationsDB(Logger):
         self.create_annotations_transient_table(transient_db)
         self._log_location(book_id, uas)
         for ua in uas:
+            self._log_location(book_id, ua)
             if isinstance(ua, NavigableString):
                 continue
-            if ua.name != 'div' or ua['class'] != "annotation":
+            if ua.name != 'div' or ua['class'][0] != "annotation":
                 continue
             this_ua = AnnotationStruct()
             this_ua.book_id = book_id
@@ -280,6 +281,7 @@ class AnnotationsDB(Logger):
             except:
                 pass
 
+            self._log_location(book_id, this_ua)
             self.add_to_transient_db(transient_db, this_ua)
 
     def close(self):
