@@ -24,7 +24,7 @@ try:
                           QPlainTextEdit, QSizePolicy,
                           QTableWidget, QTableWidgetItem, QToolButton,
                           QVBoxLayout)
-    from PyQt5.QtWebKitWidgets import QWebView
+    from PyQt5.Qt import QTextEdit as QWebView # Renaming to keep backwards compatibility.
 except ImportError:
     from PyQt4 import QtCore, QtGui
     from PyQt4.Qt import (Qt, QAbstractItemView, QCheckBox, QComboBox,

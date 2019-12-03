@@ -266,6 +266,8 @@ def merge_annotations(parent, cid, old_soup, new_soup):
             # Regurgitate old_soup with current CSS
             regurgitated_soup = BeautifulSoup(parent.opts.db.rerender_to_html(TRANSIENT_DB, cid))
             debug_print("Getting old annotations - regurgitated_soup=", regurgitated_soup)
+        else:
+            regurgitated_soup = BeautifulSoup()
 
         # Find new annotations
         uas = new_soup.findAll('div', 'annotation')
@@ -276,29 +278,25 @@ def merge_annotations(parent, cid, old_soup, new_soup):
 
         updates = list(new_hashes.difference(old_hashes))
         debug_print("differences between old and new hashs - updates=", updates)
-        if len(updates) and ouas is not None:
-            debug_print("have updates and ouas")
-            # Append new to regurgitated
-            dtc = len(regurgitated_soup.div)
-            debug_print("length regurgitated_soup - dtc=", dtc)
-            for new_annotation_id in updates:
-                debug_print("extending regurgitated_soup - new_annotation_id=", new_annotation_id)
-                new_annotation = new_soup.find('div', {'hash': new_annotation_id})
-                regurgitated_soup.div.insert(dtc, new_annotation)
-                dtc += 1
-#             if old_soup:
-#                 debug_print("adding old_soup and new_soup")
-#                 merged_soup = unicode(old_soup) + unicode(sort_merged_annotations(regurgitated_soup))
-#             else:
-#                 debug_print("just new_soup")
+        if ouas is not None:
+            if len(updates):
+                debug_print("have updates and ouas")
+                # Append new to regurgitated
+                dtc = len(regurgitated_soup.div)
+                debug_print("length regurgitated_soup - dtc=", dtc)
+                for new_annotation_id in updates:
+                    debug_print("extending regurgitated_soup - new_annotation_id=", new_annotation_id)
+                    new_annotation = new_soup.find('div', {'hash': new_annotation_id})
+                    regurgitated_soup.div.insert(dtc, new_annotation)
+                    dtc += 1
             merged_soup = unicode(sort_merged_annotations(regurgitated_soup))
         else:
             debug_print("have updates and ouas")
-            if regurgitated_soup:
+            if not regurgitated_soup == BeautifulSoup():
                 debug_print("adding old_soup and new_soup")
                 debug_print("unicode(regurgitated_soup)=", unicode(regurgitated_soup))
                 debug_print("unicode(new_soup)=", unicode(new_soup))
-                merged_soup = unicode(regurgitated_soup)# + unicode(new_soup)
+                merged_soup = unicode(regurgitated_soup) + unicode(new_soup)
             else:
                 debug_print("just new_soup")
                 merged_soup = unicode(new_soup)

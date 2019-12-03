@@ -1,4 +1,8 @@
 Version history:
+1.11.0 - 3 December 2019
+• Fix: Problem when couldn't get old annotations.
+• Fix: Support calibre version 4. Use QTextEdit instead of QWebView. Should be compatible with 3.x.
+
 1.10.0 - 4 October 2019
 • Change: Add PDF as supported format for Kindle devices.  
 • Fix Kobo: Not getting annotations for kepubs if filename contains spaces. 

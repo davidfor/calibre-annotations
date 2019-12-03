@@ -18,7 +18,7 @@ try:
                           QTableView, QTableWidgetItem,
                           QVBoxLayout,
                           pyqtSignal)
-    from PyQt5.QtWebKitWidgets import QWebView
+    from PyQt5.Qt import QTextEdit as QWebView # Renaming to keep backwards compatibility.
 except ImportError as e:
     debug_print("Error loading QT5: ", e)
     from PyQt4 import QtCore, QtGui

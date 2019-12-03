@@ -20,7 +20,7 @@ try:
                 QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread, QUrl,
                 QVBoxLayout
                 )
-    from PyQt5.QtWebKitWidgets import QWebView
+    from PyQt5.Qt import QTextEdit as QWebView # Renaming to keep backwards compatibility.
     from PyQt5.uic import compileUi
 except ImportError as e:
     from calibre.devices.usbms.driver import debug_print
