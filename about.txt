@@ -1,4 +1,7 @@
 Version history:
+1.12.0 - 08 January 2020
+• Fix: Errors fetching from Kobo devices if the dates in the database were null.
+
 1.11.0 - 3 December 2019
 • Fix: Problem when couldn't get old annotations.
 • Fix: Support calibre version 4. Use QTextEdit instead of QWebView. Should be compatible with 3.x.
