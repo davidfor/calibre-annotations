@@ -2,7 +2,7 @@
 # coding: utf-8
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2020 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import os, sqlite3, sys
@@ -169,7 +169,7 @@ class AnnotationsDB(Logger):
 
         # Create an Annotations object to hold annotations
         stored_annotations = Annotations(self.opts, title=book_mi['title'])
-        annotations = self.get_annotations(annotations_db, book_mi[b'book_id'])
+        annotations = self.get_annotations(annotations_db, book_mi['book_id'])
         for ann in annotations:
             ann = _row_to_dict(ann)
             ann['reader_app'] = book_mi['reader_app']
@@ -211,7 +211,7 @@ class AnnotationsDB(Logger):
 
         # Create an Annotations object to hold annotations
         stored_annotations = Annotations(self.opts, title=book_mi['title'])
-        annotations = self.get_annotations(annotations_db, book_mi[b'book_id'])
+        annotations = self.get_annotations(annotations_db, book_mi['book_id'])
         for ann in annotations:
             ann = _row_to_dict(ann)
             ann['reader_app'] = book_mi['reader_app']

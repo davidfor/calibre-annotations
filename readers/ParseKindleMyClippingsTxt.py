@@ -1038,8 +1038,8 @@ if __debug__ and __name__ == '__main__':
             print("%s: %s" % (level, message))
         assert level.lower().upper() != 'ERROR', message
     log = testLog
-    print 'Number of arguments:', len(sys.argv), 'arguments.'
-    print 'Argument List:', str(sys.argv)
+    print('Number of arguments:', len(sys.argv), 'arguments.')
+    print('Argument List:', str(sys.argv))
     if len(sys.argv) == 1:
         _runTests()
     else:

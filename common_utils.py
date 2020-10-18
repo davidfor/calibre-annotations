@@ -5,12 +5,20 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2020 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
-import cStringIO, re, os, shutil, sys, tempfile, time, urlparse, zipfile
+import re, os, sys, zipfile
 from collections import defaultdict
 from time import sleep
+
+# calibre Python 3 compatibility.
+try:
+    from urllib.parse import urlparse
+except ImportError as e:
+    from urlparse import urlparse
+import six
+from six import text_type as unicode
 
 try:
     from PyQt5.QtCore import pyqtSignal
@@ -18,7 +26,7 @@ try:
                 QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox, QIcon,
                 QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar, QPlainTextEdit,
                 QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread, QUrl,
-                QVBoxLayout
+                QVBoxLayout, QHBoxLayout, QFont
                 )
     from PyQt5.Qt import QTextEdit as QWebView # Renaming to keep backwards compatibility.
     from PyQt5.uic import compileUi
@@ -29,7 +37,7 @@ except ImportError as e:
                 QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox, QIcon,
                 QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar, QPlainTextEdit,
                 QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread, QUrl,
-                QVBoxLayout,
+                QVBoxLayout, QHBoxLayout, QFont,
                 pyqtSignal)
     from PyQt4.QtWebKit import QWebView
     from PyQt4.uic import compileUi
@@ -39,7 +47,7 @@ from calibre.devices.usbms.driver import debug_print
 from calibre.ebooks import normalize
 from calibre.ebooks.BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 from calibre.ebooks.metadata import MetaInformation
-from calibre.gui2 import Application, gprefs
+from calibre.gui2 import Application, gprefs, error_dialog, info_dialog, UNDEFINED_QDATETIME
 from calibre.gui2.dialogs.message_box import MessageBox
 from calibre.library import current_library_name
 from calibre.utils.config import config_dir
@@ -213,8 +221,8 @@ class PlainTextEdit(QPlainTextEdit, Logger):
         data = event.mimeData()
         mime = "text/uri-list"
         url = str(data.data(mime))
-        path = urlparse.urlparse(url).path.strip()
-        scheme = urlparse.urlparse(url).scheme
+        path = urlparse(url).path.strip()
+        scheme = urlparse(url).scheme
         path = re.sub('%20', ' ', path)
         if iswindows:
             if path.startswith('/Shared Folders'):
@@ -229,6 +237,42 @@ class PlainTextEdit(QPlainTextEdit, Logger):
             self.setPlainText(u)
         else:
             self._log_location("unsupported import: %s" % path)
+
+
+class ImageTitleLayout(QHBoxLayout):
+    '''
+    A reusable layout widget displaying an image followed by a title
+    '''
+    def __init__(self, parent, icon_name, title, has_help=True):
+        QHBoxLayout.__init__(self)
+        self.title_image_label = QLabel(parent)
+        self.update_title_icon(icon_name)
+        self.addWidget(self.title_image_label)
+
+        title_font = QFont()
+        title_font.setPointSize(16)
+        shelf_label = QLabel(title, parent)
+        shelf_label.setFont(title_font)
+        self.addWidget(shelf_label)
+        self.insertStretch(-1)
+        
+        # Add hyperlink to a help file at the right. We will replace the correct name when it is clicked.
+        if has_help:
+            help_label = QLabel(('<a href="http://www.foo.com/">{0}</a>').format(_("Help")), parent)
+            help_label.setTextInteractionFlags(Qt.LinksAccessibleByMouse | Qt.LinksAccessibleByKeyboard)
+            help_label.setAlignment(Qt.AlignRight)
+            help_label.linkActivated.connect(parent.help_link_activated)
+            self.addWidget(help_label)
+
+    def update_title_icon(self, icon_name):
+        pixmap = get_pixmap(icon_name)
+        if pixmap is None:
+            error_dialog(self.parent(),  _("Restart required"),
+                          _("Title image not found - you must restart Calibre before using this plugin!"), show=True)
+        else:
+            self.title_image_label.setPixmap(pixmap)
+        self.title_image_label.setMaximumSize(32, 32)
+        self.title_image_label.setScaledContents(True)
 
 
 class SizePersistedDialog(QDialog):
@@ -627,51 +671,52 @@ class CompileUI(Logger):
         self.help_file = None
         self.parent = parent
         self.verbose = verbose
-        self.compiled_forms = self.compile_ui()
+#         self.compiled_forms = self.compile_ui()
 
-    def compile_ui(self):
-        pat = re.compile(r'''(['"]):/images/([^'"]+)\1''')
-
-        def sub(match):
-            ans = 'I(%s%s%s)' % (match.group(1), match.group(2), match.group(1))
-            return ans
-
-        # >>> Entry point
-        self._log_location()
-
-        compiled_forms = {}
-        self._find_forms()
-
-        # Cribbed from gui2.__init__:build_forms()
-        for form in self.forms:
-            with open(form) as form_file:
-                soup = BeautifulStoneSoup(form_file.read())
-                property = soup.find('property', attrs={'name': 'windowTitle'})
-                string = property.find('string')
-                window_title = string.renderContents()
-
-            compiled_form = self._form_to_compiled_form(form)
-            if (not os.path.exists(compiled_form) or
-                    os.stat(form).st_mtime > os.stat(compiled_form).st_mtime):
-
-                if not os.path.exists(compiled_form):
-                    self._log(' compiling %s' % form)
-                else:
-                    self._log(' recompiling %s' % form)
-                    os.remove(compiled_form)
-                buf = cStringIO.StringIO()
-                compileUi(form, buf)
-                dat = buf.getvalue()
-                dat = dat.replace('__appname__', 'calibre')
-                dat = dat.replace('import images_rc', '')
-                dat = re.compile(r'(?:QtGui.QApplication.translate|(?<!def )_translate)\(.+?,\s+"(.+?)(?<!\\)",.+?\)').sub(r'_("\1")', dat)
-                dat = dat.replace('_("MMM yyyy")', '"MMM yyyy"')
-                dat = pat.sub(sub, dat)
-                with open(compiled_form, 'wb') as cf:
-                    cf.write(dat)
-
-            compiled_forms[window_title] = compiled_form.rpartition(os.sep)[2].partition('.')[0]
-        return compiled_forms
+#     def compile_ui(self):
+#         pat = re.compile(r'''(['"]):/images/([^'"]+)\1''')
+# 
+#         def sub(match):
+#             ans = 'I(%s%s%s)' % (match.group(1), match.group(2), match.group(1))
+#             return ans
+# 
+#         # >>> Entry point
+#         self._log_location()
+# 
+#         compiled_forms = {}
+#         self._find_forms()
+# 
+#         # Cribbed from gui2.__init__:build_forms()
+#         for form in self.forms:
+#             with open(form) as form_file:
+#                 soup = BeautifulStoneSoup(form_file.read())
+#                 property = soup.find('property', attrs={'name': 'windowTitle'})
+#                 string = property.find('string')
+#                 window_title = string.renderContents()
+# 
+#             compiled_form = self._form_to_compiled_form(form)
+#             if (not os.path.exists(compiled_form) or
+#                     os.stat(form).st_mtime > os.stat(compiled_form).st_mtime):
+# 
+#                 if not os.path.exists(compiled_form):
+#                     self._log(' compiling %s' % form)
+#                 else:
+#                     self._log(' recompiling %s' % form)
+#                     os.remove(compiled_form)
+#                 buf = io.BytesIO()
+#                 buf = cStringIO.StringIO()
+#                 compileUi(form, buf)
+#                 dat = buf.getvalue()
+#                 dat = dat.replace('__appname__', 'calibre')
+#                 dat = dat.replace('import images_rc', '')
+#                 dat = re.compile(r'(?:QtGui.QApplication.translate|(?<!def )_translate)\(.+?,\s+"(.+?)(?<!\\)",.+?\)').sub(r'_("\1")', dat)
+#                 dat = dat.replace('_("MMM yyyy")', '"MMM yyyy"')
+#                 dat = pat.sub(sub, dat)
+#                 with open(compiled_form, 'wb') as cf:
+#                     cf.write(dat)
+# 
+#             compiled_forms[window_title] = compiled_form.rpartition(os.sep)[2].partition('.')[0]
+#         return compiled_forms
 
     def _find_forms(self):
         forms = []

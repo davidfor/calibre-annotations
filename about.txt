@@ -1,4 +1,8 @@
 Version history:
+1.13.0 - 18 October 2020
+• Update: Changes for Python 3 support in calibre.
+• Update: Internal changes to how dialogs are handled.
+
 1.12.0 - 08 January 2020
 • Fix: Errors fetching from Kobo devices if the dates in the database were null.
 

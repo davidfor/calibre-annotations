@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2010, Gregory Riker, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2010, Gregory Riker, 2014-2020 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import sys
@@ -13,15 +13,15 @@ import sys
 from calibre.devices.usbms.driver import debug_print
 from calibre.gui2 import warning_dialog
 
-from calibre_plugins.annotations.common_utils import Logger
+from calibre_plugins.annotations.common_utils import Logger, ImageTitleLayout, SizePersistedDialog
 from calibre_plugins.annotations.config import dialog_resources_path
 
 try:
-    from PyQt5.Qt import (QDialog, QDialogButtonBox, QIcon, QPixmap,
-                          QSize)
+    from PyQt5.Qt import (QDialog, QDialogButtonBox, QIcon, QPixmap, QVBoxLayout,
+                          QSize, QGridLayout, QLineEdit, QLabel)
 except ImportError:
-    from PyQt4.Qt import (QDialog, QDialogButtonBox, QIcon, QPixmap,
-                          QSize)
+    from PyQt4.Qt import (QDialog, QDialogButtonBox, QIcon, QPixmap, QVBoxLayout,
+                          QSize, QGridLayout, QLineEdit, QLabel)
 
 try:
     load_translations()
@@ -31,18 +31,18 @@ except NameError:
 # Import Ui_Form from form generated dynamically during initialization
 if True:
     sys.path.insert(0, dialog_resources_path)
-    from cc_wizard_ui import Ui_Dialog
+#     from cc_wizard_ui import Ui_Dialog
     sys.path.remove(dialog_resources_path)
 
 
-class CustomColumnWizard(QDialog, Ui_Dialog, Logger):
+class CustomColumnWizard(SizePersistedDialog, Logger):
 
     STEP_ONE = _("Name your '{0}' column:")
 
     YELLOW_BG = '<font style="background:#FDFF99">{0}</font>'
 
     def __init__(self, parent, column_type, profile, verbose=True):
-        QDialog.__init__(self, parent.gui)
+        super(CustomColumnWizard, self).__init__(parent, 'annotations plugin:custom column wizard')
         self.column_type = column_type
         self.db = parent.gui.current_db
         self.gui = parent.gui
@@ -50,16 +50,25 @@ class CustomColumnWizard(QDialog, Ui_Dialog, Logger):
         self.previous_name = None
         self.profile = profile
 
-        self.setupUi(self)
         self.verbose = verbose
         self._log_location()
+        
+        self.setWindowTitle(_('Custom column wizard'))
+        layout = QVBoxLayout(self)
+        self.setLayout(layout)
+        title_layout = ImageTitleLayout(self, '../images/wizard.png', _('Custom column wizard'), has_help=False)
+        layout.addLayout(title_layout)
 
-        # Populate the icon
-        self.icon.setText('')
-        self.icon.setMaximumSize(QSize(40, 40))
-        self.icon.setScaledContents(True)
-        self.icon.setPixmap(QPixmap(I('wizard.png')))
+        grid_layout = QGridLayout()
+        layout.addLayout(grid_layout)
 
+        self.calibre_destination_le = QLineEdit()
+        grid_layout.addWidget(self.calibre_destination_le, 3, 1)
+        self.step_1 = QLabel("1. Step 1", self)
+        grid_layout.addWidget(self.step_1, 2, 1)
+
+        self.bb = QDialogButtonBox(QDialogButtonBox.Cancel)
+        layout.addWidget(self.bb)
         # Add the Accept button
         self.accept_button = self.bb.addButton('Button', QDialogButtonBox.AcceptRole)
         self.accept_button.setDefault(True)

@@ -2,11 +2,15 @@
 # coding: utf-8
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2020 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import operator
 from time import localtime, strftime
+
+# calibre Python 3 compatibility.
+import six
+from six import text_type as unicode
 
 from calibre.devices.usbms.driver import debug_print
 try:
@@ -306,7 +310,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         # Set row height
         fm = QFontMetrics(self.FONT)
         nrows = len(self.tabledata)
-        for row in xrange(nrows):
+        for row in range(nrows):
             self.tv.setRowHeight(row, fm.height() + 4)
 
         self.tv.setSortingEnabled(True)

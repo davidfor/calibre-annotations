@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2020 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import re
@@ -117,7 +117,7 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
 
         self.find_annotations_reader_comboBox.addItem(self.GENERIC_READER)
         racs = ReaderApp.get_reader_app_classes()
-        for ra in sorted(racs.keys()):
+        for ra in sorted(list(racs.keys())):
             self.find_annotations_reader_comboBox.addItem(ra)
         self.scgl.addWidget(self.find_annotations_reader_comboBox, row, 1, 1, 4)
         row += 1
@@ -132,7 +132,7 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         self.find_annotations_color_comboBox.setToolTip(_('Annotation style to search for'))
 
         self.find_annotations_color_comboBox.addItem(self.GENERIC_STYLE)
-        all_colors = COLOR_MAP.keys()
+        all_colors = list(COLOR_MAP.keys())
         all_colors.remove('Default')
         for color in sorted(all_colors):
             self.find_annotations_color_comboBox.addItem(color)

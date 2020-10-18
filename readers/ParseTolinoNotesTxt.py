@@ -24,7 +24,7 @@ import datetime
 global log
 def log(level, message):
     assert level.upper() in ('INFO', 'WARNING', 'ERROR')
-    print "%s: %s" % (level, message)
+    print("%s: %s" % (level, message))
 
 # all strings are utf-8 encoded
 class NotesAnnotation:
@@ -293,9 +293,11 @@ def FromUtf8String(notesTxt):
             try:
                 anno.page = int(anno.page_str)
             except:
-                log('ERROR', "Page number isn't an integer. Probably a range. anno.page_str: ---%s---" % (anno.page_str,))
+                log('DEBUG', "Page number isn't an integer. Probably a range. anno.page_str: ---%s---" % anno.page_str)
                 try:
+                    log('DEBUG', "Splitting page number as it is probably a range")
                     anno.page = int(anno.page_str.split('-')[0])
+                    log('DEBUG', "Page number was a range - anno.page: '%s'" % (anno.page,))
                 except:
                     log('ERROR', "Page number not parsed properly. Don't set.")
             log('DEBUG', "anno.page: '%s'" % (anno.page,))
@@ -326,7 +328,7 @@ if __debug__ and __name__ == '__main__':
         # to check for grammatical variations of the month name we generate
         # it for all days in a leap year.
         # However this still does not cover chinese and japanese (even when not using chinese calender)
-        print "Getting names for months from locale"
+        print("Getting names for months from locale")
         import locale
         #monthNames[(language, {name: number})
         names = {}
@@ -360,11 +362,11 @@ if __debug__ and __name__ == '__main__':
                                 else:
                                     dic[name] = month
                             except:
-                                print "No name for", language, month, day, timeFormat
+                                print("No name for", language, month, day, timeFormat)
                                 raise
 
         for longNames in (True, False):
-            print "_MONTH_NAMES = {" if longNames else "_MONTH_NAMES_SHORT = {"
+            print("_MONTH_NAMES = {" if longNames else "_MONTH_NAMES_SHORT = {")
             for langs in localeNameTuples:
                 lang = langs[0]
                 if not names.has_key(lang):
@@ -374,37 +376,37 @@ if __debug__ and __name__ == '__main__':
                     if value > 6 and not '\n' in line:
                         line = re.sub(r"\s*$", "\n"+" "*11, line)
                     line += "'%s': %s, " % (key, value)
-                print re.sub(r",\s*$", "},", line)
-            print "}"
+                print(re.sub(r",\s*$", "},", line))
+            print("}")
 
         locale.setlocale(locale.LC_TIME, 'C')
-        print "END"
+        print("END")
         
-    def _testParse(clipText, expectedResult):
-        def pformatAnno(anno):
-            return (
-             "ordernr = %r\n" % anno.ordernr +
-             "language = %r\n" % anno.language +
-             "kind = %r\n" % anno.kind +
-             "title = %r\n" % anno.title +
-             "author = %r\n" % anno.author +
-             "begin = %r\n" % anno.begin +
-             "end = %r\n" % anno.end +
-             "page = %r\n" % anno.page +
-             "time = %r\n" % anno.time +
-             "text = %r\n" % anno.text)
-        def pformatAnnos(annos):
-            return '----------\n'.join([pformatAnno(a) for a in (annos if annos else [])])
+    def pformatAnno(anno):
+        return (
+         "ordernr = %r\n" % anno.ordernr +
+         "language = %r\n" % anno.language +
+         "kind = %r\n" % anno.kind +
+         "title = %r\n" % anno.title +
+         "author = %r\n" % anno.author +
+         "begin = %r\n" % anno.begin +
+         "end = %r\n" % anno.end +
+         "page = %r\n" % anno.page +
+         "time = %r\n" % anno.time +
+         "text = %r\n" % anno.text)
+    def pformatAnnos(annos):
+        return '----------\n'.join([pformatAnno(a) for a in (annos if annos else [])])
             
+    def _testParse(clipText, expectedResult):
         result = pformatAnnos( FromUtf8String(clipText) )
         if not expectedResult or expectedResult.strip() != result.strip():
-            print "######################################"
-            print "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
-            print clipText
-            print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-            print "######################################"
-            print result
-            print "######################################"
+            print("######################################")
+            print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv")
+            print(clipText)
+            print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+            print("######################################")
+            print(result)
+            print("######################################")
             if expectedResult and expectedResult.strip():
                 import difflib
                 from pprint import pprint
@@ -412,7 +414,7 @@ if __debug__ and __name__ == '__main__':
             assert False, "expectedResult differs"
 
     def _runTests():
-        print "Test"
+        print("Test")
         
         # empty
         _testParse(
@@ -966,14 +968,34 @@ time = datetime.datetime(2013, 4, 25, 23, 40, 4)
 text = 'Inhalte Kapitel 2'
 """)
 
-        print "OK"
+        print("OK")
+# 
+# if __debug__ and __name__ == '__main__':
+#     #_PrintMonthAndWeekDayNamesDict()
+#     def testLog(level, message):
+#         if level.upper() != 'INFO':
+#             print("%s: %s" % (level, message))
+#         assert level.lower().upper() != 'ERROR', message
+#     log = testLog
+#     _runTests()
+
 
 if __debug__ and __name__ == '__main__':
+    import sys
     #_PrintMonthAndWeekDayNamesDict()
     def testLog(level, message):
         if level.upper() != 'INFO':
-            print "%s: %s" % (level, message)
+            print("%s: %s" % (level, message))
         assert level.lower().upper() != 'ERROR', message
     log = testLog
-    _runTests()
+    print('Number of arguments:', len(sys.argv), 'arguments.')
+    print('Argument List:', str(sys.argv))
+    if len(sys.argv) == 1:
+        _runTests()
+    else:
+        my_clippings_text = sys.argv[1]
+        print("Testing file: %s" % my_clippings_text)
+        annos = FromFileName(my_clippings_text)
+        print("Parsed result:")
+        print(pformatAnnos(annos))
 

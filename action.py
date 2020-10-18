@@ -5,10 +5,18 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2020 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
-import imp, inspect, os, re, sys, tempfile, threading, types, urlparse
+import imp, inspect, os, re, sys, tempfile, threading, types
+
+# calibre Python 3 compatibility.
+try:
+    from urllib.parse import urlparse
+except ImportError as e:
+    from urlparse import urlparse
+import six
+from six import text_type as unicode
 
 from functools import partial
 from zipfile import ZipFile
@@ -153,12 +161,14 @@ class AnnotationsAction(InterfaceAction, Logger):
             # Any older annotations?
             um = mi.metadata_for_field(update_field)
             if mi.get_user_metadata(update_field, False)['#value#'] is None:
-                um['#value#'] = unicode(new_soup)
+                um['#value#'] = new_soup
+#                 um['#value#'] = unicode(new_soup)
             else:
                 # Merge new hashes into old
                 old_soup = BeautifulSoup(mi.get_user_metadata(update_field, False)['#value#'])
                 merged_soup = merge_annotations(self, cid, old_soup, new_soup)
-                um['#value#'] = unicode(merged_soup)
+#                 um['#value#'] = unicode(merged_soup)
+                um['#value#'] = merged_soup
             mi.set_user_metadata(update_field, um)
             db.set_metadata(cid, mi, set_title=False, set_authors=False)
         db.commit()
@@ -254,8 +264,8 @@ class AnnotationsAction(InterfaceAction, Logger):
             self._log("waiting for library_scanner()")
             self.library_scanner.wait()
 
-        path = urlparse.urlparse(self.dropped_url).path.strip()
-        scheme = urlparse.urlparse(self.dropped_url).scheme
+        path = urlparse(self.dropped_url).path.strip()
+        scheme = urlparse(self.dropped_url).scheme
         path = re.sub('%20', ' ', path)
         self._log_location(path)
 
@@ -534,7 +544,7 @@ class AnnotationsAction(InterfaceAction, Logger):
             this_book_list = []
             for book in books:
                 book_mi = {}
-                for key in book.keys():
+                for key in list(book.keys()):
                     book_mi[key] = book[key]
                 if not book_mi['active']:
                     continue
@@ -596,7 +606,7 @@ class AnnotationsAction(InterfaceAction, Logger):
             this_book_list = []
             for book in books:
                 book_mi = {}
-                for key in book.keys():
+                for key in list(book.keys()):
                     book_mi[key] = book[key]
                 if not book_mi['active']:
                     continue
@@ -844,7 +854,7 @@ class AnnotationsAction(InterfaceAction, Logger):
             tmp_file = os.path.join(tempfile.gettempdir(), plugin_tmpdir, basename)
             if not os.path.exists(os.path.dirname(tmp_file)):
                 os.makedirs(os.path.dirname(tmp_file))
-            with open(tmp_file, 'w') as tf:
+            with open(tmp_file, 'wb') as tf:
                 tf.write(get_resources(rac))
             self._log(" loading built-in class '%s'" % name)
             imp.load_source(name, tmp_file)
@@ -1196,7 +1206,7 @@ class AnnotationsAction(InterfaceAction, Logger):
                         ac.triggered.connect(self.show_supported_ios_reader_apps)
 
                 else:
-                    usb_reader_classes = USBReader.get_usb_reader_classes().keys()
+                    usb_reader_classes = list(USBReader.get_usb_reader_classes().keys())
                     primary_name = self.connected_device.name.split()[0]
                     if primary_name in usb_reader_classes:
                         haveDevice = True
@@ -1304,7 +1314,7 @@ class AnnotationsAction(InterfaceAction, Logger):
     def show_supported_ios_reader_apps(self):
         '''
         '''
-        supported_reader_apps = sorted(iOSReaderApp.get_reader_app_classes().keys(),
+        supported_reader_apps = sorted(list(iOSReaderApp.get_reader_app_classes().keys()),
                                        key=lambda s: s.lower())
 
         title = _("Supported iOS reader apps")

@@ -8,13 +8,17 @@ from __future__ import (unicode_literals, division, absolute_import,
 # calibre-debug -e __init__.py
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2017 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2020 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 from datetime import datetime
 from functools import partial
 import hashlib, importlib, os, re, sys
 from time import mktime
+
+# calibre Python 3 compatibility.
+import six
+from six import text_type as unicode
 
 try:
     from PyQt5 import QtWidgets as QtGui
@@ -135,7 +139,7 @@ class ConfigWidget(QWidget, Logger):
                 self.custom_fields[field_md['name']] = {'field': custom_field,
                                                    'datatype': field_md['datatype']}
 
-        all_fields = self.custom_fields.keys() + ['Comments']
+        all_fields = list(self.custom_fields.keys()) + ['Comments']
         for cf in sorted(all_fields):
             self.cfg_annotations_destination_comboBox.addItem(cf)
 
@@ -319,7 +323,7 @@ class ConfigWidget(QWidget, Logger):
         osh = hashlib.md5()
         for setting in appearance_settings:
             original_settings[setting] = plugin_prefs.get(setting, appearance_settings[setting])
-            osh.update(repr(plugin_prefs.get(setting, appearance_settings[setting])))
+            osh.update(repr(plugin_prefs.get(setting, appearance_settings[setting])).encode('utf-8'))
 
         # Display the appearance dialog
         aa = AnnotationsAppearance(self, get_icon('images/annotations.png'), plugin_prefs)
@@ -330,7 +334,7 @@ class ConfigWidget(QWidget, Logger):
             # Generate a new hash
             nsh = hashlib.md5()
             for setting in appearance_settings:
-                nsh.update(repr(plugin_prefs.get(setting, appearance_settings[setting])))
+                nsh.update(repr(plugin_prefs.get(setting, appearance_settings[setting])).encode('utf-8'))
         else:
             for setting in appearance_settings:
                 plugin_prefs.set(setting, original_settings[setting])

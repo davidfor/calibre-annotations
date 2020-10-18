@@ -234,7 +234,7 @@ class GoodReaderApp(ExportingReader):
         self.add_to_books_db(self.books_db, book_mi)
         self.annotated_book_list.append(book_mi)
 
-        sorted_keys = sorted(highlights.iterkeys())
+        sorted_keys = sorted(list(highlights.keys()))
         for dt in sorted_keys:
             highlight_text = None
             if 'text' in highlights[dt]:

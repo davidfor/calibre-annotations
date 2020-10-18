@@ -77,7 +77,7 @@ class KindleReaderApp(USBReader):
         self.opts.pb.set_maximum(len(self.active_annotations))
 
         # Add annotations to the database
-        for timestamp in sorted(self.active_annotations.iterkeys()):
+        for timestamp in sorted(list(self.active_annotations.keys())):
             # Populate an AnnotationStruct with available data
             ann_mi = AnnotationStruct()
 

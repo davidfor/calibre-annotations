@@ -11,6 +11,12 @@ __docformat__ = 'restructuredtext en'
 import datetime, re, time, os
 from time import mktime
 
+# calibre Python 3 compatibility.
+try:
+    from urllib.parse import quote
+except ImportError as e:
+    from urllib import quote
+
 from calibre_plugins.annotations.reader_app_support import USBReader
 from calibre_plugins.annotations.common_utils import (AnnotationStruct, BookStruct)
 
@@ -71,7 +77,7 @@ class KoboFetchingApp(USBReader):
 
 #         self._log("%s:get_active_annotations() - self.active_annotations={0}".format(self.active_annotations))
         # Add annotations to the database
-        for annotation in sorted(self.active_annotations.values(), key=lambda k: (k['book_id'], k['last_modification'])):
+        for annotation in sorted(list(self.active_annotations.values()), key=lambda k: (k['book_id'], k['last_modification'])):
             # Populate an AnnotationStruct with available data
             ann_mi = AnnotationStruct()
 
@@ -162,7 +168,6 @@ class KoboFetchingApp(USBReader):
 #            self._log("mi={0}".format(mi))
             installed_books.add(book_id)
 
-            #self._log(mi.standard_field_keys())
             # Populate a BookStruct with available metadata
             book_mi = BookStruct()
 #            book_mi.path = resolved_path_map[book_id]            # Add book_id to list of installed_books (make this a sql function)
@@ -294,8 +299,8 @@ class KoboFetchingApp(USBReader):
         def get_ids_from_selected_rows():
             rows = self.gui.library_view.selectionModel().selectedRows()
             if not rows or len(rows) < 1:
-                rows = xrange(self.gui.library_view.model().rowCount(QModelIndex()))
-            ids = map(self.gui.library_view.model().id, rows)
+                rows = range(self.gui.library_view.model().rowCount(QModelIndex()))
+            ids = list(map(self.gui.library_view.model().id, rows))
             return ids
 
         def get_formats(_id):
@@ -345,7 +350,7 @@ class KoboFetchingApp(USBReader):
             cursor = connection.cursor()
             cursor.execute(count_bookmark_query)
             try:
-                result = cursor.next()
+                result = next(cursor)
                 count_bookmarks = result['num_bookmarks']
                 self.opts.pb.set_maximum(count_bookmarks)
 #                 self.opts.pb.set_label(_("_fetch_annotations - 2"))
@@ -369,7 +374,7 @@ class KoboFetchingApp(USBReader):
 #         self.opts.pb.set_label(_("_read_database_annotations {0}".format(kepubs)))
 
         kepub_chapters = {}
-        for contentId in path_map.keys():
+        for contentId in list(path_map.keys()):
             book_id = path_map[contentId]['book_id']
             self._log("_read_database_annotations - contentId={0} book={1}".format(contentId, path_map[contentId]))
             kepub = (contentId.endswith('.kepub.epub') or not os.path.splitext(contentId)[1])
@@ -430,7 +435,6 @@ class KoboFetchingApp(USBReader):
                         fragment_reference = ''
 #                     self._log("_read_database_annotations - getting kepub: chapter fragment_index={0}, fragment_reference='{1}'".format(fragment_index, fragment_reference))
 #                     self._log("_read_database_annotations - getting kepub: chapter file_contentID_part='{0}'".format(file_contentID_part))
-                    from urllib import quote
                     file_contentID_part = quote(file_contentID_part)
                     chapter_contentID = book_contentID_part + "!" + opf_reference + "!" + file_contentID_part + fragment_reference
 #                     self._log("_read_database_annotations - getting kepub chapter chapter_contentID='{0}'".format(chapter_contentID))

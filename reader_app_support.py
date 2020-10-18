@@ -8,12 +8,14 @@ __license__ = 'GPL v3'
 __copyright__ = '2013, Greg Riker <griker@hotmail.com>'
 __docformat__ = 'restructuredtext en'
 
-import cStringIO, glob, os, re, subprocess, sys
+import io, os, re, sys
+# calibre Python 3 compatibility.
+import six
+from six import text_type as unicode
 
 from collections import OrderedDict
 from datetime import datetime
 from lxml import etree
-from time import sleep
 
 try:
     from PyQt5.Qt import QModelIndex
@@ -481,7 +483,7 @@ class iOSReaderApp(ReaderApp):
             if getattr(kls, 'SUPPORTS_FETCHING', False):
                 sqlite_apps[kls] = app_name
         if by_name:
-            sqlite_apps = OrderedDict(zip(sqlite_apps.values(), sqlite_apps.keys()))
+            sqlite_apps = OrderedDict(zip(list(sqlite_apps.values()), list(sqlite_apps.keys())))
         return sqlite_apps
 
     ''' Helpers '''
@@ -560,13 +562,13 @@ class iOSReaderApp(ReaderApp):
         if self.ios.stat(fpath) and self.ios.stat(fpath)['st_ifmt'] == 'S_IFDIR':
             # Find the OPF in the unzipped ePub
             fp = '/'.join([fpath, 'META-INF', 'container.xml'])
-            cf = cStringIO.StringIO(self.ios.read(fp))
+            cf = io.BytesIO(self.ios.read(fp))
             container = etree.parse(cf)
             opf_file = container.xpath('.//*[local-name()="rootfile"]')[0].get('full-path')
             oebps = opf_file.rpartition('/')[0]
 
             fp = '/'.join([fpath, opf_file])
-            opf = cStringIO.StringIO(self.ios.read(fp))
+            opf = io.BytesIO(self.ios.read(fp))
             opf_tree = etree.parse(opf)
             spine = opf_tree.xpath('.//*[local-name()="spine"]')[0]
             ncx_fs = spine.get('toc')
@@ -574,13 +576,13 @@ class iOSReaderApp(ReaderApp):
             ncx_file = manifest.find('.//*[@id="%s"]' % ncx_fs).get('href')
 
             fp = '/'.join([fpath, oebps, ncx_file])
-            ncxf = cStringIO.StringIO(self.ios.read(fp))
+            ncxf = io.BytesIO(self.ios.read(fp))
             ncx_tree = etree.parse(ncxf)
             #self._log(etree.tostring(ncx_tree, pretty_print=True))
 
         else:
             # Find the OPF file in the zipped ePub
-            zfo = cStringIO.StringIO(self.ios.read(fpath, mode='rb'))
+            zfo = io.BytesIO(self.ios.read(fpath, mode='rb'))
             try:
                 zf = ZipFile(zfo, 'r')
                 container = etree.fromstring(zf.read('META-INF/container.xml'))
@@ -756,8 +758,8 @@ class USBReader(ReaderApp):
         def get_ids_from_selected_rows():
             rows = self.opts.gui.library_view.selectionModel().selectedRows()
             if not rows or len(rows) < 2:
-                rows = xrange(self.opts.gui.library_view.model().rowCount(QModelIndex()))
-            ids = map(self.opts.gui.library_view.model().id, rows)
+                rows = range(self.opts.gui.library_view.model().rowCount(QModelIndex()))
+            ids = list(map(self.opts.gui.library_view.model().id, rows))
             return ids
 
         def get_formats(id):

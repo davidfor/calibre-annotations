@@ -5,10 +5,14 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2020 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import hashlib, re
+
+# calibre Python 3 compatibility.
+import six
+from six import text_type as unicode
 
 from datetime import datetime
 from xml.sax.saxutils import escape
@@ -117,6 +121,7 @@ class Annotations(Annotation, Logger):
         '''
         Generate HTML with user-specified CSS, element order
         '''
+        from calibre.ebooks.BeautifulSoup import prettify
         # Retrieve CSS prefs
         from calibre_plugins.annotations.appearance import default_elements
         stored_css = plugin_prefs.get('appearance_css', default_elements)
@@ -187,12 +192,12 @@ class Annotations(Annotation, Logger):
 
                 if agroup.hash is not None:
                     # Use existing hash when re-rendering
-                    hash = agroup.hash
+                    annotation_hash = agroup.hash
                 else:
                     m = hashlib.md5()
-                    m.update(text)
-                    m.update(note)
-                    hash = m.hexdigest()
+                    m.update(text.encode('utf-8'))
+                    m.update(note.encode('utf-8'))
+                    annotation_hash = m.hexdigest()
 
                 try:
                     ka_soup = BeautifulSoup()
@@ -214,7 +219,7 @@ class Annotations(Annotation, Logger):
                 divTag['genre'] = ''
                 if agroup.genre:
                     divTag['genre'] = escape(agroup.genre)
-                divTag['hash'] = hash
+                divTag['hash'] = annotation_hash
                 divTag['location_sort'] = agroup.location_sort
                 divTag['reader'] = agroup.reader_app
                 divTag['style'] = ANNOTATION_DIV_STYLE
@@ -227,7 +232,7 @@ class Annotations(Annotation, Logger):
 
         else:
             soup = BeautifulSoup(ANNOTATIONS_HEADER)
-        return unicode(soup.renderContents())
+        return prettify(soup)
 
 
 def merge_annotations(parent, cid, old_soup, new_soup):
