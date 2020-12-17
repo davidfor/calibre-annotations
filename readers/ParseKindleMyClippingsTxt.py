@@ -308,7 +308,7 @@ def FromFileName(myClippingsFilePath):
 
 def FromUtf8String(myClippingsTxt):
     # remove BOM(s) a.k.a. zero width space
-    myClippingsTxt = myClippingsTxt.replace('﻿', '')
+    myClippingsTxt = myClippingsTxt.replace(b'\xef\xbb\xbf'.decode('utf-8'), '')
     # normalize newlines
     myClippingsTxt = myClippingsTxt.replace('\r\n', '\n').replace('\r', '\n')
     if myClippingsTxt.strip() == '':
