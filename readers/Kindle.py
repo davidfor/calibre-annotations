@@ -17,7 +17,7 @@ from calibre.utils.date import parse_date
 from calibre_plugins.annotations.reader_app_support import USBReader
 from calibre_plugins.annotations.common_utils import (AnnotationStruct, BookStruct)
 
-KINDLE_FORMATS = [u'azw', u'azw1', u'azw3', 'kfx', u'mobi', u'pdf']
+KINDLE_FORMATS = ['azw', 'azw1', 'azw3', 'kfx', 'mobi', 'pdf']
 KINDLE_TEMPLATES = ['*.azw', '*.azw3', '*.kfx', '*.mobi', '*.pobi', '*.pdf']
 MY_CLIPPINGS_FILENAMES = ['My Clippings.txt', 'Meine Clippings.txt']
 
@@ -330,13 +330,13 @@ class KindleReaderApp(USBReader):
         annos = ParseKindleMyClippingsTxt.FromFileName(self._get_my_clippings())
         self._log(" Number of entries retrieved from 'My Clippings.txt'=%d" % (len(annos)))
         for anno in annos:
-            title = anno.title.decode('utf-8')
+            title = anno.title
             self._log("  Annotation for Title=='%s'" % (title))
             # If title/author_sort match book in library,
             # consider this an active annotation
             book_id = None
             title = title.strip()
-            if title in self.installed_books_by_title.keys():
+            if title in list(self.installed_books_by_title.keys()):
                 book_id = self.installed_books_by_title[title]['book_id']
                 self._log("    Found book_id=%d" % (book_id))
             if not book_id:
@@ -357,9 +357,9 @@ class KindleReaderApp(USBReader):
                 'location_sort': "%06d" % anno.begin if anno.begin is not None else "000000"
                 }
             if anno.kind == 'highlight':
-                self.active_annotations[timestamp]['highlight_text'] = anno.text.decode('utf-8').split(u'\n')
+                self.active_annotations[timestamp]['highlight_text'] = anno.text.split('\n')
             elif anno.kind == 'note':
-                self.active_annotations[timestamp]['note_text'] = anno.text.decode('utf-8').split(u'\n')
+                self.active_annotations[timestamp]['note_text'] = anno.text.split('\n')
             else:
                 self._log("    Clipping is not a highlight or note")
 
@@ -374,10 +374,9 @@ class KindleReaderApp(USBReader):
         if cp:
             lines = []
             # Apparently new MyClippings.txt files are encoded UTF-8 with BOM
-            with open(cp) as clippings:
+            with open(cp, encoding='utf-8-sig') as clippings:
                 for line in clippings:
-                    stripped = line.decode('utf-8-sig')
-                    lines.append(stripped)
+                    lines.append(line)
 
             index = 0
             line = lines[index]
@@ -401,7 +400,7 @@ class KindleReaderApp(USBReader):
                     author_sort = tas.group('author_sort')
                     # If title/author_sort match book in library,
                     # consider this an active annotation
-                    if title in self.installed_books_by_title.keys():
+                    if title in list(self.installed_books_by_title.keys()):
                         book_id = self.installed_books_by_title[title]['book_id']
                     index += 1
 
@@ -448,16 +447,16 @@ class KindleReaderApp(USBReader):
                     highlight_text = None
                     note_text = None
                     if ann_type == 'Highlight':
-                        highlight_text = [unicode(item)]
+                        highlight_text = [str(item)]
                         index += 1
                         while lines[index].strip() != SEPARATOR:
-                            highlight_text.append(unicode(lines[index]))
+                            highlight_text.append(str(lines[index]))
                             index += 1
                     elif ann_type == 'Note':
-                        note_text = [unicode(item)]
+                        note_text = [str(item)]
                         index += 1
                         while lines[index].strip() != SEPARATOR:
-                            note_text.append(unicode(lines[index]))
+                            note_text.append(str(lines[index]))
                             index += 1
                     # Pass SEPARATOR
                     index += 1

@@ -164,9 +164,9 @@ _MONTH_NAMES_SHORT = {
 
 def _detectLanguageAndType(status):
     words = status.split(None, _MAX_NR_OF_START_WORDS)
-    for nrWords in xrange(0, _MAX_NR_OF_START_WORDS):
+    for nrWords in range(0, _MAX_NR_OF_START_WORDS):
         key = ' '.join(words[:nrWords+1])
-        if _LANG_AND_KIND_DETECT_BY_START_WORDS.has_key(key):
+        if key in _LANG_AND_KIND_DETECT_BY_START_WORDS:
             return _LANG_AND_KIND_DETECT_BY_START_WORDS[key]
     return (None, None)
     
@@ -241,22 +241,22 @@ def _getDateTime(status, language):
         # Otherwise the last number is the year (and 2000 should be added).
         words = re.split(r"[,;]?\s", status)
         for word in words:
-            if _MONTH_NAMES[language].has_key(word):
+            if word in _MONTH_NAMES[language]:
                 month = _MONTH_NAMES[language][word]
                 break
         if not month:
             for word in words:
-                if _MONTH_NAMES_SHORT[language].has_key(word):
+                if word in _MONTH_NAMES_SHORT[language]:
                     month = _MONTH_NAMES_SHORT[language][word]
                     break
         if not month: # Some languages should be lower case, but Amazon seems to have capitalized the month.
             for word in words:
-                if _MONTH_NAMES[language].has_key(word.lower()):
+                if word.lower() in _MONTH_NAMES[language]:
                     month = _MONTH_NAMES[language][word.lower()]
                     break
         if not month:
             for word in words:
-                if _MONTH_NAMES_SHORT[language].has_key(word.lower()):
+                if word.lower() in _MONTH_NAMES_SHORT[language]:
                     month = _MONTH_NAMES_SHORT[language][word.lower()]
                     break
         if month:
@@ -300,15 +300,15 @@ def _getTitleAndAuthor(line):
 # read "My Clippings.txt" and extract all annotations
 def FromFileName(myClippingsFilePath):
     try:
-        with file( myClippingsFilePath, 'rb' ) as f: # file is UTF-8 => read binary!
+        with open(myClippingsFilePath, 'r', encoding='utf-8') as f: # file is UTF-8
             return FromUtf8String( f.read() )
-    except Exception as e:
+    except IOError as e:
         log('ERROR', "Error trying to read clippings file: %s" % (str(e),))
         return []
 
 def FromUtf8String(myClippingsTxt):
     # remove BOM(s) a.k.a. zero width space
-    myClippingsTxt = myClippingsTxt.replace('\xef\xbb\xbf', '')
+    myClippingsTxt = myClippingsTxt.replace('﻿', '')
     # normalize newlines
     myClippingsTxt = myClippingsTxt.replace('\r\n', '\n').replace('\r', '\n')
     if myClippingsTxt.strip() == '':
@@ -392,15 +392,15 @@ if __debug__ and __name__ == '__main__':
             names[language] = ({}, {}, {}, {}) # month long/short, week day long/short
             for localeName in localeNames[1:]:
                 locale.setlocale(locale.LC_TIME, localeName)
-                for month in xrange(1,12+1):
+                for month in range(1,12+1):
                     days = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-                    for day in xrange(1,days[month-1]+1):
+                    for day in range(1,days[month-1]+1):
                         date = datetime.date(2012,month,day)
                         for idx, timeFormat in enumerate(["%B", "%b", "%A", "%a"]):
                             try:
                                 name = date.strftime(timeFormat)
                                 dic = names[language][idx]
-                                if dic.has_key(name):
+                                if name in dic:
                                     if dic[name] is not None and dic[name] != month:
                                         dic[name] = None # ambiguous; not really a month or day name
                                 else:
@@ -413,10 +413,10 @@ if __debug__ and __name__ == '__main__':
             print("_MONTH_NAMES = {" if longNames else "_MONTH_NAMES_SHORT = {")
             for langs in localeNameTuples:
                 lang = langs[0]
-                if not names.has_key(lang):
+                if lang not in names:
                     continue
                 line = "    '%s': {" % lang
-                for value, key in sorted([(v,k) for k,v in names[lang][0 if longNames else 1].items()]):
+                for value, key in sorted([(v,k) for k,v in list(names[lang][0 if longNames else 1].items())]):
                     if value > 6 and not '\n' in line:
                         line = re.sub(r"\s*$", "\n"+" "*11, line)
                     line += "'%s': %s, " % (key, value)
