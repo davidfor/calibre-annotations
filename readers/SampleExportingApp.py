@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2013, Greg Riker <griker@hotmail.com>'
+__copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2020 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import datetime, time
@@ -176,7 +176,7 @@ class SampleExportingApp(ExportingReader):
         book_mi.annotations = len(self.highlights)
 
         # Add annotations to the database
-        for timestamp in sorted(self.highlights.iterkeys()):
+        for timestamp in sorted(self.highlights.keys()):
             book_mi.last_update = timestamp
 
             # Populate an AnnotationStruct

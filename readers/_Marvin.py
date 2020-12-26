@@ -434,7 +434,7 @@ class MarvinReaderApp(iOSReaderApp):
                                'startx', 'startoffset']:
                         highlights[datetime][md] = hl.get(md)
 
-                sorted_keys = sorted(highlights.iterkeys())
+                sorted_keys = sorted(highlights.keys())
                 for datetime in sorted_keys:
                     highlight_text = highlights[datetime]['text']
                     note_text = highlights[datetime]['note']

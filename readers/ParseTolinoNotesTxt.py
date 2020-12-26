@@ -20,6 +20,10 @@ assert '…' == '\xe2\x80\xa6', "file encoding error"
 import re
 import datetime
 
+# calibre Python 3 compatibility.
+import six
+from six import text_type as unicode
+
 # override this function if you need different error logging
 global log
 def log(level, message):
@@ -64,24 +68,24 @@ class NotesAnnotation:
 # Tolino uses a limited set of phrases, which we can use to detect language, annotation type, etc.;
 # add more start phrases when they are reported
 _LANG_AND_KIND_DETECT_BY_START_WORDS = {
-    "Highlight on": ('en', 'highlight'),
-    "Note on":      ('en', 'note'),
-    "Bookmark on":  ('en', 'bookmark'),
-    "Markierung auf": ('de', 'highlight'),
-    "Notiz auf":      ('de', 'note'),
-    "Ihr Lesezeichen": ('de', 'bookmark'),
-    "Selección en la":  ('es', 'highlight'),
-    "Marcadores en la": ('es', 'note'),
-    "Mi marcador":      ('es', 'bookmark'),
-    "Surlignement en": ('fr', 'highlight'),
-    "Note en":         ('fr', 'note'),
-    "Signet en":       ('fr', 'bookmark'),
-    "Evidenziazione a": ('it', 'highlight'),
-    "Nota a":           ('it', 'note'),
-    "Segnalibro a":     ('it', 'bookmark'),
-    "Markering op":     ('nl', 'highlight'),
-    "Notitie op":       ('nl', 'note'),
-    "Bladwijzer op":    ('nl', 'bookmark'),
+    "Highlight\son":        ('en', 'highlight'),
+    "Note\son":             ('en', 'note'),
+    "Bookmark\son":         ('en', 'bookmark'),
+    "Markierung\sauf":      ('de', 'highlight'),
+    "Notiz\sauf":           ('de', 'note'),
+    "Ihr\sLesezeichen":     ('de', 'bookmark'),
+    "Selección\sen\sla":    ('es', 'highlight'),
+    "Marcadores\sen\sla":   ('es', 'note'),
+    "Mi\smarcador":         ('es', 'bookmark'),
+    "Surlignement\sen":     ('fr', 'highlight'),
+    "Note\sen":             ('fr', 'note'),
+    "Signet\sen":           ('fr', 'bookmark'),
+    "Evidenziazione\sa":    ('it', 'highlight'),
+    "Nota\sa":              ('it', 'note'),
+    "Segnalibro\sa":        ('it', 'bookmark'),
+    "Markering\sop":        ('nl', 'highlight'),
+    "Notitie\sop":          ('nl', 'note'),
+    "Bladwijzer\sop":       ('nl', 'bookmark'),
     }
 _MAX_NR_OF_START_WORDS = 3
     
@@ -124,8 +128,11 @@ _DATE_FORMAT = {
 
 
 def _detectLanguageAndType(status):
+#     log('DEBUG', "_detectLanguageAndType - status: '%s'" % (status,))
     for kind_key in _LANG_AND_KIND_DETECT_BY_START_WORDS.keys():
-        if status.startswith(kind_key):
+#         log('DEBUG', "_detectLanguageAndType - kind_key: '%s'" % (kind_key,))
+#         log('DEBUG', "_detectLanguageAndType - status.startswith(kind_key): '%s'" % (status.startswith(kind_key),))
+        if re.match(kind_key, status):
             return _LANG_AND_KIND_DETECT_BY_START_WORDS[kind_key]
     return (None, None)
     
@@ -195,19 +202,22 @@ def _getTitleAndAuthor(line):
 def FromFileName(notesFilePath):
     log('INFO', "FromFileName: notesFilePath='%s'" % (notesFilePath,))
     try:
-        with file( notesFilePath, 'rb' ) as f: # file is UTF-8 => read binary!
+        with open( notesFilePath, 'rb' ) as f: # file is UTF-8 => read binary!
             return FromUtf8String( f.read() )
     except Exception as e:
         log('ERROR', "Error trying to read notes file: %s" % (str(e),))
+        raise
         return []
 
 def FromUtf8String(notesTxt):
     log('INFO', "FromUtf8String: len(notesTxt)=%d" % (len(notesTxt),))
     # Replace non-breaking space with normal space
+    notesTxt = notesTxt.decode('utf-8')
     notesTxt = notesTxt.replace('\xc2\xa0', ' ')
     # normalize newlines
     notesTxt = notesTxt.replace('\r\n', '\n').replace('\r', '\n')
-    if notesTxt.strip() == '':
+    notesTxt = notesTxt.strip()
+    if len(notesTxt) == 0:
         return
     if notesTxt[-1] != '\n':
         notesTxt += '\n'
@@ -280,7 +290,7 @@ def FromUtf8String(notesTxt):
             anno.language, anno.kind = _detectLanguageAndType(annotation_type)
             log('DEBUG', "anno.language: '%s'" % (anno.language,))
             log('DEBUG', "anno.kind: '%s'" % (anno.kind,))
-            if not anno.kind:
+            if anno.kind is None:
                 log('ERROR', "could not detect type of record '%s'" % anno.statusline)
                 continue
             if not (anno.kind == 'bookmark'):
@@ -348,15 +358,15 @@ if __debug__ and __name__ == '__main__':
             names[language] = ({}, {}, {}, {}) # month long/short, week day long/short
             for localeName in localeNames[1:]:
                 locale.setlocale(locale.LC_TIME, localeName)
-                for month in xrange(1,12+1):
+                for month in range(1,12+1):
                     days = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-                    for day in xrange(1,days[month-1]+1):
+                    for day in range(1,days[month-1]+1):
                         date = datetime.date(2012,month,day)
                         for idx, timeFormat in enumerate(["%B", "%b", "%A", "%a"]):
                             try:
                                 name = date.strftime(timeFormat)
                                 dic = names[language][idx]
-                                if dic.has_key(name):
+                                if name in dic:
                                     if dic[name] is not None and dic[name] != month:
                                         dic[name] = None # ambiguous; not really a month or day name
                                 else:
@@ -369,7 +379,7 @@ if __debug__ and __name__ == '__main__':
             print("_MONTH_NAMES = {" if longNames else "_MONTH_NAMES_SHORT = {")
             for langs in localeNameTuples:
                 lang = langs[0]
-                if not names.has_key(lang):
+                if lang not in names:
                     continue
                 line = "    '%s': {" % lang
                 for value, key in sorted([(v,k) for k,v in names[lang][0 if longNames else 1].items()]):

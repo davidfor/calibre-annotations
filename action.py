@@ -57,7 +57,7 @@ from calibre_plugins.annotations.common_utils import (CompileUI,
     Logger, ProgressBar, Struct,
     get_cc_mapping, get_clippings_cid, get_icon, get_pixmap, get_resource_files,
     get_selected_book_mi, plugin_tmpdir,
-    set_cc_mapping, set_plugin_icon_resources, updateCalibreGUIView)
+    set_cc_mapping, set_plugin_icon_resources)
 #import calibre_plugins.annotations.config as cfg
 from calibre_plugins.annotations.config import plugin_prefs
 from calibre_plugins.annotations.find_annotations import FindAnnotationsDialog
@@ -138,45 +138,48 @@ class AnnotationsAction(InterfaceAction, Logger):
         """
         update_field = get_cc_mapping('annotations', 'field', 'Comments')
         self._log_location(update_field)
-        db = self.opts.gui.current_db
-        mi = db.get_metadata(cid, index_is_id=True)
+        library_db = self.opts.gui.current_db
+        mi = library_db.get_metadata(cid, index_is_id=True)
 
         # Get the newly imported annotations
+        self._log_location("Getting new annotations as soup...")
+        raw_annotations = self.opts.db.annotations_to_html(annotations_db, book_mi)
+        self._log_location("New raw_annotations=%s" % raw_annotations)
         new_soup = BeautifulSoup(self.opts.db.annotations_to_html(annotations_db, book_mi))
+        self._log_location("new_soup=%s" % new_soup)
+        new_annotation_string = None
 
         if update_field == "Comments":
             # Append merged annotations to end of existing Comments
 
             # Any older annotations?
-            comments = db.comments(cid, index_is_id=True)
+            comments = library_db.comments(cid, index_is_id=True)
             if comments is None:
                 comments = unicode(new_soup)
             else:
                 # Keep comments, update annotations
                 comments_soup = BeautifulSoup(comments)
                 comments = merge_annotations_with_comments(self, cid, comments_soup, new_soup)
-            db.set_comment(mi.id, comments)
+            new_annotation_string = comments
         else:
             # Generate annotations formatted for custom field
             # Any older annotations?
-            um = mi.metadata_for_field(update_field)
             if mi.get_user_metadata(update_field, False)['#value#'] is None:
-                um['#value#'] = new_soup
-#                 um['#value#'] = unicode(new_soup)
+                new_annotation_string = unicode(new_soup)
             else:
                 # Merge new hashes into old
+                self._log_location("Current Annotation in library=%s" % mi.get_user_metadata(update_field, False)['#value#'])
                 old_soup = BeautifulSoup(mi.get_user_metadata(update_field, False)['#value#'])
+                self._log_location("Have old soup=%s" % old_soup)
                 merged_soup = merge_annotations(self, cid, old_soup, new_soup)
-#                 um['#value#'] = unicode(merged_soup)
-                um['#value#'] = merged_soup
-            mi.set_user_metadata(update_field, um)
-            db.set_metadata(cid, mi, set_title=False, set_authors=False)
-        db.commit()
+                new_annotation_string = unicode(merged_soup)
+#                 self._log_location("Have merged soup=%s" % merged_soup)
 
+#         self._log_location("Updateing GUI view")
         #self.gui.library_view.select_rows([cid], using_ids=True)
-        updateCalibreGUIView()
 
         self._log(" annotations updated: '%s' cid:%d " % (mi.title, cid))
+        return new_annotation_string
 
     def create_menu_item(self, m, menu_text, image=None, tooltip=None, shortcut=None):
         ac = self.create_action(spec=(menu_text, None, tooltip, shortcut), attr=menu_text)
@@ -923,6 +926,8 @@ class AnnotationsAction(InterfaceAction, Logger):
         pb.set_value(0)
         pb.set_label('{:^100}'.format(_("Scanning {0} of {1}").format(0, total_books)))
         pb.show()
+        
+        book_ids_updated = []
 
         for i, record in enumerate(db.data.iterall()):
             mi = db.get_metadata(record[id], index_is_id=True)
@@ -977,13 +982,14 @@ class AnnotationsAction(InterfaceAction, Logger):
                     db.set_metadata(record[id], mi, set_title=False, set_authors=False,
                                     commit=True, force_changes=True, notify=True)
 
+            book_ids_updated.append(record[id])
             pb.increment()
 
+        self.gui.library_view.model().refresh_ids(book_ids_updated)
+    
         # Hide the progress bar
         pb.hide()
 
-        # Update the UI
-        updateCalibreGUIView()
 
     def on_device_connection_changed(self, is_connected):
         '''
@@ -1043,9 +1049,15 @@ class AnnotationsAction(InterfaceAction, Logger):
         self._log_location()
         updated_annotations = 0
 
+        library_db = self.opts.gui.current_db
+
         # Are we collecting News clippings?
         collect_news_clippings = plugin_prefs.get('cfg_news_clippings_checkbox', False)
         news_clippings_destination = plugin_prefs.get('cfg_news_clippings_lineEdit', None)
+        update_field = get_cc_mapping('annotations', 'field', 'Comments')
+        self._log_location(update_field)
+        
+        book_ids_updated = {}
 
         for book_mi in selected_books[reader_app]:
 
@@ -1059,14 +1071,16 @@ class AnnotationsAction(InterfaceAction, Logger):
                 book_mi['cid'], confidence = self.generate_confidence(book_mi)
 
             if confidence >= 3: # and False: # Uncomment this to force Kobo devices to go through the prompts.
-                self.add_annotations_to_calibre(book_mi, annotations_db, book_mi['cid'])
-                self._log(" '%s' (confidence: %d) annotations added automatically" % (book_mi['title'], confidence))
-                updated_annotations += 1
+                new_annotation_string = self.add_annotations_to_calibre(book_mi, annotations_db, book_mi['cid'])
+                if new_annotation_string is not None:
+                    self._log(" '%s' (confidence: %d) annotations added automatically" % (book_mi['title'], confidence))
+                    updated_annotations += 1
+                    book_ids_updated[book_mi['cid']] = new_annotation_string
             else:
                 # Low or zero confidence, confirm with user
                 if confidence == 0:
                     book_mi['cid'] = self.selected_mi.id
-                proposed_mi = self.opts.gui.current_db.get_metadata(int(book_mi['cid']), index_is_id=True)
+                proposed_mi = library_db.get_metadata(int(book_mi['cid']), index_is_id=True)
                 title = _('Import annotations • Mismatched metadata')
                 msg = ''
                 grey = '#ddd'
@@ -1121,10 +1135,8 @@ class AnnotationsAction(InterfaceAction, Logger):
                 det_msg = self.describe_confidence(confidence, book_mi, proposed_mi)
 
                 # Get the cover
-                db = self.opts.gui.current_db
-
-                cover_path = os.path.join(db.library_path,
-                                          db.path(proposed_mi.id, index_is_id=True),
+                cover_path = os.path.join(library_db.library_path,
+                                          library_db.path(proposed_mi.id, index_is_id=True),
                                           'cover.jpg')
                 if not os.path.exists(cover_path):
                     cover_path = I('book.png')
@@ -1139,14 +1151,23 @@ class AnnotationsAction(InterfaceAction, Logger):
                                     show_copy_button=False,
                                     default_yes=True)
                 if d.exec_() == d.Accepted:
-                    self.add_annotations_to_calibre(book_mi, annotations_db, book_mi['cid'])
-                    updated_annotations += 1
+                    new_annotation_string = self.add_annotations_to_calibre(book_mi, annotations_db, book_mi['cid'])
+                    if new_annotation_string is not None:
+                        self._log(" '%s' (confidence: %d) annotations added automatically" % (book_mi['title'], confidence))
+                        updated_annotations += 1
+                        book_ids_updated[book_mi['cid']] = new_annotation_string
                     self._log(" '{0}' annotations added to '{2}' with user confirmation (confidence: {1})".format(
                         book_mi['title'], confidence, proposed_mi.title))
                 else:
                     self._log(" NO CONFIDENCE: '%s' (confidence: %d), annotations not added to '%s'" %
                             (book_mi['title'], confidence, self.selected_mi.title))
             self.opts.pb.increment()
+        if len(book_ids_updated) > 0:
+            debug_print("process_selected_books - Updating metadata - for column: %s number of changes=%d" % (update_field, len(book_ids_updated)))
+            library_db.new_api.set_field(update_field.lower(), book_ids_updated)
+            self._log("About to update UI for %s books" % len(book_ids_updated))
+            self.gui.library_view.model().refresh_ids(book_ids_updated,
+                                          current_row=self.gui.library_view.currentIndex().row())
 
         return updated_annotations
 

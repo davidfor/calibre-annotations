@@ -6,7 +6,7 @@ __copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2014-2020 additions by D
 __docformat__ = 'restructuredtext en'
 
 import operator
-from time import localtime, strftime
+from time import time, localtime, strftime
 
 # calibre Python 3 compatibility.
 import six
@@ -42,6 +42,8 @@ from calibre_plugins.annotations.common_utils import (
 
 from calibre_plugins.annotations.config import plugin_prefs
 from calibre_plugins.annotations.reader_app_support import ReaderApp
+
+from calibre.devices.usbms.driver import debug_print
 
 try:
     debug_print("Annotations::annotated_books.py - loading translations")
@@ -155,14 +157,15 @@ class MarkupTableModel(QAbstractTableModel):
         self.dataChanged.emit(index, index)
         return True
 
-    def sort(self, Ncol, order):
+    def sort(self, Ncol, order=Qt.AscendingOrder):
         """
         Sort table by given column number.
         """
         self.layoutAboutToBeChanged.emit()
-        self.arraydata = sorted(self.arraydata, key=operator.itemgetter(Ncol))
-        if order == Qt.DescendingOrder:
-            self.arraydata.reverse()
+        if Ncol == self.ENABLED_COL: # Don't sort on the checkbox column.
+            self.arraydata = sorted(self.arraydata, key=lambda row: row[Ncol].checkState(), reverse=(order == Qt.DescendingOrder))
+        else:
+            self.arraydata = sorted(self.arraydata, key=operator.itemgetter(Ncol), reverse=(order == Qt.DescendingOrder))
         self.layoutChanged.emit()
 
 
@@ -208,10 +211,12 @@ class AnnotatedBooksDialog(SizePersistedDialog):
             enabled.setChecked(True)
 
             # last_annotation sorts by timestamp
+            last_annotation_timestamp = time() if book_data['last_update'] is None else book_data['last_update']
+#             debug_print("AnnotatedBooksDialog::__init__ title=%s, i=%d, the_timestamp=%s" % (book_data['title'], i, the_timestamp))
             last_annotation = SortableTableWidgetItem(
                 strftime(friendly_timestamp_format,
-                         localtime(book_data['last_update'])),
-                book_data['last_update'])
+                         localtime(last_annotation_timestamp)),
+                last_annotation_timestamp)
 
             # reader_app sorts case-insensitive
             reader_app = SortableTableWidgetItem(
@@ -284,7 +289,6 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         self.tv.hideColumn(self.annotations_header.index('uuid'))
         self.tv.hideColumn(self.annotations_header.index('book_id'))
         self.tv.hideColumn(self.annotations_header.index('genre'))
-#         self.tv.hideColumn(self.annotations_header.index(_('Confidence')))
         self.tv.hideColumn(self.CONFIDENCE_COL)
 
         # Set horizontal self.header props

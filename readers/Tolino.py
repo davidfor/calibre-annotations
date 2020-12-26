@@ -320,7 +320,7 @@ class TolinoReaderApp(USBReader):
         annos = ParseTolinoNotesTxt.FromFileName(self._get_notes())
         self._log(" Number of entries retrieved from 'notes.txt'=%d" % (len(annos)))
         for anno in annos:
-            title = anno.title.decode('utf-8')
+            title = anno.title
             self._log("  Annotation for Title=='%s'" % (title))
             # If title/author_sort match book in library,
             # consider this an active annotation
@@ -353,10 +353,10 @@ class TolinoReaderApp(USBReader):
                 self.active_annotations[timestamp]['uuid'] = self.installed_books_by_title[title]['uuid']
 #             if anno.kind == 'highlight':
             if anno.highlight_text:
-                self.active_annotations[timestamp]['highlight_text'] = anno.highlight_text.decode('utf-8').split(u'\n')
+                self.active_annotations[timestamp]['highlight_text'] = anno.highlight_text.split(u'\n')
 #             elif anno.kind == 'note':
             if anno.note_text:
-                self.active_annotations[timestamp]['note_text'] = anno.note_text.decode('utf-8').split(u'\n')
+                self.active_annotations[timestamp]['note_text'] = anno.note_text.split(u'\n')
 #             else:
 #                 self._log("    Notes.txt entry is not a highlight or note")
                 

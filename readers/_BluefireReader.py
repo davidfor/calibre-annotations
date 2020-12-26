@@ -207,9 +207,9 @@ class BluefireReader(ExportingReader):
         except:
             if log_failure:
                 self._log(" unable to parse %s Annotations" % self.app_name)
-                self._log("{:~^80}".format(" Imported Annotation summary ")
+                self._log("{:~^80}".format(" Imported Annotation summary "))
                 self._log(raw)
-                self._log("{:~^80}".format(" end imported Annotations summary ")
+                self._log("{:~^80}".format(" end imported Annotations summary "))
                 import traceback
                 traceback.print_exc()
                 msg = ('Unable to parse Annotation summary from %s. ' % self.app_name +
@@ -239,7 +239,7 @@ class BluefireReader(ExportingReader):
         self.annotated_book_list.append(book_mi)
 
         # Add the annotations
-        for timestamp in sorted(annotations.iterkeys()):
+        for timestamp in sorted(annotations.keys()):
             self.add_to_annotations_db(self.annotations_db, annotations[timestamp])
             self.update_book_last_annotation(self.books_db, timestamp, mi.id)
             self.opts.pb.increment()

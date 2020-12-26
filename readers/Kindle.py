@@ -17,7 +17,7 @@ from calibre.utils.date import parse_date
 from calibre_plugins.annotations.reader_app_support import USBReader
 from calibre_plugins.annotations.common_utils import (AnnotationStruct, BookStruct)
 
-KINDLE_FORMATS = [u'azw', u'azw1', u'azw3', 'kfx', u'mobi', u'pdf']
+KINDLE_FORMATS = [u'azw', u'azw1', u'azw3', u'kfx', u'mobi', u'pdf']
 KINDLE_TEMPLATES = ['*.azw', '*.azw3', '*.kfx', '*.mobi', '*.pobi', '*.pdf']
 MY_CLIPPINGS_FILENAMES = ['My Clippings.txt', 'Meine Clippings.txt']
 
@@ -140,15 +140,19 @@ class KindleReaderApp(USBReader):
         '''
         self._log("%s:get_installed_books()" % self.app_name)
         self.installed_books = []
+        
 
         self.device = self.opts.gui.device_manager.device
         path_map = self.get_path_map()
+        self._log("path_map=%s" % path_map)
 
         # Get books added to Kindle by calibre
         resolved_path_map = self._get_installed_books(path_map)
+        self._log("After getting installed books: resolved_path_map=%s" % resolved_path_map)
 
         # Add books added to Kindle by WhisperNet or download
         resolved_path_map = self._get_imported_books(resolved_path_map)
+        self._log("After getting imported books: resolved_path_map=%s" % resolved_path_map)
 
         self.books_db = self.generate_books_db_name(self.app_name_, self.opts.device_name)
 
@@ -169,6 +173,7 @@ class KindleReaderApp(USBReader):
         #  Add installed books to the database
         for book_id in resolved_path_map:
             try:
+                self._log("Getting metadata from book. path='%s'" % (resolved_path_map[book_id]))
                 mi = self._get_metadata(resolved_path_map[book_id])
             except Exception as e:
                 self._log("Unable to get metadata from book. path='%s'" % (resolved_path_map[book_id]))
@@ -330,7 +335,7 @@ class KindleReaderApp(USBReader):
         annos = ParseKindleMyClippingsTxt.FromFileName(self._get_my_clippings())
         self._log(" Number of entries retrieved from 'My Clippings.txt'=%d" % (len(annos)))
         for anno in annos:
-            title = anno.title.decode('utf-8')
+            title = anno.title
             self._log("  Annotation for Title=='%s'" % (title))
             # If title/author_sort match book in library,
             # consider this an active annotation
@@ -357,9 +362,9 @@ class KindleReaderApp(USBReader):
                 'location_sort': "%06d" % anno.begin if anno.begin is not None else "000000"
                 }
             if anno.kind == 'highlight':
-                self.active_annotations[timestamp]['highlight_text'] = anno.text.decode('utf-8').split(u'\n')
+                self.active_annotations[timestamp]['highlight_text'] = anno.text.split(u'\n')
             elif anno.kind == 'note':
-                self.active_annotations[timestamp]['note_text'] = anno.text.decode('utf-8').split(u'\n')
+                self.active_annotations[timestamp]['note_text'] = anno.text.split(u'\n')
             else:
                 self._log("    Clipping is not a highlight or note")
 

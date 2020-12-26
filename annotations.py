@@ -61,6 +61,8 @@ class Annotation(object):
         for p in self.all_fields:
             setattr(self, p, annotation.get(p))
 
+    def __str__(self):
+        return '\n'.join(["%s: %s" % (field, getattr(self, field, None)) for field in self.all_fields])
 
 class Annotations(Annotation, Logger):
     '''
@@ -121,7 +123,6 @@ class Annotations(Annotation, Logger):
         '''
         Generate HTML with user-specified CSS, element order
         '''
-        from calibre.ebooks.BeautifulSoup import prettify
         # Retrieve CSS prefs
         from calibre_plugins.annotations.appearance import default_elements
         stored_css = plugin_prefs.get('appearance_css', default_elements)
@@ -154,6 +155,7 @@ class Annotations(Annotation, Logger):
                                 </tr>
                             </table>'''
                 comments_body += re.sub(r'>\s+<', r'><', ts_css)
+        self._log_location("comments_body='%s'" % comments_body)
 
         if self.annotations:
             soup = BeautifulSoup(ANNOTATIONS_HEADER)
@@ -161,6 +163,7 @@ class Annotations(Annotation, Logger):
 
             # Add the annotations
             for i, agroup in enumerate(sorted(self.annotations, key=self._annotation_sorter)):
+                self._log_location("agroup='%s'" % agroup)
                 location = agroup.location
                 if location is None:
                     location = ''
@@ -169,13 +172,16 @@ class Annotations(Annotation, Logger):
 
                 text = ''
                 if agroup.text:
+                    self._log_location("agroup.text='%s'" % agroup.text)
                     for agt in agroup.text:
-                        self._log_location(agt)
+                        self._log_location("agt='%s'" % agt)
                         text += '<p class="highlight" style="{0}">{1}</p>'.format(text_style, agt)
 
                 note = ''
                 if agroup.note:
+                    self._log_location("agroup.note='%s'" % agroup.note)
                     for agn in agroup.note:
+                        self._log_location("agn='%s'" % agn)
                         note += '<p class="note" style="{0}">{1}</p>'.format(note_style, agn)
 
                 try:
@@ -202,8 +208,10 @@ class Annotations(Annotation, Logger):
                 try:
                     ka_soup = BeautifulSoup()
                     divTag = ka_soup.new_tag('div')
+                    self._log_location("Used ka_soup.new_tag to create tag: %s" % divTag)
                 except:
                     divTag = Tag(BeautifulSoup(), 'div')
+                    self._log_location("Used Tag(BeautifulSoup() to create tag: %s" % divTag)
 
                 content_args = {
                             'color': agroup.highlightcolor,
@@ -214,7 +222,19 @@ class Annotations(Annotation, Logger):
                             'ts_style': datetime_style.format(dt_bgcolor, dt_fgcolor),
                             'unix_timestamp': agroup.timestamp,
                             }
-                divTag.insert(0, BeautifulSoup(comments_body.format(**content_args)))
+#                 self._log_location("Generated comment soup: %s" % BeautifulSoup(comments_body.format(**content_args)))
+                comments_body_soup = BeautifulSoup(comments_body.format(**content_args))
+                self._log_location("Generated comment soup: comments_body_soup=%s" % comments_body_soup)
+                self._log_location("Generated comment soup: comments_body_soup.body=%s" % comments_body_soup.body)
+                self._log_location("Generated comment soup: comments_body_soup.body.children=%s" % comments_body_soup.body.children)
+                self._log_location("Generated comment soup: comments_body_soup.body.contents=%s" % comments_body_soup.body.contents)
+                self._log_location("Generated comment soup: len(comments_body_soup.body.contents)=%s" % len(comments_body_soup.body.contents))
+                for i in range(0, len(comments_body_soup.body.contents)):
+                    self._log_location("i=%s" % i)
+                    self._log_location("comment_body_tag=%s" % comments_body_soup.body.contents[i])
+                while len(comments_body_soup.body.contents) > 0:
+                    self._log_location("comment_body_tag=%s" % comments_body_soup.body.contents[0])
+                    divTag.append(comments_body_soup.body.contents[0])
                 divTag['class'] = "annotation"
                 divTag['genre'] = ''
                 if agroup.genre:
@@ -223,7 +243,9 @@ class Annotations(Annotation, Logger):
                 divTag['location_sort'] = agroup.location_sort
                 divTag['reader'] = agroup.reader_app
                 divTag['style'] = ANNOTATION_DIV_STYLE
+                self._log_location("An annotation - divTag=%s" % divTag)
                 soup.div.insert(dtc, divTag)
+                self._log_location("Full soup after adding annotation - soup=%s" % soup)
                 dtc += 1
                 if i < len(self.annotations) - 1 and \
                     plugin_prefs.get('appearance_hr_checkbox', False):
@@ -232,7 +254,7 @@ class Annotations(Annotation, Logger):
 
         else:
             soup = BeautifulSoup(ANNOTATIONS_HEADER)
-        return prettify(soup)
+        return unicode(soup)
 
 
 def merge_annotations(parent, cid, old_soup, new_soup):
@@ -266,10 +288,10 @@ def merge_annotations(parent, cid, old_soup, new_soup):
             debug_print("Getting old annotations - old_soup after extract=", old_soup)
 
             # Capture existing annotations
-            parent.opts.db.capture_content(ouas, cid, TRANSIENT_DB)
+            annotation_list = parent.opts.db.capture_content(ouas, cid, TRANSIENT_DB)
 
             # Regurgitate old_soup with current CSS
-            regurgitated_soup = BeautifulSoup(parent.opts.db.rerender_to_html(TRANSIENT_DB, cid))
+            regurgitated_soup = BeautifulSoup(parent.opts.db.rerender_to_html_from_list(annotation_list))
             debug_print("Getting old annotations - regurgitated_soup=", regurgitated_soup)
         else:
             regurgitated_soup = BeautifulSoup()
@@ -325,10 +347,10 @@ def merge_annotations(parent, cid, old_soup, new_soup):
             ouas.extract()
 
             # Capture existing annotations
-            parent.opts.db.capture_content(ouas, cid, TRANSIENT_DB)
+            annotation_list = parent.opts.db.capture_content(ouas, cid, TRANSIENT_DB)
 
             # Regurgitate old_soup with current CSS
-            regurgitated_soup = BeautifulSoup(parent.opts.db.rerender_to_html(TRANSIENT_DB, cid))
+            regurgitated_soup = BeautifulSoup(parent.opts.db.rerender_to_html_from_list(annotation_list))
 
         # Add device annotation timestamps and hashes
         duas = new_soup.findAll('div', 'annotation')

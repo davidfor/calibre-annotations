@@ -19,6 +19,7 @@ except ImportError as e:
     from urlparse import urlparse
 import six
 from six import text_type as unicode
+import collections
 
 try:
     from PyQt5.QtCore import pyqtSignal
@@ -51,7 +52,6 @@ from calibre.gui2 import Application, gprefs, error_dialog, info_dialog, UNDEFIN
 from calibre.gui2.dialogs.message_box import MessageBox
 from calibre.library import current_library_name
 from calibre.utils.config import config_dir
-from calibre.utils.ipc import RC
 from calibre.utils.logging import Log
 
 from calibre_plugins.annotations.message_box_ui import Ui_Dialog, COVER_ICON_SIZE
@@ -961,8 +961,8 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
 
     _log_location("%s -> %s" % (old_destination_field, new_destination_field))
 
-    db = parent.opts.gui.current_db
-    id = db.FIELD_MAP['id']
+    library_db = parent.opts.gui.current_db
+    id = library_db.FIELD_MAP['id']
 
     # Show progress
     pb = ProgressBar(parent=parent, window_title=window_title, on_top=True)
@@ -972,6 +972,8 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
     pb.set_label('{:^100}'.format('%s for %d books' % (window_title, total_books)))
     pb.show()
 
+    id_map_old_destination_field = {}
+    id_map_new_destination_field = {}
     transient_db = 'transient'
 
     # Prepare a new COMMENTS_DIVIDER
@@ -979,7 +981,7 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
         cfg.plugin_prefs.get('COMMENTS_DIVIDER', '&middot;  &middot;  &bull;  &middot;  &#x2726;  &middot;  &bull;  &middot; &middot;'))
 
     for cid in annotation_map:
-        mi = db.get_metadata(cid, index_is_id=True)
+        mi = library_db.get_metadata(cid, index_is_id=True)
 
         # Comments -> custom
         if old_destination_field == 'Comments' and new_destination_field.startswith('#'):
@@ -995,23 +997,15 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
                     if cd:
                         cd.extract()
 
-                    # Save stripped Comments
-                    mi.comments = unicode(old_soup)
-
                     # Capture content
-                    parent.opts.db.capture_content(uas, cid, transient_db)
+                    annotation_list = parent.opts.db.capture_content(uas, cid, transient_db)
 
                     # Regurgitate content with current CSS style
-                    new_soup = parent.opts.db.rerender_to_html(transient_db, cid)
+                    new_soup = parent.opts.db.rerender_to_html_from_list(annotation_list)
 
-                    # Add user_annotations to destination
-                    um = mi.metadata_for_field(new_destination_field)
-                    um['#value#'] = unicode(new_soup)
-                    mi.set_user_metadata(new_destination_field, um)
+                    id_map_old_destination_field[cid] = unicode(old_soup)
+                    id_map_new_destination_field[cid] = unicode(new_soup)
 
-                    # Update the record with stripped Comments, populated custom field
-                    db.set_metadata(cid, mi, set_title=False, set_authors=False,
-                                    commit=True, force_changes=True, notify=True)
                     pb.increment()
 
         # custom -> Comments
@@ -1024,27 +1018,25 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
                     uas.extract()
 
                     # Capture content
-                    parent.opts.db.capture_content(uas, cid, transient_db)
+                    annotation_list = parent.opts.db.capture_content(uas, cid, transient_db)
 
                     # Regurgitate content with current CSS style
-                    new_soup = parent.opts.db.rerender_to_html(transient_db, cid)
-
-                    # Save stripped custom field data
-                    um = mi.metadata_for_field(old_destination_field)
-                    um['#value#'] = unicode(old_soup)
-                    mi.set_user_metadata(old_destination_field, um)
+                    new_soup = parent.opts.db.rerender_to_html_from_list(annotation_list)
 
                     # Add user_annotations to Comments
+                    new_comments = ''
                     if mi.comments is None:
-                        mi.comments = unicode(new_soup)
+                        new_comments = unicode(new_soup)
                     else:
-                        mi.comments = mi.comments + \
+                        new_comments = mi.comments + \
                                       unicode(comments_divider) + \
                                       unicode(new_soup)
 
-                    # Update the record with stripped custom field, updated Comments
-                    db.set_metadata(cid, mi, set_title=False, set_authors=False,
-                                    commit=True, force_changes=True, notify=True)
+#                     # Update the record with stripped custom field, updated Comments
+#                     library_db.set_metadata(cid, mi, set_title=False, set_authors=False,
+#                                     commit=True, force_changes=True, notify=True)
+                    id_map_old_destination_field[cid] = unicode(old_soup)
+                    id_map_new_destination_field[cid] = new_comments
                     pb.increment()
 
         # custom -> custom
@@ -1058,24 +1050,13 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
                     uas.extract()
 
                     # Capture content
-                    parent.opts.db.capture_content(uas, cid, transient_db)
+                    annotation_list = parent.opts.db.capture_content(uas, cid, transient_db)
 
                     # Regurgitate content with current CSS style
-                    new_soup = parent.opts.db.rerender_to_html(transient_db, cid)
+                    new_soup = parent.opts.db.rerender_to_html_from_list(annotation_list)
 
-                    # Save stripped custom field data
-                    um = mi.metadata_for_field(old_destination_field)
-                    um['#value#'] = unicode(old_soup)
-                    mi.set_user_metadata(old_destination_field, um)
-
-                    # Add new_soup to destination field
-                    um = mi.metadata_for_field(new_destination_field)
-                    um['#value#'] = unicode(new_soup)
-                    mi.set_user_metadata(new_destination_field, um)
-
-                    # Update the record
-                    db.set_metadata(cid, mi, set_title=False, set_authors=False,
-                                    commit=True, force_changes=True, notify=True)
+                    id_map_old_destination_field[cid] = unicode(old_soup)
+                    id_map_new_destination_field[cid] = unicode(new_soup)
                     pb.increment()
 
         # same field -> same field - called from config:configure_appearance()
@@ -1099,22 +1080,25 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
                         mi.comments = unicode(old_soup)
 
                         # Capture content
-                        parent.opts.db.capture_content(uas, cid, transient_db)
+                        annotation_list = parent.opts.db.capture_content(uas, cid, transient_db)
 
                         # Regurgitate content with current CSS style
-                        new_soup = parent.opts.db.rerender_to_html(transient_db, cid)
+                        new_soup = parent.opts.db.rerender_to_html_from_list(annotation_list)
 
                         # Add user_annotations to Comments
+                        new_comments = ''
                         if mi.comments is None:
-                            mi.comments = unicode(new_soup)
+                            new_comments = unicode(new_soup)
                         else:
-                            mi.comments = mi.comments + \
+                            new_comments = mi.comments + \
                                           unicode(comments_divider) + \
                                           unicode(new_soup)
 
                         # Update the record with stripped custom field, updated Comments
-                        db.set_metadata(cid, mi, set_title=False, set_authors=False,
-                                        commit=True, force_changes=True, notify=True)
+#                         library_db.set_metadata(cid, mi, set_title=False, set_authors=False,
+#                                         commit=True, force_changes=True, notify=True)
+                        id_map_old_destination_field[cid] = unicode(old_soup)
+                        id_map_new_destination_field[cid] = unicode(new_soup)
                         pb.increment()
 
             else:
@@ -1126,20 +1110,29 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
                     uas.extract()
 
                     # Capture content
-                    parent.opts.db.capture_content(uas, cid, transient_db)
+                    annotation_list = parent.opts.db.capture_content(uas, cid, transient_db)
 
                     # Regurgitate content with current CSS style
-                    new_soup = parent.opts.db.rerender_to_html(transient_db, cid)
+                    new_soup = parent.opts.db.rerender_to_html_from_list(annotation_list)
 
-                    # Add stripped old_soup plus new_soup to destination field
-                    um = mi.metadata_for_field(new_destination_field)
-                    um['#value#'] = unicode(old_soup) + unicode(new_soup)
-                    mi.set_user_metadata(new_destination_field, um)
-
-                    # Update the record
-                    db.set_metadata(cid, mi, set_title=False, set_authors=False,
-                                    commit=True, force_changes=True, notify=True)
+#                     # Add stripped old_soup plus new_soup to destination field
+#                     um = mi.metadata_for_field(new_destination_field)
+#                     um['#value#'] = unicode(old_soup) + unicode(new_soup)
+#                     mi.set_user_metadata(new_destination_field, um)
+# 
+#                     # Update the record
+#                     library_db.set_metadata(cid, mi, set_title=False, set_authors=False,
+#                                     commit=True, force_changes=True, notify=True)
+                    id_map_old_destination_field[cid] = unicode(old_soup)
+                    id_map_new_destination_field[cid] = unicode(new_soup)
                     pb.increment()
+
+    if len(id_map_old_destination_field) > 0:
+        debug_print("move_annotations - Updating metadata - for column: %s number of changes=%d" % (old_destination_field, len(id_map_old_destination_field)))
+        library_db.new_api.set_field(old_destination_field.lower(), id_map_old_destination_field)
+    if len(id_map_new_destination_field) > 0:
+        debug_print("move_annotations - Updating metadata - for column: %s number of changes=%d" % (new_destination_field, len(id_map_new_destination_field)))
+        library_db.new_api.set_field(new_destination_field.lower(), id_map_new_destination_field)
 
     # Hide the progress bar
     pb.hide()
@@ -1175,9 +1168,6 @@ def move_annotations(parent, annotation_map, old_destination_field, new_destinat
     _log_location()
     _log("INFO: %s" % msg)
 
-    # Update the UI
-    updateCalibreGUIView()
-
 
 def restore_state(ui, restore_position=False):
     from calibre_plugins.annotations.config import plugin_prefs
@@ -1195,17 +1185,17 @@ def restore_state(ui, restore_position=False):
                 if isinstance(CONTROL_SET[index], unicode):
                     setter_ref = getattr(control_ref, CONTROL_SET[index], None)
                     if setter_ref is not None:
-                        if callable(setter_ref):
+                        if isinstance(setter_ref, collections.Callable):
                             setter_ref(plugin_prefs.get(control, CONTROL_DEFAULT[index]))
                 elif isinstance(CONTROL_SET[index], tuple) and len(CONTROL_SET[index]) == 2:
                     # Special case for comboBox - first findText, then setCurrentIndex
                     setter_ref = getattr(control_ref, CONTROL_SET[index][0], None)
                     if setter_ref is not None:
-                        if callable(setter_ref):
+                        if isinstance(setter_ref, collections.Callable):
                             result = setter_ref(plugin_prefs.get(control, CONTROL_DEFAULT[index]))
                             setter_ref = getattr(control_ref, CONTROL_SET[index][1], None)
                             if setter_ref is not None:
-                                if callable(setter_ref):
+                                if isinstance(setter_ref, collections.Callable):
                                     setter_ref(result)
                 else:
                     print(" invalid CONTROL_SET tuple for '%s'" % control)
@@ -1277,16 +1267,3 @@ def set_plugin_icon_resources(name, resources):
     plugin_icon_resources = resources
 
 
-def updateCalibreGUIView():
-    '''
-    Refresh the GUI view
-    '''
-    t = RC(print_error=False)
-    t.start()
-    sleep(0.5)
-    while True:
-        if t.done:
-            t.conn.send('refreshdb:')
-            t.conn.close()
-            break
-        sleep(0.5)

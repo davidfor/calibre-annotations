@@ -226,6 +226,7 @@ class AnnotationsDB(Logger):
         '''
         self.create_annotations_transient_table(transient_db)
         self._log_location(book_id, uas)
+        annotation_list = []
         for ua in uas:
             self._log_location(book_id, ua)
             if isinstance(ua, NavigableString):
@@ -282,7 +283,8 @@ class AnnotationsDB(Logger):
                 pass
 
             self._log_location(book_id, this_ua)
-            self.add_to_transient_db(transient_db, this_ua)
+            annotation_list.append(this_ua)
+        return annotation_list
 
     def close(self):
         if self.conn:
@@ -591,6 +593,56 @@ class AnnotationsDB(Logger):
         annotations = self.get_transient_annotations(transient_table, book_id)
         self._log_location(book_id, annotations)
         for ann in annotations:
+            ann = _row_to_dict(ann)
+            this_annotation = Annotation(ann)
+            rerendered_annotations.annotations.append(this_annotation)
+        soup = rerendered_annotations.to_HTML()
+        return soup
+
+    def rerender_to_html_from_list(self, annotation_list):
+        '''
+        Rerender a set of annotations with the current style
+        Models annotations_to_html()
+        '''
+
+        def _row_to_dict(ann):
+            # Convert sqlite row object to dict
+            # Convert timestamp to float
+            # Translation table: sqlite field:Annotation
+            xl = {
+                  'genre': 'genre',
+                  'hash': 'hash',
+                  'highlight_color': 'highlightcolor',
+                  'highlight_text': 'text',
+                  'last_modification': 'timestamp',
+                  'location': 'location',
+                  'location_sort': 'location_sort',
+                  'note_text': 'note',
+                  'reader': 'reader_app'
+                  }
+            ann_dict = {}
+            for key in ann.keys():
+                try:
+                    new_key = xl[key]
+                except KeyError:
+                    continue
+                if key == 'last_modification' and ann[key] is not None:
+                    ann_dict[new_key] = float(ann[key])
+                elif key in ['note_text', 'highlight_text']:
+                    # Store text/notes as lists, split on line breaks
+                    if ann[key]:
+                        self._log_location(key, ann[key])
+                        ann_dict[new_key] = ann[key].strip().split('\n')
+                    else:
+                        ann_dict[new_key] = None
+                else:
+                    ann_dict[new_key] = ann[key]
+            return ann_dict
+
+        # Create an Annotations object to hold the re-rendered annotations
+        rerendered_annotations = Annotations(self.opts)
+        self._log_location(annotation_list)
+        for ann in annotation_list:
             ann = _row_to_dict(ann)
             this_annotation = Annotation(ann)
             rerendered_annotations.annotations.append(this_annotation)

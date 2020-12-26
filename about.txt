@@ -1,4 +1,12 @@
 Version history:
+1.14.0 - 26 December 2020
+• Fix: Python 3 compatiblity: Replace use of "file" with "open". 
+• Fix: Python 3 compatiblity: Sorting on the Annotations Import dialog.
+• Fix: Python 3 compatiblity: Completed work for tolinos and Kindles. 
+• New: Add support for Sony devices. From @Cibes. 
+• Fix: Remove references to older calibre IPC code as that was removed in calibre 5.7.
+• Update: Various backend changed that should improve performance.
+
 1.13.0 - 18 October 2020
 • Update: Changes for Python 3 support in calibre.
 • Update: Internal changes to how dialogs are handled.
