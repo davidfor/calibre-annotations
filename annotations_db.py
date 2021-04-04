@@ -168,7 +168,7 @@ class AnnotationsDB(Logger):
             return ann_dict
 
         # Create an Annotations object to hold annotations
-        stored_annotations = Annotations(self.opts, title=book_mi['title'])
+        stored_annotations = Annotations(self.opts, title=book_mi['title'], cid=book_mi['book_id'])
         annotations = self.get_annotations(annotations_db, book_mi['book_id'])
         for ann in annotations:
             ann = _row_to_dict(ann)

@@ -573,8 +573,13 @@ class AnnotationsAppearance(SizePersistedDialog):
         '''
         Display strftime help file
         '''
+        help_html = get_resources('help/timestamp_formats.html')
+        print("1 - %s" % help_html)
+        help_html = help_html.decode('utf-8')
+        print("2 - %s" % help_html)
+
         hv = HelpView(self, self.icon, self.prefs,
-            html=get_resources('help/timestamp_formats.html'), title=_("Timestamp formats"))
+            html=help_html, title=_("Timestamp formats"))
         hv.show()
 
     def sizeHint(self):

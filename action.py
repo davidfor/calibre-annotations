@@ -469,7 +469,8 @@ class AnnotationsAction(InterfaceAction, Logger):
         '''
         Match imported metadata against library metadata
         Confidence:
-          5: uuid + title + author
+          5: book_id
+          5: uuid + title + author or book_id + title + author
           4: uuid + title
           3: uuid
           2: title + author
@@ -489,9 +490,17 @@ class AnnotationsAction(InterfaceAction, Logger):
         
         title = normalize(book_mi['title'])
         self._log_location("DEBUG: book_mi=%s" % book_mi)
+        
+        try:
+            book_id = int(book_mi['book_id'])
+        except:
+            book_id = -1
 
+        if (book_mi['book_id'] is not None and book_id > 0):
+            cid = book_id
+            confidence = 5
         # Check uuid_map
-        if (book_mi['uuid'] in uuid_map and
+        elif (book_mi['uuid'] in uuid_map and
                 title == uuid_map[book_mi['uuid']]['title'] and
                 book_mi['author'] in uuid_map[book_mi['uuid']]['authors']):
             cid = uuid_map[book_mi['uuid']]['id']

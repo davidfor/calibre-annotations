@@ -77,7 +77,7 @@ class KoboFetchingApp(USBReader):
 
 #         self._log("%s:get_active_annotations() - self.active_annotations={0}".format(self.active_annotations))
         # Add annotations to the database
-        for annotation in sorted(list(self.active_annotations.values()), key=lambda k: (k['book_id'], k['last_modification'])):
+        for annotation in sorted(list(self.active_annotations.values()), key=lambda k: (k['book_id'], k['location_sort'], k['last_modification'])):
             # Populate an AnnotationStruct with available data
             ann_mi = AnnotationStruct()
 
@@ -144,6 +144,7 @@ class KoboFetchingApp(USBReader):
         # Calibre already knows what books are on the device, so use it.
         db = self.opts.gui.library_view.model().db
         self.onDeviceIds = set(db.search_getting_ids('ondevice:True', None, sort_results=False, use_virtual_library=False))
+        self._log("%s:get_installed_books() - self.onDeviceIds=" % self.onDeviceIds)
 
         self._log("%s:get_installed_books() - about to call self.generate_books_db_name" % self.app_name)
         self.books_db = self.generate_books_db_name(self.app_name_, self.opts.device_name)
@@ -231,56 +232,87 @@ class KoboFetchingApp(USBReader):
     def _fetch_annotations(self):
         self._log_location("Start!!!!")
         
-        count_bookmark_query = ('SELECT COUNT(*) AS num_bookmarks '
-                                'FROM Bookmark bm LEFT OUTER JOIN Content c ON '
-                                    'bm.ContentID = c.ContentID '
-                                'WHERE bm.Hidden = "false" ')
+        count_bookmark_query = (
+            'SELECT COUNT(*) AS num_bookmarks '
+            'FROM Bookmark bm LEFT OUTER JOIN Content c ON '
+                'bm.ContentID = c.ContentID '
+            'WHERE bm.Hidden = "false" '
+            )
         bookmark_query = (
-                        'SELECT bm.BookmarkID, bm.ContentID, bm.VolumeID, bm.Text, bm.Annotation, bm.ChapterProgress, ' 
-                                'bm.StartContainerChildIndex, bm.StartOffset, c.BookTitle, c.Title, c.volumeIndex, '
-                                'c.___NumPages, IFNULL(bm.DateModified, bm.DateCreated) as DateModified, '
-                                'c.MimeType, c.VolumeIndex, bm.DateCreated '
-                        'FROM Bookmark bm LEFT OUTER JOIN Content c ON bm.ContentID = c.ContentID ' 
-                        'WHERE bm.Hidden = "false" '
-                        'AND MimeType NOT IN ("application/xhtml+xml", "application/x-kobo-epub+zip") '
-                        'AND bm.VolumeID = ? '
-                        'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
-                        )
+            'SELECT bm.BookmarkID, bm.ContentID, bm.VolumeID, bm.Text, bm.Annotation, bm.ChapterProgress, ' 
+                    'c.BookTitle, c.Title, c.volumeIndex, '
+                    'IFNULL(bm.DateModified, bm.DateCreated) as DateModified, '
+                    'c.VolumeIndex, bm.DateCreated '
+            'FROM Bookmark bm LEFT OUTER JOIN Content c ON bm.ContentID = c.ContentID ' 
+            'WHERE bm.Hidden = "false" '
+            'AND MimeType NOT IN ("application/xhtml+xml", "application/x-kobo-epub+zip") '
+            'AND bm.VolumeID = ? '
+            'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
+            )
         kepub_bookmark_query = (
-                                'SELECT bm.bookmarkid, bm.ContentID, bm.VolumeID, bm.text, bm.annotation, bm.ChapterProgress, '
-                                    'bm.StartContainerChildIndex, bm.StartOffset, c.BookTitle, c.TITLE, c.volumeIndex, ' 
-                                    'c.___NumPages, IFNULL(bm.DateModified, bm.DateCreated) as DateModified, ' 
-                                    'c.MimeType, c.VolumeIndex, bm.DateCreated ' 
-                                'FROM Bookmark bm LEFT OUTER JOIN Content c '
-                                'WHERE bm.Hidden = "false" '
-                                'AND MimeType IN ("application/xhtml+xml", "application/x-kobo-epub+zip") '
-                                'AND ContentType = 899 '
-                                'AND c.ContentID LIKE bm.ContentID || "-%" '
-                                'AND bm.VolumeID = c.BookID '
-                                'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
-                               )
+            'SELECT bm.bookmarkid, bm.ContentID, bm.VolumeID, bm.text, bm.annotation, bm.ChapterProgress, '
+                'c.BookTitle, c.TITLE, c.volumeIndex, ' 
+                'IFNULL(bm.DateModified, bm.DateCreated) as DateModified, ' 
+                'c.VolumeIndex, bm.DateCreated ' 
+            'FROM Bookmark bm LEFT OUTER JOIN Content c '
+            'WHERE bm.Hidden = "false" '
+            'AND MimeType IN ("application/xhtml+xml", "application/x-kobo-epub+zip") '
+            'AND ContentType = 899 '
+            'AND c.ContentID LIKE bm.ContentID || "-%" '
+            'AND bm.VolumeID = c.BookID '
+            'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
+           )
         kepub_bookmark_query = (
-                                'SELECT bm.bookmarkid, bm.ContentID, bm.VolumeID, bm.text, bm.annotation, bm.ChapterProgress, '
-                                    'bm.StartContainerChildIndex, bm.StartOffset, c.BookTitle, c.Title, c.volumeIndex, ' 
-                                    'c.___NumPages, IFNULL(bm.DateModified, bm.DateCreated) as DateModified, ' 
-                                    'c.MimeType, c.VolumeIndex, bm.DateCreated ' 
-                                'FROM Bookmark bm LEFT OUTER JOIN content c '
-                                'WHERE bm.Hidden = "false" '
-                                'AND MimeType IN ("application/x-kobo-epub+zip") '
-                                'AND ContentType = 6 '
-                                'AND bm.VolumeID = c.ContentID '
-                                'AND bm.VolumeID = ? '
-                                'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
-                               )
+            'SELECT bm.bookmarkid, bm.ContentID, bm.VolumeID, bm.text, bm.annotation, bm.ChapterProgress, '
+                'c.BookTitle, c.Title, c.volumeIndex, ' 
+                'IFNULL(bm.DateModified, bm.DateCreated) as DateModified, ' 
+                'c.VolumeIndex, bm.DateCreated ' 
+            'FROM Bookmark bm LEFT OUTER JOIN content c '
+            'WHERE bm.Hidden = "false" '
+            'AND MimeType IN ("application/x-kobo-epub+zip") '
+            'AND ContentType = 6 '
+            'AND bm.VolumeID = c.ContentID '
+            'AND bm.VolumeID = ? '
+            'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
+           )
+        kepub_bookmark_query = (
+            'SELECT bm.bookmarkid, bm.ContentID, bm.VolumeID, bm.text, bm.annotation, bm.ChapterProgress,'
+                'IFNULL(bm.DateModified, bm.DateCreated) as DateModified, '
+                'bm.DateCreated '
+            'FROM Bookmark bm '
+            'WHERE bm.Hidden = "false" '
+                'AND bm.VolumeID = ? '
+            'ORDER BY bm.volumeid, bm.DateCreated, bm.chapterprogress'
+           )
+        kepub_bookmark_query = (
+            'SELECT bm.bookmarkid, bm.ContentID, bm.VolumeID, bm.text, bm.annotation, bm.ChapterProgress, '
+                'c.BookTitle, c.Title, c.volumeIndex, '
+                'IFNULL(bm.DateModified, bm.DateCreated) as DateModified, '
+                'c.VolumeIndex, bm.DateCreated ' 
+            'FROM Bookmark bm LEFT OUTER JOIN content c ON bm.ContentID = c.ContentID '
+            'WHERE bm.Hidden = "false" '
+                'AND bm.VolumeID = ? '
+            'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
+           )
         kepub_chapter_query = (
-                                'SELECT c.ContentID, c.BookTitle, c.Title, c.VolumeIndex, ' 
-                                    'c.___NumPages, c.MimeType ' 
-                                'FROM content c '
-                                'WHERE ContentType = 899 '
-                                'AND c.BookID = ? '
-#                                 'AND c.ContentID LIKE ? '
-                                'ORDER BY c.VolumeIndex'
-                               )
+            'SELECT c.ContentID, c.BookTitle, c.Title, c.VolumeIndex ' 
+            'FROM content c '
+            'WHERE ContentType = 899 '
+            'AND c.BookID = ? '
+            'ORDER BY c.VolumeIndex'
+           )
+        kepub_chapter_query = (
+            'SELECT spine.BookTitle, IFNULL(chap.Title, spine.Title) as Title, '
+                'chap.ContentID as chap_ContentID, spine.ContentID as spine_ContentID, ' 
+                'spine.VolumeIndex as spine_VolumeIndex, IFNULL(chap.VolumeIndex, 0) as chap_VolumeIndex ' 
+            'FROM content spine LEFT OUTER JOIN content chap '
+                'ON spine.BookID = chap.BookID AND chap.ChapterIDBookmarked = spine.ContentID ' 
+            'WHERE spine.ContentType = 9 ' 
+                'AND spine.BookID = ? ' 
+            'ORDER BY spine.VolumeIndex, spine.ContentID, chap.VolumeIndex, chap.ContentID'
+           )
+
+
         def _convert_calibre_ids_to_books(db, ids):
             books = []
             for book_id in ids:
@@ -293,7 +325,6 @@ class KoboFetchingApp(USBReader):
             book = Book('', 'lpath', title=mi.title, other=mi)
             book.calibre_id  = mi.id
             return book
-
 
         # Generate a path_map from selected ids
         def get_ids_from_selected_rows():
@@ -330,6 +361,7 @@ class KoboFetchingApp(USBReader):
                     path_map[contentId] = dict(path=path, fmts=get_formats(_id), book_id=_id)
             return path_map
 
+
         db = self.opts.gui.library_view.model().db
         if not self.onDeviceIds:
             self.onDeviceIds = set(db.search_getting_ids('ondevice:True', None, sort_results=False, use_virtual_library=False))
@@ -358,12 +390,9 @@ class KoboFetchingApp(USBReader):
                 count_bookmarks = 0
             self._log("_fetch_annotations - Total number of bookmarks={0}".format(count_bookmarks))
             
-            self._log("_fetch_annotations - About to get non-kepub annotations")
-#             self._read_database_annotations(connection, bookmark_query, path_map)
-            self._log("_fetch_annotations - Finished getting non-kepub annotations")
-            self._log("_fetch_annotations - About to get kepub annotations")
+            self._log("_fetch_annotations - About to get annotations")
             self._read_database_annotations(connection, bookmark_query, kepub_bookmark_query, path_map, chapter_query=kepub_chapter_query, kepubs=True)
-            self._log("_fetch_annotations - Finished getting kepub annotations")
+            self._log("_fetch_annotations - Finished getting annotations")
         
         self._log_location("Finish!!!!")
 
@@ -378,7 +407,6 @@ class KoboFetchingApp(USBReader):
             book_id = path_map[contentId]['book_id']
             self._log("_read_database_annotations - contentId={0} book={1}".format(contentId, path_map[contentId]))
             kepub = (contentId.endswith('.kepub.epub') or not os.path.splitext(contentId)[1])
-            self._log("_read_database_annotations - contentId={0} book={1}".format(contentId, path_map[contentId]))
             if kepub:
                 bookmark_cursor.execute(kepub_bookmark_query, [contentId])
             else:
@@ -391,31 +419,45 @@ class KoboFetchingApp(USBReader):
                     '''
                     Need to get the entry from the content table for the chapter. The contentID looks like:
                         [bookcontentid]![OPF Reference]![file name][fragment]-[number]
-                        
+                         
                         bookcontentid is the reference to the book. But, for sideloaded, it does not have "file:" at the start.
                         "OPF Reference" shows where the file is relative to the OPF file.
                         "file name" is the actual file name in the book, but it is URL encoded.
                         "fragment" is the reference to an id. It will only exist if the ToC entry refers to an id.
                         "number" is an integer for the ToC nesting depth.
-                        
+                         
                     The contentId in the Bookmark table is only "[bookcontentid]![OPF Reference]![file name]". Because of this,
                     take the first ToC entry in the content table.
                     '''
-                        
+                         
                     if new_book:
                         self._log("_read_database_annotations - getting kepub chapters: contentId={0}".format(contentId))
                         chapter_cursor.execute(chapter_query, [contentId])
                         kepub_chapters = {}
                         try:
                             for chapter_row in chapter_cursor:
-                                chapter_contentID = chapter_row['ContentID']
-                                chapter_contentID = chapter_contentID[:chapter_contentID.rfind('-')]
-                                kepub_chapters[chapter_contentID] = chapter_row['Title']
+                                self._log("_read_database_annotations - getting kepub chapters: chapter_row={0}".format(chapter_row))
+                                if chapter_row['chap_ContentID'] is not None:
+                                    chapter_contentID = chapter_row['chap_ContentID']
+                                    toc_level_separator = chapter_contentID.rfind('-')
+                                    if toc_level_separator > 0:
+                                        chapter_contentID = chapter_contentID[:toc_level_separator]
+                                    kepub_chapters[chapter_contentID] = {
+                                            'Title': chapter_row['Title'],
+                                            'VolumeIndex': chapter_row['spine_VolumeIndex'] * 1000 + chapter_row['chap_VolumeIndex']
+                                        }
+                                chapter_contentID = chapter_row['spine_ContentID']
+                                kepub_chapters[chapter_contentID] = {
+                                        'Title': chapter_row['Title'],
+                                        'VolumeIndex': chapter_row['spine_VolumeIndex'] * 1000 + chapter_row['chap_VolumeIndex']
+                                    }
                             self._log("_read_database_annotations - getting kepub chapter: kepub chapters={0}".format(kepub_chapters))
-                        except:
+                        except Exception:
+                            import traceback
+                            traceback.print_exc()
                             self._log("_read_database_annotations - No chapters found")
                         new_book = False
-
+ 
                     chapter_contentID = row['ContentID']
 #                     self._log("_read_database_annotations - getting kepub: chapter chapter_contentID='{0}'".format(chapter_contentID))
                     filename_index = chapter_contentID.find('!')
@@ -437,13 +479,22 @@ class KoboFetchingApp(USBReader):
 #                     self._log("_read_database_annotations - getting kepub: chapter file_contentID_part='{0}'".format(file_contentID_part))
                     file_contentID_part = quote(file_contentID_part)
                     chapter_contentID = book_contentID_part + "!" + opf_reference + "!" + file_contentID_part + fragment_reference
-#                     self._log("_read_database_annotations - getting kepub chapter chapter_contentID='{0}'".format(chapter_contentID))
-                    chapter_title= kepub_chapters.get(chapter_contentID, '')
+                    self._log("_read_database_annotations - getting kepub chapter chapter_contentID='{0}'".format(chapter_contentID))
+                    kepub_chapter = kepub_chapters.get(chapter_contentID, None)
+                    if kepub_chapter is not None:
+                        chapter_title = kepub_chapter['Title']
+                        current_chapter = kepub_chapter['VolumeIndex']
+                    else:
+                        chapter_title = _('(Unknown Chapter)')
+                        current_chapter = -1
+                        chapter_title = row['Title']
+                        current_chapter = row['VolumeIndex']
                 else:
                     chapter_title   = row['Title']
-    
+                    current_chapter = row['VolumeIndex']
+
                 bookmark_timestamp = convert_kobo_date(row['DateModified'])
-                self._log("_read_database_annotations - bookmark_timestamp={0}, row['DateModified']='{1}'".format(bookmark_timestamp, row['DateModified']))
+#                 self._log("_read_database_annotations - bookmark_timestamp={0}, row['DateModified']='{1}'".format(bookmark_timestamp, row['DateModified']))
                 bookmark_timestamp = mktime(bookmark_timestamp.timetuple())
 #                 self._log("_read_database_annotations - bookmark_timestamp={0}, row['DateModified']='{1}'".format(bookmark_timestamp, row['DateModified']))
 #                 if row['DateModified']:
@@ -451,9 +502,8 @@ class KoboFetchingApp(USBReader):
 #                     bookmark_timestamp = mktime(bookmark_timestamp.timetuple())
 #                 else:
 #                     self._log("_read_database_annotations - row['DateModified'] is false - didn't call mktime")
-                self._log("_read_database_annotations - after mktime - bookmark_timestamp={0}, row['DateModified']='{1}'".format(bookmark_timestamp, row['DateModified']))
+#                 self._log("_read_database_annotations - after mktime - bookmark_timestamp={0}, row['DateModified']='{1}'".format(bookmark_timestamp, row['DateModified']))
                 annotation_id   = row['BookmarkID']
-                current_chapter = row['VolumeIndex']
                 if current_chapter is None:
                     current_chapter = 0
     
@@ -462,12 +512,12 @@ class KoboFetchingApp(USBReader):
                     'book_id': int(book_id),
                     'highlight_color': 'Gray',
                     'location': chapter_title,
-                    'location_sort': "%06d" % (current_chapter  * 1000 + row['ChapterProgress'] * 100),
+                    'location_sort': "%08d" % (current_chapter  * 1000 + row['ChapterProgress'] * 100),
                     'last_modification': bookmark_timestamp
                     }
                 self.active_annotations[annotation_id]['highlight_text'] = row['Text']
                 self.active_annotations[annotation_id]['note_text'] = row['Annotation']
-    #             self._log(self.active_annotations[annotation_id])
+                self._log(self.active_annotations[annotation_id])
                 last_contentId = contentId
 
     def get_device_paths_from_id(self, book_id):

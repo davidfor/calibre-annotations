@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-assert '…' == '\xe2\x80\xa6', "file encoding error"
 
 # Copyright 2013 Axel Walthelm, 2014-2019 additions by David Forrester <davidfor@internode.on.net>'
 #
@@ -75,11 +74,13 @@ _LANG_AND_KIND_DETECT_BY_START_WORDS = {
     "Markierung":  ('de', 'highlight'),
     "Notiz":       ('de', 'note'),
     "Lesezeichen": ('de', 'bookmark'),
+    "La subrayado": ('es', 'highlight'),
+    "La nota":      ('es', 'note'),
+    "La marcador":  ('es', 'bookmark'),
     "Mi subrayado": ('es', 'highlight'),
     "Mi nota":      ('es', 'note'),
     "Mi marcador":  ('es', 'bookmark'),
     "Tu subrayado": ('es', 'highlight'),
-    "La subrayado": ('es', 'highlight'),
     "Tu nota":      ('es', 'note'),
     "Tu marcador":  ('es', 'bookmark'),
     "Votre surlignement": ('fr', 'highlight'),
@@ -291,7 +292,7 @@ def _getTitleAndAuthor(line):
         while i >= 0 and line[i:].count('(') != line[i:].count(')'):
             i = line.rindex('(', 0, i-1) if i > 0 else -1
         if i > 0:
-            title = line[0:i].strip()
+            title = line[:i].strip()
             author = line[i+1:-1].strip()
     if title is None:
         title = line
@@ -304,12 +305,14 @@ def FromFileName(myClippingsFilePath):
             return FromUtf8String( f.read() )
     except Exception as e:
         log('ERROR', "Error trying to read clippings file: %s" % (str(e),))
+        import traceback
+        traceback.print_exc()
         return []
 
 def FromUtf8String(myClippingsTxt):
-    myClippingsTxt = myClippingsTxt.decode('utf-8')
+    myClippingsTxt = myClippingsTxt.decode('utf-8-sig')
     # remove BOM(s) a.k.a. zero width space
-    myClippingsTxt = myClippingsTxt.replace('\xef\xbb\xbf', '')
+    #     myClippingsTxt = myClippingsTxt.replace('\xef\xbb\xbf', '')
     # normalize newlines
     myClippingsTxt = myClippingsTxt.replace('\r\n', '\n').replace('\r', '\n')
     myClippingsTxt = myClippingsTxt.strip()
@@ -329,6 +332,7 @@ def FromUtf8String(myClippingsTxt):
 
     annos = []
     for record in records:
+        record = record.encode().decode('utf-8-sig')
         # check basic record format:
         # first line is not empty
         # second line starts with "- " and contains "|"
@@ -348,6 +352,7 @@ def FromUtf8String(myClippingsTxt):
         
         # evaluate book line
         anno.title, anno.author = _getTitleAndAuthor(anno.bookline.strip())
+#         anno.title = anno.title
 
         # status line ends with a date part after the last |
         split_idx = anno.statusline.rindex('|') # we already checked that | does exist
@@ -365,7 +370,7 @@ def FromUtf8String(myClippingsTxt):
 ###################################################################################################
 # tests and test helpers
 ###################################################################################################
-if __debug__ and __name__ == '__main__':
+if __name__ == '__main__':
     
     def _PrintMonthAndWeekDayNamesDict():
         # we must not use setlocale in product code, because it is not thread safe;
@@ -465,14 +470,14 @@ if __debug__ and __name__ == '__main__':
         # empty
         print("Test: empty")
         _testParse(
-r"""""",
-r"""
+"",
+"""
 """)
 
         # basic English
         print("Test: basic English")
         _testParse(
-r"""Kindle-Benutzerhandbuch (German Edition) (Amazon)
+"""Kindle-Benutzerhandbuch (German Edition) (Amazon)
 - Your Highlight Location 449-449 | Added on Thursday, 25 April 13 23:45:11
 
 auszublenden. Seite aktualisieren:
@@ -598,7 +603,7 @@ text = 'Notiz Zeile 1\nZeile 2'
         # basic Spanish
         print("Test: basic Spanish")
         _testParse(
-r"""Willkommen Axel  
+"""Willkommen Axel  
 - Mi nota Posición 6 | Añadido el viernes 26 de abril de 2013, 0:04:34
 
 note
@@ -652,7 +657,7 @@ text = ''
         # basic French
         print("Test: basic French")
         _testParse(
-r"""Willkommen Axel  
+"""Willkommen Axel  
 - Votre surlignement Emplacement 12-12 | Ajouté le vendredi 26 avril 2013 à 00:18:27
 
 Lesen beginnen.
@@ -705,7 +710,7 @@ text = ''
         # basic Italian
         print("Test: basic Italian")
         _testParse(
-r"""Willkommen Axel  
+"""Willkommen Axel  
 - La mia evidenziazione Posizione 22-22 | Aggiunto il venerdì 6 aprile 12, 00:25:08
 
 Wir freuen uns
@@ -758,7 +763,7 @@ text = ''
         # basic Japanese
         print("Test: basic Japanese")
         _testParse(
-r"""The Café (Hans Glück)
+"""The Café (Hans Glück)
 - ハイライト ページ222 | 位置No. 3396-3396 | 追加日： 2013年6月17日 (月曜日) 20:31:09
 
 CHAPTER
@@ -812,7 +817,7 @@ text = ''
         # basic Brazilian
         print("Test: basic Brazilian")
         _testParse(
-r"""The Café (Hans Glück)
+"""The Café (Hans Glück)
 - Seu destaque na página 222 | Posição 3396-3396 | Adicionado na data segunda-feira, 17 de junho de 2013, 20:39:30
 
 CHAPTER
@@ -866,7 +871,7 @@ text = ''
         # basic Chinese
         print("Test: basic Chinese")
         _testParse(
-r"""The Café (Hans Glück)
+"""The Café (Hans Glück)
 - 我的标注 第222页 | 位置3397-3397 | 已添加至 2013年6月17日 星期一 22:27:30
 
 CHAPTER
@@ -919,7 +924,7 @@ text = ''
         # exotic English
         print("Test: exotic English")
         _testParse(
-r"""EGC Spanish to English Dictionary V0.1 (Dave Slusher)
+"""EGC Spanish to English Dictionary V0.1 (Dave Slusher)
 - Bookmark on Page 415 | Loc. 6353  | Added on Saturday, April 30, 2011, 08:37 AM
 
 
@@ -1032,7 +1037,7 @@ text = 'Inhalte Kapitel 2'
 
         print("OK")
 
-if __debug__ and __name__ == '__main__':
+if __name__ == '__main__':
     import sys
     #_PrintMonthAndWeekDayNamesDict()
     def testLog(level, message):

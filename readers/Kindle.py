@@ -122,6 +122,14 @@ class KindleReaderApp(USBReader):
         self.update_timestamp(self.annotations_db)
         self.commit()
 
+    def get_device_paths_from_id(self, book_id):
+        paths = []
+        for x in ('memory', 'card_a', 'card_b'):
+            x = getattr(self.opts.gui, x+'_view').model()
+            paths += x.paths_for_db_ids(set([book_id]), as_map=True)[book_id]
+#        self._log("get_device_paths_from_id - paths=", paths)
+        return [r.path for r in paths]
+
     def get_installed_books(self):
         '''
         For each book, construct a BookStruct object with the book's metadata.
@@ -149,6 +157,22 @@ class KindleReaderApp(USBReader):
         # Get books added to Kindle by calibre
         resolved_path_map = self._get_installed_books(path_map)
         self._log("After getting installed books: resolved_path_map=%s" % resolved_path_map)
+
+
+        self._log("###########################################")
+        self._log("###########################################")
+        self._log("###########################################")
+        self._log("Get installed books using calibre search...")
+        resolved_path_map = {}
+        db = self.opts.gui.library_view.model().db
+        self.onDeviceIds = set(db.search_getting_ids('ondevice:True', None, sort_results=False, use_virtual_library=False))
+        for book_id in self.onDeviceIds:
+            paths = self.get_device_paths_from_id(book_id)
+            if len(paths) > 0:
+                resolved_path_map[book_id] = paths[0]
+
+        self._log("After getting installed books: resolved_path_map=%s" % resolved_path_map)
+
 
         # Add books added to Kindle by WhisperNet or download
         resolved_path_map = self._get_imported_books(resolved_path_map)
@@ -230,6 +254,7 @@ class KindleReaderApp(USBReader):
             self.add_to_books_db(self.books_db, book_mi)
 
             # Add book to indexed_books
+            self._log("Adding title to self.installed_books_by_title: '%s'" % (mi.title.strip()))
             self.installed_books_by_title[mi.title.strip()] = {'book_id': book_id, 'author_sort': mi.author_sort}
 
             # Increment the progress bar
@@ -298,11 +323,14 @@ class KindleReaderApp(USBReader):
 
         unrecognized_index = -1
         storage = self.get_storage()
+        self._log("    List of storage devices - storage=%s" % (storage))
+        uuid_map_keys = self.parent.library_scanner.uuid_map.keys() # Should help performances
         for vol in storage:
             templates = KINDLE_TEMPLATES
             for template in templates:
                 self._log("    Searching for books on vol=%s using template=%s" % (vol,template))
                 imported_books = glob.iglob(os.path.join(vol, template))
+                self._log("    List of books from glob - imported_books=%s" % (imported_books))
                 for path in imported_books:
                     self._log("    Have possible book with path=%s" % (path))
                     try:
@@ -317,13 +345,16 @@ class KindleReaderApp(USBReader):
                             resolved_path_map[self.news_clippings_cid] = path
                             continue
 
-                    if book_mi.uuid in self.parent.library_scanner.uuid_map:
+                    if book_mi.uuid in uuid_map_keys:
+                        self._log("    Have found book UUID - book_mi.uuid='%s'" % (book_mi.uuid))
                         matched_id = self.parent.library_scanner.uuid_map[book_mi.uuid]['id']
-                        if not matched_id in resolved_path_map:
-                            resolved_path_map[matched_id] = path
+                        resolved_path_map[matched_id] = path
                     else:
-                        resolved_path_map[unrecognized_index] = path
-                        unrecognized_index -= 1
+                        self._log("    Did not find book UUID - book_mi.uuid='%s'" % (book_mi.uuid))
+                        if not path in resolved_path_map.values():
+                            self._log("    Book not already in resolved_path_map path=='%s'" % (path))
+                            resolved_path_map[unrecognized_index] = path
+                            unrecognized_index -= 1
 
         return resolved_path_map
 
@@ -334,6 +365,9 @@ class KindleReaderApp(USBReader):
         ParseKindleMyClippingsTxt.log = log
         annos = ParseKindleMyClippingsTxt.FromFileName(self._get_my_clippings())
         self._log(" Number of entries retrieved from 'My Clippings.txt'=%d" % (len(annos)))
+        self._log(" Dictionary of installed_books_by_title =%s" % (self.installed_books_by_title))
+        self._log(" Keys/Titles of installed_books_by_title =%s" % (self.installed_books_by_title.keys()))
+        self._log(" Keys/Titles of installed_books_by_title =%s" % list(self.installed_books_by_title.keys()))
         for anno in annos:
             title = anno.title
             self._log("  Annotation for Title=='%s'" % (title))
@@ -341,10 +375,15 @@ class KindleReaderApp(USBReader):
             # consider this an active annotation
             book_id = None
             title = title.strip()
+            self._log("  Searching for Title=='%s'" % (title))
             if title in self.installed_books_by_title.keys():
                 book_id = self.installed_books_by_title[title]['book_id']
                 self._log("    Found book_id=%d" % (book_id))
-            if not book_id:
+            if book_id is None:
+                if title in list(self.installed_books_by_title.keys()):
+                    book_id = self.installed_books_by_title[title]['book_id']
+                    self._log("    Using list, Found book_id=%d" % (book_id))
+            if book_id is None:
                 self._log("    Title not found in books on device")
                 continue
             if anno.time:

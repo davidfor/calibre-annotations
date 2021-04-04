@@ -757,17 +757,17 @@ class USBReader(ReaderApp):
 
         def get_ids_from_selected_rows():
             rows = self.opts.gui.library_view.selectionModel().selectedRows()
-            if not rows or len(rows) < 2:
+            if rows is not None or len(rows) < 2:
                 rows = range(self.opts.gui.library_view.model().rowCount(QModelIndex()))
             ids = list(map(self.opts.gui.library_view.model().id, rows))
             return ids
 
-        def get_formats(id):
-            formats = db.formats(id, index_is_id=True)
+        def get_formats(book_id):
+            formats = db.formats(book_id, index_is_id=True)
             fmts = []
             if formats:
-                for format in formats.split(','):
-                    fmts.append(format.lower())
+                for book_format in formats.split(','):
+                    fmts.append(book_format.lower())
             return fmts
 
         def get_device_path_from_id(id_):

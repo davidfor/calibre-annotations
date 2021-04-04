@@ -62,8 +62,8 @@ class SortableTableWidgetItem(QTableWidgetItem):
         self.sort_key = sort_key
 
     def __lt__(self, other):
-        return self.sort_key < other.sort_key
-
+        return self.sort_key is not None and other.sort_key is not None and self.sort_key < other.sort_key \
+            or (self.sort_key is not None and other.sort_key is None)
 
 class MarkupTableModel(QAbstractTableModel):
     #http://www.saltycrane.com/blog/2007/12/pyqt-43-qtableview-qabstracttablemodel/
@@ -210,6 +210,11 @@ class AnnotatedBooksDialog(SizePersistedDialog):
             enabled = QCheckBox()
             enabled.setChecked(True)
 
+            # The UUID might not be present. And it is hidden so shouldn't need to be sorted, but...
+            book_uuid = SortableTableWidgetItem(
+                book_data['uuid'],
+                book_data['uuid'])
+
             # last_annotation sorts by timestamp
             last_annotation_timestamp = time() if book_data['last_update'] is None else book_data['last_update']
 #             debug_print("AnnotatedBooksDialog::__init__ title=%s, i=%d, the_timestamp=%s" % (book_data['title'], i, the_timestamp))
@@ -224,13 +229,13 @@ class AnnotatedBooksDialog(SizePersistedDialog):
                 book_data['reader_app'].upper())
 
             # title, author sort by title_sort, author_sort
-            if not book_data['title_sort']:
+            if book_data['title_sort'] is None:
                 book_data['title_sort'] = book_data['title']
             title = SortableTableWidgetItem(
                 book_data['title'],
                 book_data['title_sort'].upper())
 
-            if not book_data['author_sort']:
+            if book_data['author_sort'] is None:
                 book_data['author_sort'] = book_data['author']
             author = SortableTableWidgetItem(
                 book_data['author'],
@@ -245,7 +250,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
 
             # List order matches self.annotations_header
             this_book = [
-                book_data['uuid'],
+                book_uuid,
                 book_data['book_id'],
                 book_data['genre'],
                 enabled,
@@ -317,12 +322,12 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         for row in range(nrows):
             self.tv.setRowHeight(row, fm.height() + 4)
 
-        self.tv.setSortingEnabled(True)
         sort_column = self.opts.prefs.get('annotated_books_dialog_sort_column',
                                           self.CONFIDENCE_COL)
         sort_order = self.opts.prefs.get('annotated_books_dialog_sort_order',
                                          Qt.DescendingOrder)
         self.tv.sortByColumn(sort_column, sort_order)
+        self.tv.setSortingEnabled(True)
 
         # ~~~~~~~~ Create the ButtonBox ~~~~~~~~
         self.dialogButtonBox = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Help)
@@ -439,8 +444,11 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         '''
         Display help file
         '''
+        help_html = get_resources('help/import_annotations.html')
+        help_html = help_html.decode('utf-8')
+
         hv = HelpView(self, self.opts.icon, self.opts.prefs,
-                      html=get_resources('help/import_annotations.html'), title=_("Import Annotations"))
+                      html=help_html, title=_("Import Annotations"))
         hv.show()
 
     def size_hint(self):

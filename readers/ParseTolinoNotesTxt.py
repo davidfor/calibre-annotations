@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-assert '…' == '\xe2\x80\xa6', "file encoding error"
 
 # Copyright 2018-2019, David Forrester <davidfor@internode.on.net>'
 #
@@ -329,7 +328,7 @@ def FromUtf8String(notesTxt):
 ###################################################################################################
 # tests and test helpers
 ###################################################################################################
-if __debug__ and __name__ == '__main__':
+if __name__ == '__main__':
     
     def _PrintMonthAndWeekDayNamesDict():
         # we must not use setlocale in product code, because it is not thread safe;
@@ -980,7 +979,7 @@ text = 'Inhalte Kapitel 2'
 
         print("OK")
 # 
-# if __debug__ and __name__ == '__main__':
+# if __name__ == '__main__':
 #     #_PrintMonthAndWeekDayNamesDict()
 #     def testLog(level, message):
 #         if level.upper() != 'INFO':
@@ -990,7 +989,7 @@ text = 'Inhalte Kapitel 2'
 #     _runTests()
 
 
-if __debug__ and __name__ == '__main__':
+if __name__ == '__main__':
     import sys
     #_PrintMonthAndWeekDayNamesDict()
     def testLog(level, message):

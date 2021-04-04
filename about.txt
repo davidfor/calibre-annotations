@@ -1,8 +1,22 @@
 Version history:
+1.15.0 - 04 March 2021
+• Fix: Spanish My Clippings.txt has "La" for the annotations.
+• Fix: Change method of getting books on device to use a search similar to what is used for Kobo and Tolino devices.
+• Fix: Sorting of annotations for kepubs on Kobo devices.
+• Fix: Opening My Clippings.txt should have been binary. Missed this when reverted earlier change. 
+• Fix: Display more details of an exception when parsing My Clippings.txt.
+• Fix: Goodreader import not working.
+• Fix: Broke Python 2 support with the open when reading My Clippings.txt. 
+• Fix: If already have book id in library, use confidence of 5.
+• Fix: Encode and decode the title from My Clippings.txt to remove the Unicode BOM character.
+• Fix: A couple of changes to solve some obvious problems with the Kindle fetch. Plus more logging.
+• Fix: Python 3 compatibility: Help dialogs.
+• Fix: Sorting columns in fetched annotations dialog. 
+
 1.14.0 - 26 December 2020
-• Fix: Python 3 compatiblity: Replace use of "file" with "open". 
-• Fix: Python 3 compatiblity: Sorting on the Annotations Import dialog.
-• Fix: Python 3 compatiblity: Completed work for tolinos and Kindles. 
+• Fix: Python 3 compatibility: Replace use of "file" with "open". 
+• Fix: Python 3 compatibility: Sorting on the Annotations Import dialog.
+• Fix: Python 3 compatibility: Completed work for tolinos and Kindles. 
 • New: Add support for Sony devices. From @Cibes. 
 • Fix: Remove references to older calibre IPC code as that was removed in calibre 5.7.
 • Update: Various backend changed that should improve performance.
