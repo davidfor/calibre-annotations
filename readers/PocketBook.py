@@ -391,6 +391,8 @@ class PocketBookFetchingApp(USBReader):
             title = book['Title']
             book_oid = book['book_oid']
             filename = book['filename']
+            if '.doc' in filename:
+                filename = re.sub('(?<=.[doc|docx])\.html$', '', filename) # can't escape lookbehind '.'
 
             book_id = path_map.get(filename, None)
             if not book_id:
