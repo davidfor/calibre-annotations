@@ -223,7 +223,50 @@ class PocketBookFetchingApp(USBReader):
         self._log_location("Start!!!!")
 
         count_bookmark_query = (
+            '''
+            SELECT COUNT(*) num_bookmarks FROM Tags t
+            WHERE
+                TagID = 102 AND Val IN ("note", "highlight")
+                AND ItemID IN (SELECT OID from Items WHERE State = 0)
+            '''
+        )
 
+        books_metadata_query = (
+            '''
+            SELECT DISTINCT b.OID book_oid, i.Val mimetype, Title, Authors, f.Name filename FROM Books b
+            LEFT JOIN Files f ON b.OID = f.BookID
+            LEFT JOIN (SELECT ItemID, Val FROM Tags WHERE TagID = 37) i ON b.OID = i.ItemID
+            WHERE
+                b.OID IN (SELECT DISTINCT ParentID FROM Items WHERE TypeID = 4)
+            GROUP BY b.OID
+            ORDER BY b.OID
+            '''
+        )
+
+        annotation_ids_query = (
+            '''
+            SELECT OID AS item_oid, TimeAlt FROM Items
+            WHERE
+                ParentID = ? AND State = 0
+                AND OID NOT IN (SELECT ItemID FROM Tags WHERE Val IN ("bookmark", "draws"))
+            '''
+        )
+
+        # For 104 (highlight_txt) either use json_extract(text), or import JSON using python
+        # as notes edited in the PB notes app loose their Begin/End JSON fields.
+        annotation_data_query = (
+            '''
+            SELECT TagID,
+            CASE
+                WHEN TagID = 101 THEN json_extract(Val, '$.anchor')
+                WHEN TagID = 104 THEN json_extract(Val, '$.text')
+                WHEN TagID = 105 THEN json_extract(Val, '$.text')
+                ELSE Val
+            END AS Val
+            FROM Tags WHERE ItemID = ?
+            ORDER BY TagID
+            '''
+        )
 
         def _convert_calibre_ids_to_books(db, ids):
             books = []
