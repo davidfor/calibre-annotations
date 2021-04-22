@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2021 William Ouwehand <>' # TODO
+__copyright__ = '2021 William Ouwehand <> with parts by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
 import os, re
