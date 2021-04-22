@@ -5,24 +5,16 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 __license__ = 'GPL v3'
-__copyright__ = '2014-2016, David Forrester <davidfor@internode.on.net>'
+__copyright__ = '2021 William Ouwehand <>' # TODO
 __docformat__ = 'restructuredtext en'
 
-import datetime, re, time, os
-from time import mktime
-
-# calibre Python 3 compatibility.
-try:
-    from urllib.parse import quote
-except ImportError as e:
-    from urllib import quote
+import os, re
 
 from calibre_plugins.annotations.reader_app_support import USBReader
 from calibre_plugins.annotations.common_utils import (AnnotationStruct, BookStruct)
 
 
-# Change the class name to <app_name>ReaderApp, e.g. 'KindleReaderApp'
-class KoboFetchingApp(USBReader):
+class PocketBookFetchingApp(USBReader):
     """
     Fetching annotations takes place in two stages:
     1) get_installed_books():
@@ -32,12 +24,10 @@ class KoboFetchingApp(USBReader):
     """
     # The app name should be the first word from the
     # device's name property, e.g., 'Kindle' or 'SONY'. Drivers are located in
-    # calibre.devices.<device>
-    # For example, the name declared in the Kindle class
-    # is 'Kindle 2/3/4/Touch/PaperWhite Device Interface',
-    # so app_name would be the first word, 'Kindle'
-    app_name = 'Kobo'
-#    MERGE_INDEX = "timestamp"
+    app_name = 'PocketBook'
+
+    # Change this to True when developing a new class from this template
+    SUPPORTS_FETCHING = True
 
     # Fetch the active annotations, add them to the annotations_db
     def get_active_annotations(self):
@@ -231,86 +221,8 @@ class KoboFetchingApp(USBReader):
 
     def _fetch_annotations(self):
         self._log_location("Start!!!!")
-        
+
         count_bookmark_query = (
-            'SELECT COUNT(*) AS num_bookmarks '
-            'FROM Bookmark bm LEFT OUTER JOIN Content c ON '
-                'bm.ContentID = c.ContentID '
-            'WHERE bm.Hidden = "false" '
-            )
-        bookmark_query = (
-            'SELECT bm.BookmarkID, bm.ContentID, bm.VolumeID, bm.Text, bm.Annotation, bm.ChapterProgress, ' 
-                    'c.BookTitle, c.Title, c.volumeIndex, '
-                    'IFNULL(bm.DateModified, bm.DateCreated) as DateModified, '
-                    'c.VolumeIndex, bm.DateCreated '
-            'FROM Bookmark bm LEFT OUTER JOIN Content c ON bm.ContentID = c.ContentID ' 
-            'WHERE bm.Hidden = "false" '
-            'AND MimeType NOT IN ("application/xhtml+xml", "application/x-kobo-epub+zip") '
-            'AND bm.VolumeID = ? '
-            'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
-            )
-        kepub_bookmark_query = (
-            'SELECT bm.bookmarkid, bm.ContentID, bm.VolumeID, bm.text, bm.annotation, bm.ChapterProgress, '
-                'c.BookTitle, c.TITLE, c.volumeIndex, ' 
-                'IFNULL(bm.DateModified, bm.DateCreated) as DateModified, ' 
-                'c.VolumeIndex, bm.DateCreated ' 
-            'FROM Bookmark bm LEFT OUTER JOIN Content c '
-            'WHERE bm.Hidden = "false" '
-            'AND MimeType IN ("application/xhtml+xml", "application/x-kobo-epub+zip") '
-            'AND ContentType = 899 '
-            'AND c.ContentID LIKE bm.ContentID || "-%" '
-            'AND bm.VolumeID = c.BookID '
-            'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
-           )
-        kepub_bookmark_query = (
-            'SELECT bm.bookmarkid, bm.ContentID, bm.VolumeID, bm.text, bm.annotation, bm.ChapterProgress, '
-                'c.BookTitle, c.Title, c.volumeIndex, ' 
-                'IFNULL(bm.DateModified, bm.DateCreated) as DateModified, ' 
-                'c.VolumeIndex, bm.DateCreated ' 
-            'FROM Bookmark bm LEFT OUTER JOIN content c '
-            'WHERE bm.Hidden = "false" '
-            'AND MimeType IN ("application/x-kobo-epub+zip") '
-            'AND ContentType = 6 '
-            'AND bm.VolumeID = c.ContentID '
-            'AND bm.VolumeID = ? '
-            'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
-           )
-        kepub_bookmark_query = (
-            'SELECT bm.bookmarkid, bm.ContentID, bm.VolumeID, bm.text, bm.annotation, bm.ChapterProgress,'
-                'IFNULL(bm.DateModified, bm.DateCreated) as DateModified, '
-                'bm.DateCreated '
-            'FROM Bookmark bm '
-            'WHERE bm.Hidden = "false" '
-                'AND bm.VolumeID = ? '
-            'ORDER BY bm.volumeid, bm.DateCreated, bm.chapterprogress'
-           )
-        kepub_bookmark_query = (
-            'SELECT bm.bookmarkid, bm.ContentID, bm.VolumeID, bm.text, bm.annotation, bm.ChapterProgress, '
-                'c.BookTitle, c.Title, c.volumeIndex, '
-                'IFNULL(bm.DateModified, bm.DateCreated) as DateModified, '
-                'c.VolumeIndex, bm.DateCreated ' 
-            'FROM Bookmark bm LEFT OUTER JOIN content c ON bm.ContentID = c.ContentID '
-            'WHERE bm.Hidden = "false" '
-                'AND bm.VolumeID = ? '
-            'ORDER BY bm.volumeid, bm.DateCreated, c.VolumeIndex, bm.chapterprogress'
-           )
-        kepub_chapter_query = (
-            'SELECT c.ContentID, c.BookTitle, c.Title, c.VolumeIndex ' 
-            'FROM content c '
-            'WHERE ContentType = 899 '
-            'AND c.BookID = ? '
-            'ORDER BY c.VolumeIndex'
-           )
-        kepub_chapter_query = (
-            'SELECT spine.BookTitle, IFNULL(chap.Title, spine.Title) as Title, '
-                'chap.ContentID as chap_ContentID, spine.ContentID as spine_ContentID, ' 
-                'spine.VolumeIndex as spine_VolumeIndex, IFNULL(chap.VolumeIndex, 0) as chap_VolumeIndex ' 
-            'FROM content spine LEFT OUTER JOIN content chap '
-                'ON spine.BookID = chap.BookID AND chap.ChapterIDBookmarked = spine.ContentID ' 
-            'WHERE spine.ContentType = 9 ' 
-                'AND spine.BookID = ? ' 
-            'ORDER BY spine.VolumeIndex, spine.ContentID, chap.VolumeIndex, chap.ContentID'
-           )
 
 
         def _convert_calibre_ids_to_books(db, ids):
@@ -532,79 +444,4 @@ class KoboFetchingApp(USBReader):
         return {k[0]: row[i] for i, k in enumerate(cursor.getdescription())}
 
 
-class KoboTouchFetchingApp(KoboFetchingApp):
-    """
-    Fetching annotations takes place in two stages:
-    1) get_installed_books():
-        add the installed books' metadata to the database
-    2) get_active_annotations():
-        add the annotations for installed books to the database
-    """
-    # The app name should be the first word from the
-    # device's name property, e.g., 'Kindle' or 'SONY'. Drivers are located in
-    # calibre.devices.<device>
-    # For example, the name declared in the Kindle class
-    # is 'Kindle 2/3/4/Touch/PaperWhite Device Interface',
-    # so app_name would be the first word, 'Kindle'
-    app_name = 'KoboTouch'
-
-class KoboTouchExtendedFetchingApp(KoboTouchFetchingApp):
-    """
-    Fetching annotations takes place in two stages:
-    1) get_installed_books():
-        add the installed books' metadata to the database
-    2) get_active_annotations():
-        add the annotations for installed books to the database
-    """
-    # The app name should be the first word from the
-    # device's name property, e.g., 'Kindle' or 'SONY'. Drivers are located in
-    # calibre.devices.<device>
-    # For example, the name declared in the Kindle class
-    # is 'Kindle 2/3/4/Touch/PaperWhite Device Interface',
-    # so app_name would be the first word, 'Kindle'
-    app_name = 'KoboTouchExtended'
-
-
-def convert_kobo_date(kobo_date):
-    """
-    KoBo stores dates as a timestamp string. The exact format has changed with firmware
-    and what part of the firmware writes it. The following is overkill, but it handles all 
-    the formats I have seen.
-    """
-    from calibre.utils.date import utc_tz, local_tz
-    from calibre.devices.usbms.driver import debug_print
-#     debug_print("convert_kobo_date - start - kobo_date={0}'".format(kobo_date))
-
-    if kobo_date is None:
-        converted_date = datetime.datetime.now(tz=utc_tz)
-    else:
-        try:
-            converted_date = datetime.datetime.strptime(kobo_date, "%Y-%m-%dT%H:%M:%S+00:00")
-    #         debug_print("convert_kobo_date - '%Y-%m-%dT%H:%M:%S+00:00' - kobo_date=%s' - kobo_date={0}'".format(kobo_date))
-        except Exception as e:
-    #         debug_print("convert_kobo_date - exception={0}'".format(e))
-            try:
-                converted_date = datetime.datetime.strptime(kobo_date, "%Y-%m-%dT%H:%M:%SZ")
-    #             debug_print("convert_kobo_date - '%Y-%m-%dT%H:%M:%SZ' - kobo_date={0}'".format(kobo_date))
-            except:
-                try:
-                    converted_date = datetime.datetime.strptime(kobo_date[0:19], "%Y-%m-%dT%H:%M:%S")
-    #                 debug_print("convert_kobo_date - '%Y-%m-%dT%H:%M:%S' - kobo_date={0}'".format(kobo_date))
-                except:
-                    try:
-                        converted_date = datetime.datetime.strptime(kobo_date.split('+')[0], "%Y-%m-%dT%H:%M:%S")
-    #                     debug_print("convert_kobo_date - '%Y-%m-%dT%H:%M:%S' - kobo_date={0}'".format(kobo_date))
-                    except:
-                        try:
-                            converted_date = datetime.datetime.strptime(kobo_date.split('+')[0], "%Y-%m-%d")
-    #                         converted_date = converted_date.replace(tzinfo=utc_tz)
-    #                         debug_print("convert_kobo_date - '%Y-%m-%d' - kobo_date={0}'".format(kobo_date))
-                        except:
-                            converted_date = datetime.datetime.now(tz=utc_tz)
-                            debug_print("convert_kobo_date - could not convert, using current time - kobo_date={0}, converted_date={1}".format(kobo_date, converted_date))
-
-#     debug_print("convert_kobo_date - result - kobo_date={0}, converted_date={1}".format(kobo_date, converted_date))
-
-    converted_date = converted_date.replace(tzinfo=utc_tz).astimezone(local_tz)
-    return converted_date
 
