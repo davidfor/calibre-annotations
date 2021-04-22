@@ -55,7 +55,6 @@ class PocketBookFetchingApp(USBReader):
 
         annotations_db = self.generate_annotations_db_name(self.app_name_, self.opts.device_name)
         self.books_db = self.generate_books_db_name(self.app_name_, self.opts.device_name)
-        self._log("%s:get_active_annotations() - annotations_db=%s, books_db=%s" % (self.app_name, annotations_db, self.books_db))
 
         # Create the annotations table
         self.create_annotations_table(annotations_db)
@@ -66,7 +65,6 @@ class PocketBookFetchingApp(USBReader):
         self.opts.pb.set_value(0)
         self.opts.pb.set_maximum(len(self.active_annotations))
 
-#         self._log("%s:get_active_annotations() - self.active_annotations={0}".format(self.active_annotations))
         # Add annotations to the database
         for annotation in sorted(list(self.active_annotations.values()), key=lambda k: (k['book_id'], k['location_sort'], k['last_modification'])):
             # Populate an AnnotationStruct with available data
@@ -76,13 +74,12 @@ class PocketBookFetchingApp(USBReader):
             ann_mi.book_id = annotation['book_id']
             ann_mi.last_modification = annotation['last_modification']
 
-            # Optional items
+            # Optional items with PB modifications
             if 'annotation_id' in annotation:
                 ann_mi.annotation_id = annotation['annotation_id']
             if 'highlight_color' in annotation:
                 ann_mi.highlight_color = annotation['highlight_color'].capitalize()
             if 'highlight_text' in annotation:
-#                 self._log("get_active_annotations() - annotation['highlight_text']={0}".format(annotation['highlight_text']))
                 highlight_text = annotation['highlight_text']
                 ann_mi.highlight_text = highlight_text
             if 'note_text' in annotation:
@@ -99,7 +96,6 @@ class PocketBookFetchingApp(USBReader):
             # Increment the progress bar
             self.opts.pb.increment()
 
-#             self._log("%s:get_active_annotations() - books_db=%s" % (self.app_name, self.books_db))
             # Update last_annotation in books_db
             self.update_book_last_annotation(self.books_db, ann_mi.last_modification, ann_mi.book_id)
 
@@ -155,8 +151,6 @@ class PocketBookFetchingApp(USBReader):
         #  Add installed books to the database
         for book_id in self.onDeviceIds:
             mi = db.get_metadata(book_id, index_is_id=True)
-#            self._log_location("book: {0} - {1}".format(mi.authors, mi.title))
-#            self._log("mi={0}".format(mi))
             installed_books.add(book_id)
 
             # Populate a BookStruct with available metadata
@@ -210,13 +204,6 @@ class PocketBookFetchingApp(USBReader):
         self.installed_books = list(installed_books)
         self._log_location("Finish!!!!")
 
-    def _get_metadata(self, path):
-        from calibre.ebooks.metadata.epub import get_metadata
-        self._log_location("_get_metadata: path=%s" % path)
-        with open(path, 'rb') as f:
-            mi = get_metadata(f)
-        self._log_location("Finish!!!!")
-        return mi
 
     def location_split(self, string):
         '''Returns page (int), offset (int) and cfi (string, with either epubcfi or pdfloc) tuple
@@ -368,8 +355,6 @@ class PocketBookFetchingApp(USBReader):
             try:
                 result = next(cursor)
                 count_bookmarks = result['num_bookmarks']
-                self.opts.pb.set_maximum(count_bookmarks)
-#                 self.opts.pb.set_label(_("_fetch_annotations - 2"))
             except StopIteration:
                 count_bookmarks = 0
             self._log("_fetch_annotations - Total number of bookmarks={0}".format(count_bookmarks))
@@ -443,15 +428,8 @@ class PocketBookFetchingApp(USBReader):
                 data['location_sort'] = data['page'] * 10000 + (data['offs'] or 0)
 
                 self.active_annotations[annotation_id] = data
-                self._log(self.active_annotations[annotation_id])
+                # self._log(self.active_annotations[annotation_id])
 
-    def get_device_paths_from_id(self, book_id):
-        paths = []
-        for x in ('memory', 'card_a', 'card_b'):
-            x = getattr(self.opts.gui, x+'_view').model()
-            paths += x.paths_for_db_ids(set([book_id]), as_map=True)[book_id]
-#        self._log("get_device_paths_from_id - paths=", paths)
-        return [r.path for r in paths]
 
     def row_factory(self, cursor, row):
         return {k[0]: row[i] for i, k in enumerate(cursor.getdescription())}
