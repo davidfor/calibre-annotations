@@ -12,6 +12,7 @@ import os, re
 
 from calibre_plugins.annotations.reader_app_support import USBReader
 from calibre_plugins.annotations.common_utils import (AnnotationStruct, BookStruct)
+from calibre.devices.usbms.driver import USBMS
 
 
 class PocketBookFetchingApp(USBReader):
@@ -87,11 +88,10 @@ class PocketBookFetchingApp(USBReader):
             if 'note_text' in annotation:
                 note_text = annotation['note_text']
                 ann_mi.note_text = note_text
-            if 'location' in annotation:
-                ann_mi.location = annotation['location']
+            if 'page' in annotation:
+                ann_mi.location = annotation['page']
             if 'location_sort' in annotation:
-                ann_mi.location_sort = annotation['location_sort']
-#            self._log(ann_mi)
+                ann_mi.location_sort = "%08d" % annotation['location_sort']
 
             # Add annotation to annotations_db
             self.add_to_annotations_db(annotations_db, ann_mi)
@@ -218,6 +218,23 @@ class PocketBookFetchingApp(USBReader):
         self._log_location("Finish!!!!")
         return mi
 
+    def location_split(self, string):
+        '''Returns page (int), offset (int) and cfi (string, with either epubcfi or pdfloc) tuple
+        from PB location string.'''
+
+        page = re.findall(r'(?<=page\=)\d*', string) or None
+        offs = re.findall(r'(?<=offs\=)\d*', string) or None
+        cfi = re.findall(r'(?<=#).*', string) or None
+
+        if page:
+            page = int(page[0])
+        if offs:
+            offs = int(offs[0])
+        if cfi:
+            cfi = cfi[0]
+
+        return page, offs, cfi
+
 
     def _fetch_annotations(self):
         self._log_location("Start!!!!")
@@ -268,13 +285,14 @@ class PocketBookFetchingApp(USBReader):
             '''
         )
 
+        '''
         def _convert_calibre_ids_to_books(db, ids):
             books = []
             for book_id in ids:
                 book = self._convert_calibre_id_to_book(db, book_id)
                 books.append(book)
             return books
-    
+
         def _convert_calibre_id_to_book(db, book_id):
             mi = db.get_metadata(book_id, index_is_id=True, get_cover=True)
             book = Book('', 'lpath', title=mi.title, other=mi)
@@ -296,6 +314,7 @@ class PocketBookFetchingApp(USBReader):
                 for format in formats.split(','):
                     fmts.append(format.lower())
             return fmts
+        '''
 
         def get_device_path_from_id(id_):
             paths = []
@@ -304,18 +323,27 @@ class PocketBookFetchingApp(USBReader):
                 paths += x.paths_for_db_ids(set([id_]), as_map=True)[id_]
             return paths[0].path if paths else None
 
-        def generate_annotation_paths(ids, db, device):
-            # Generate path templates
-            # Individual storage mount points scanned/resolved in driver.get_annotations()
+        # Modified. Use filename for matching: not unique, but better than title,
+        # and avoiding author string issues. Paths can/will be added later
+        def generate_annotation_paths(ids, db):
             path_map = {}
-            for _id in ids:
-                paths = self.get_device_paths_from_id(_id)
-#                self._log("generate_annotation_paths - paths={0}".format(paths))
-                for path in paths:
-                    contentId = self.device.contentid_from_path(path, 6)
-                    path_map[contentId] = dict(path=path, fmts=get_formats(_id), book_id=_id)
+            for id in ids:
+                path = os.path.basename(get_device_path_from_id(id))
+                path_map[os.path.basename(path)] = id
             return path_map
 
+        # Get DB location (only stock or default profile)
+        self._log("Getting DB location")
+        db_location = ''
+        vol = self.device._main_prefix
+        locations = [os.path.join(vol, 'system/config/books.db'), os.path.join(vol, 'system/profiles/default/config/books.db')]
+        for path in locations:
+            if os.path.exists(path):
+                db_location = USBMS.normalize_path(path)
+
+        if not db_location:
+            self._log("No DB found. Currently only supports default profiles, with DB based notes. Stopping")
+            return
 
         db = self.opts.gui.library_view.model().db
         if not self.onDeviceIds:
@@ -324,16 +352,17 @@ class PocketBookFetchingApp(USBReader):
         if len(self.onDeviceIds) == 0:
             return
         self._log("_fetch_annotations - onDeviceIds={0}".format(self.onDeviceIds))
-        # Map ids to paths
-        path_map = generate_annotation_paths(self.onDeviceIds, db, self.device)
-#         self._log("_fetch_annotations - path_map={0}".format(path_map))
 
+        path_map = generate_annotation_paths(self.onDeviceIds, db)
+
+
+        # Start fetching annotations
         from contextlib import closing
         import apsw
-        with closing(apsw.Connection(self.device.device_database_path())) as connection:
+        with closing(apsw.Connection(db_location)) as connection:
             self.opts.pb.set_label(_("Fetch annotations from database"))
             connection.setrowtrace(self.row_factory)
-    
+
             cursor = connection.cursor()
             cursor.execute(count_bookmark_query)
             try:
@@ -344,136 +373,75 @@ class PocketBookFetchingApp(USBReader):
             except StopIteration:
                 count_bookmarks = 0
             self._log("_fetch_annotations - Total number of bookmarks={0}".format(count_bookmarks))
-            
             self._log("_fetch_annotations - About to get annotations")
-            self._read_database_annotations(connection, bookmark_query, kepub_bookmark_query, path_map, chapter_query=kepub_chapter_query, kepubs=True)
+            self._read_database_annotations(connection, books_metadata_query, annotation_ids_query, annotation_data_query, path_map)
             self._log("_fetch_annotations - Finished getting annotations")
-        
+
         self._log_location("Finish!!!!")
 
-    def _read_database_annotations(self, connection, bookmark_query, kepub_bookmark_query, path_map, chapter_query=None, kepubs=False):
+
+    def _read_database_annotations(self, connection, books_metadata_query, annotation_ids_query, annotation_data_query, path_map):
         self._log("_read_database_annotations - Starting fetch of bookmarks")
-        bookmark_cursor = connection.cursor()
-        chapter_cursor = connection.cursor()
-#         self.opts.pb.set_label(_("_read_database_annotations {0}".format(kepubs)))
 
-        kepub_chapters = {}
-        for contentId in list(path_map.keys()):
-            book_id = path_map[contentId]['book_id']
-            self._log("_read_database_annotations - contentId={0} book={1}".format(contentId, path_map[contentId]))
-            kepub = (contentId.endswith('.kepub.epub') or not os.path.splitext(contentId)[1])
-            if kepub:
-                bookmark_cursor.execute(kepub_bookmark_query, [contentId])
-            else:
-                bookmark_cursor.execute(bookmark_query, [contentId])
-            new_book = True
-            for row in bookmark_cursor:
-                self.opts.pb.increment()
-                self._log("_read_database_annotations - row={0}".format(row))
-                if kepub:
-                    '''
-                    Need to get the entry from the content table for the chapter. The contentID looks like:
-                        [bookcontentid]![OPF Reference]![file name][fragment]-[number]
-                         
-                        bookcontentid is the reference to the book. But, for sideloaded, it does not have "file:" at the start.
-                        "OPF Reference" shows where the file is relative to the OPF file.
-                        "file name" is the actual file name in the book, but it is URL encoded.
-                        "fragment" is the reference to an id. It will only exist if the ToC entry refers to an id.
-                        "number" is an integer for the ToC nesting depth.
-                         
-                    The contentId in the Bookmark table is only "[bookcontentid]![OPF Reference]![file name]". Because of this,
-                    take the first ToC entry in the content table.
-                    '''
-                         
-                    if new_book:
-                        self._log("_read_database_annotations - getting kepub chapters: contentId={0}".format(contentId))
-                        chapter_cursor.execute(chapter_query, [contentId])
-                        kepub_chapters = {}
-                        try:
-                            for chapter_row in chapter_cursor:
-                                self._log("_read_database_annotations - getting kepub chapters: chapter_row={0}".format(chapter_row))
-                                if chapter_row['chap_ContentID'] is not None:
-                                    chapter_contentID = chapter_row['chap_ContentID']
-                                    toc_level_separator = chapter_contentID.rfind('-')
-                                    if toc_level_separator > 0:
-                                        chapter_contentID = chapter_contentID[:toc_level_separator]
-                                    kepub_chapters[chapter_contentID] = {
-                                            'Title': chapter_row['Title'],
-                                            'VolumeIndex': chapter_row['spine_VolumeIndex'] * 1000 + chapter_row['chap_VolumeIndex']
-                                        }
-                                chapter_contentID = chapter_row['spine_ContentID']
-                                kepub_chapters[chapter_contentID] = {
-                                        'Title': chapter_row['Title'],
-                                        'VolumeIndex': chapter_row['spine_VolumeIndex'] * 1000 + chapter_row['chap_VolumeIndex']
-                                    }
-                            self._log("_read_database_annotations - getting kepub chapter: kepub chapters={0}".format(kepub_chapters))
-                        except Exception:
-                            import traceback
-                            traceback.print_exc()
-                            self._log("_read_database_annotations - No chapters found")
-                        new_book = False
- 
-                    chapter_contentID = row['ContentID']
-#                     self._log("_read_database_annotations - getting kepub: chapter chapter_contentID='{0}'".format(chapter_contentID))
-                    filename_index = chapter_contentID.find('!')
-                    book_contentID_part = chapter_contentID[:filename_index]
-#                     self._log("_read_database_annotations - getting kepub: chapter book_contentID_part='{0}'".format(book_contentID_part))
-                    file_contentID_part = chapter_contentID[filename_index + 1:]
-                    filename_index = file_contentID_part.find('!')
-                    opf_reference = file_contentID_part[:filename_index]
-#                     self._log("_read_database_annotations - getting kepub: chapter opf_reference='{0}'".format(opf_reference))
-                    file_contentID_part = file_contentID_part[filename_index + 1:]
-#                     self._log("_read_database_annotations - getting kepub: chapter file_contentID_part='{0}'".format(file_contentID_part))
-                    fragment_index = file_contentID_part.find('#')
-                    if fragment_index >= 0:
-                        fragment_reference = "#" + file_contentID_part[fragment_index + 1:]
-                        file_contentID_part = file_contentID_part[:fragment_index]
-                    else:
-                        fragment_reference = ''
-#                     self._log("_read_database_annotations - getting kepub: chapter fragment_index={0}, fragment_reference='{1}'".format(fragment_index, fragment_reference))
-#                     self._log("_read_database_annotations - getting kepub: chapter file_contentID_part='{0}'".format(file_contentID_part))
-                    file_contentID_part = quote(file_contentID_part)
-                    chapter_contentID = book_contentID_part + "!" + opf_reference + "!" + file_contentID_part + fragment_reference
-                    self._log("_read_database_annotations - getting kepub chapter chapter_contentID='{0}'".format(chapter_contentID))
-                    kepub_chapter = kepub_chapters.get(chapter_contentID, None)
-                    if kepub_chapter is not None:
-                        chapter_title = kepub_chapter['Title']
-                        current_chapter = kepub_chapter['VolumeIndex']
-                    else:
-                        chapter_title = _('(Unknown Chapter)')
-                        current_chapter = -1
-                        chapter_title = row['Title']
-                        current_chapter = row['VolumeIndex']
-                else:
-                    chapter_title   = row['Title']
-                    current_chapter = row['VolumeIndex']
+        metadata_cursor = connection.cursor()
+        annotation_ids_cursor = connection.cursor()
+        annotation_data_cursor = connection.cursor()
 
-                bookmark_timestamp = convert_kobo_date(row['DateModified'])
-#                 self._log("_read_database_annotations - bookmark_timestamp={0}, row['DateModified']='{1}'".format(bookmark_timestamp, row['DateModified']))
-                bookmark_timestamp = mktime(bookmark_timestamp.timetuple())
-#                 self._log("_read_database_annotations - bookmark_timestamp={0}, row['DateModified']='{1}'".format(bookmark_timestamp, row['DateModified']))
-#                 if row['DateModified']:
-#                     self._log("_read_database_annotations - row['DateModified'] is true")
-#                     bookmark_timestamp = mktime(bookmark_timestamp.timetuple())
-#                 else:
-#                     self._log("_read_database_annotations - row['DateModified'] is false - didn't call mktime")
-#                 self._log("_read_database_annotations - after mktime - bookmark_timestamp={0}, row['DateModified']='{1}'".format(bookmark_timestamp, row['DateModified']))
-                annotation_id   = row['BookmarkID']
-                if current_chapter is None:
-                    current_chapter = 0
-    
-                self.active_annotations[annotation_id] = {
+        for book in metadata_cursor.execute(books_metadata_query):
+            title = book['Title']
+            book_oid = book['book_oid']
+            filename = book['filename']
+
+            book_id = path_map.get(filename, None)
+            if not book_id:
+                self._log("Book not in calibre db: {0}, {1}".format(title, book['filename']))
+                continue
+
+            for bookmarkid in annotation_ids_cursor.execute(annotation_ids_query, (book_oid,)):
+                annotation_id = bookmarkid['item_oid']
+                last_modification = bookmarkid['TimeAlt']
+
+                data = {
                     'annotation_id': annotation_id,
-                    'book_id': int(book_id),
-                    'highlight_color': 'Gray',
-                    'location': chapter_title,
-                    'location_sort': "%08d" % (current_chapter  * 1000 + row['ChapterProgress'] * 100),
-                    'last_modification': bookmark_timestamp
-                    }
-                self.active_annotations[annotation_id]['highlight_text'] = row['Text']
-                self.active_annotations[annotation_id]['note_text'] = row['Annotation']
+                    'title': title,
+                    'book_id': book_id,
+                    'book_oid': book_oid,
+                    'bookmark': False,
+                    'format': None,
+                    'epubcfi': None,
+                    'page': None,
+                    'offs': None,
+                    'location_sort': None,
+                    'last_modification': last_modification,
+                    'highlight_text': None,
+                    'note_text': None,
+                    'highlight_color': None
+                }
+
+                for row in annotation_data_cursor.execute(annotation_data_query, (annotation_id,)):
+                    TagID = row['TagID']
+                    Val = row['Val']
+
+                    if TagID == 101:
+                        data['page'], data['offs'], data['cfi1'] = self.location_split(Val)
+                    elif TagID == 102:
+                        if Val == 'bookmark':
+                            data['bookmark'] = True
+                    elif TagID == 104:
+                        data['highlight_text'] = Val
+                    elif TagID == 105:
+                        data['note_text'] = Val
+                    elif TagID == 106:
+                        data['highlight_color'] = Val
+                    else:
+                        self._log("_read_database_annotations - Unprocessed Tag ID {0} in ItemID {1} for {2}".format(TagID, annotation_id, title))
+
+
+                # Additions
+                data['location_sort'] = data['page'] * 10000 + (data['offs'] or 0)
+
+                self.active_annotations[annotation_id] = data
                 self._log(self.active_annotations[annotation_id])
-                last_contentId = contentId
 
     def get_device_paths_from_id(self, book_id):
         paths = []
@@ -485,6 +453,3 @@ class PocketBookFetchingApp(USBReader):
 
     def row_factory(self, cursor, row):
         return {k[0]: row[i] for i, k in enumerate(cursor.getdescription())}
-
-
-
