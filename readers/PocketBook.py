@@ -230,7 +230,7 @@ class PocketBookFetchingApp(USBReader):
             '''
             SELECT COUNT(*) num_bookmarks FROM Tags t
             WHERE
-                TagID = 102 AND Val IN ("note", "highlight")
+                TagID = 102 
                 AND ItemID IN (SELECT OID from Items WHERE State = 0)
             '''
         )
@@ -359,13 +359,14 @@ class PocketBookFetchingApp(USBReader):
                 count_bookmarks = 0
             self._log("_fetch_annotations - Total number of bookmarks={0}".format(count_bookmarks))
             self._log("_fetch_annotations - About to get annotations")
-            self._read_database_annotations(connection, books_metadata_query, annotation_ids_query, annotation_data_query, path_map)
+            self._read_database_annotations(connection, books_metadata_query, annotation_ids_query,
+                                            annotation_data_query, path_map, types=("highlight", "note"))
             self._log("_fetch_annotations - Finished getting annotations")
 
         self._log_location("Finish!!!!")
 
-
-    def _read_database_annotations(self, connection, books_metadata_query, annotation_ids_query, annotation_data_query, path_map):
+    def _read_database_annotations(self, connection, books_metadata_query, annotation_ids_query, annotation_data_query,
+                                   path_map, types=("highlight", "note")):
         self._log("_read_database_annotations - Starting fetch of bookmarks")
 
         metadata_cursor = connection.cursor()
@@ -393,7 +394,7 @@ class PocketBookFetchingApp(USBReader):
                     'title': title,
                     'book_id': book_id,
                     'book_oid': book_oid,
-                    'bookmark': False,
+                    'type': None,
                     'format': None,
                     'epubcfi': None,
                     'page': None,
@@ -412,8 +413,7 @@ class PocketBookFetchingApp(USBReader):
                     if TagID == 101:
                         data['page'], data['offs'], data['cfi1'] = self.location_split(Val)
                     elif TagID == 102:
-                        if Val == 'bookmark':
-                            data['bookmark'] = True
+                        data['type'] = Val
                     elif TagID == 104:
                         data['highlight_text'] = Val
                     elif TagID == 105:
@@ -423,13 +423,10 @@ class PocketBookFetchingApp(USBReader):
                     else:
                         self._log("_read_database_annotations - Unprocessed Tag ID {0} in ItemID {1} for {2}".format(TagID, annotation_id, title))
 
-
-                # Additions
-                data['location_sort'] = data['page'] * 10000 + (data['offs'] or 0)
-
-                self.active_annotations[annotation_id] = data
-                # self._log(self.active_annotations[annotation_id])
-
+                if data['type'] in types:
+                    data['location_sort'] = data['page'] * 10000 + (data['offs'] or 0)
+                    # self._log(self.active_annotations[annotation_id])
+                    self.active_annotations[annotation_id] = data
 
     def row_factory(self, cursor, row):
         return {k[0]: row[i] for i, k in enumerate(cursor.getdescription())}
