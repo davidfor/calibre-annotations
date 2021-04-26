@@ -389,42 +389,47 @@ class PocketBookFetchingApp(USBReader):
                 annotation_id = bookmarkid['item_oid']
                 last_modification = bookmarkid['TimeAlt']
 
-                data = {
-                    'annotation_id': annotation_id,
-                    'title': title,
-                    'book_id': book_id,
-                    'book_oid': book_oid,
-                    'type': None,
-                    'format': None,
-                    'epubcfi': None,
-                    'page': None,
-                    'offs': None,
-                    'location_sort': None,
-                    'last_modification': last_modification,
-                    'highlight_text': None,
-                    'note_text': None,
-                    'highlight_color': None
-                }
-
                 for row in annotation_data_cursor.execute(annotation_data_query, (annotation_id,)):
                     TagID = row['TagID']
                     Val = row['Val']
 
                     if TagID == 101:
-                        data['page'], data['offs'], data['cfi1'] = self.location_split(Val)
+                        page, offs, cfi1 = self.location_split(Val)
                     elif TagID == 102:
-                        data['type'] = Val
+                        atype = Val
                     elif TagID == 104:
-                        data['highlight_text'] = Val
+                        highlight_text = Val
                     elif TagID == 105:
-                        data['note_text'] = Val
+                        note_text = Val
                     elif TagID == 106:
-                        data['highlight_color'] = Val
+                        highlight_color = Val
                     else:
                         self._log("_read_database_annotations - Unprocessed Tag ID {0} in ItemID {1} for {2}".format(TagID, annotation_id, title))
 
-                if data['type'] in types:
-                    data['location_sort'] = data['page'] * 10000 + (data['offs'] or 0)
+                if atype in types:
+                    if atype == 'highlight':
+                        note_text = None
+                    elif atype == 'bookmark':
+                        note_text = None
+                        highlight_color = None
+
+                    data = {
+                        'book_id': book_id,
+                        'annotation_id': annotation_id,
+                        'last_modification': last_modification,
+                        'format': None,
+                        'type': atype,
+                        'title': title,
+                        'book_oid': book_oid,
+                        'epubcfi': cfi1,
+                        'page': page,
+                        'offs': offs,
+                        'location_sort': page * 10000 + (offs or 0),
+                        'highlight_text': highlight_text,
+                        'note_text': note_text,
+                        'highlight_color': highlight_color or 'yellow'
+                    }
+
                     # self._log(self.active_annotations[annotation_id])
                     self.active_annotations[annotation_id] = data
 
