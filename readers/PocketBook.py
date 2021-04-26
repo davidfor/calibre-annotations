@@ -252,7 +252,7 @@ class PocketBookFetchingApp(USBReader):
             SELECT OID AS item_oid, TimeAlt FROM Items
             WHERE
                 ParentID = ? AND State = 0
-                AND OID NOT IN (SELECT ItemID FROM Tags WHERE Val IN ("bookmark", "draws"))
+                AND OID IN (SELECT ItemID FROM Tags WHERE Val IN ("highlight", "note"))
             '''
         )
 
