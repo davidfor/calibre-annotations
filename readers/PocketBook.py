@@ -89,6 +89,8 @@ class PocketBookFetchingApp(USBReader):
                 ann_mi.location = annotation['page']
             if 'location_sort' in annotation:
                 ann_mi.location_sort = "%08d" % annotation['location_sort']
+            if 'epubcfi' in annotation:
+                ann_mi.epubcfi = annotation['epubcfi']
 
             # Add annotation to annotations_db
             self.add_to_annotations_db(annotations_db, ann_mi)
