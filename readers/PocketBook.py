@@ -267,6 +267,7 @@ class PocketBookFetchingApp(USBReader):
             '''
         )
 
+        # Borrowed Kobo reader functions -> create pathmap
         '''
         def _convert_calibre_ids_to_books(db, ids):
             books = []
@@ -327,6 +328,7 @@ class PocketBookFetchingApp(USBReader):
             self._log("No DB found. Currently only supports default profiles, with DB based notes. Stopping")
             return
 
+        # Borrowed from Kobo
         db = self.opts.gui.library_view.model().db
         if not self.onDeviceIds:
             self.onDeviceIds = set(db.search_getting_ids('ondevice:True', None, sort_results=False, use_virtual_library=False))
@@ -365,7 +367,6 @@ class PocketBookFetchingApp(USBReader):
         self._log("_read_database_annotations - Starting fetch of bookmarks")
 
         metadata_cursor = connection.cursor()
-        annotation_ids_cursor = connection.cursor()
         annotation_data_cursor = connection.cursor()
 
         regex_worddocfix = re.compile('(?<=.[doc|docx])\.html$')  # '.' unescaped: lookbehind needs fixed length
