@@ -247,28 +247,21 @@ class PocketBookFetchingApp(USBReader):
             '''
         )
 
-        annotation_ids_query = (
-            '''
-            SELECT OID AS item_oid, TimeAlt FROM Items
-            WHERE
-                ParentID = ? AND State = 0
-                AND OID IN (SELECT ItemID FROM Tags WHERE Val IN ("highlight", "note"))
-            '''
-        )
-
         # For 104 (highlight_txt) either use json_extract(text), or import JSON using python
         # as notes edited in the PB notes app loose their Begin/End JSON fields.
         annotation_data_query = (
             '''
-            SELECT TagID,
-            CASE
-                WHEN TagID = 101 THEN json_extract(Val, '$.anchor')
-                WHEN TagID = 104 THEN json_extract(Val, '$.text')
-                WHEN TagID = 105 THEN json_extract(Val, '$.text')
-                ELSE Val
-            END AS Val
-            FROM Tags WHERE ItemID = ?
-            ORDER BY TagID
+            SELECT i.OID AS item_oid, i.TimeAlt, t.TagID,
+                CASE
+                    WHEN TagID = 101 THEN json_extract(Val, '$.anchor')
+                    WHEN TagID = 104 THEN json_extract(Val, '$.text')
+                    WHEN TagID = 105 THEN json_extract(Val, '$.text')
+                    ELSE Val
+                END AS Val
+            FROM Items i
+            LEFT JOIN Tags t ON i.OID=t.ItemID
+            WHERE ParentID = ? AND State = 0
+            ORDER BY i.OID, t.TagID
             '''
         )
 
@@ -359,14 +352,14 @@ class PocketBookFetchingApp(USBReader):
                 count_bookmarks = 0
             self._log("_fetch_annotations - Total number of bookmarks={0}".format(count_bookmarks))
             self._log("_fetch_annotations - About to get annotations")
-            self._read_database_annotations(connection, books_metadata_query, annotation_ids_query,
-                                            annotation_data_query, path_map, types=("highlight", "note"))
+            self._read_database_annotations(connection, books_metadata_query,
+                                            annotation_data_query, path_map, fetchbookmarks=False)
             self._log("_fetch_annotations - Finished getting annotations")
 
         self._log_location("Finish!!!!")
 
-    def _read_database_annotations(self, connection, books_metadata_query, annotation_ids_query, annotation_data_query,
-                                   path_map, types=("highlight", "note")):
+    def _read_database_annotations(self, connection, books_metadata_query, annotation_data_query,
+                                   path_map, fetchbookmarks=False):
         self._log("_read_database_annotations - Starting fetch of bookmarks")
 
         metadata_cursor = connection.cursor()
@@ -376,6 +369,8 @@ class PocketBookFetchingApp(USBReader):
         for book in metadata_cursor.execute(books_metadata_query):
             title = book['Title']
             book_oid = book['book_oid']
+
+            # Get calibre ID using filename
             filename = book['filename']
             if '.doc' in filename:
                 filename = re.sub('(?<=.[doc|docx])\.html$', '', filename) # can't escape lookbehind '.'
@@ -385,53 +380,59 @@ class PocketBookFetchingApp(USBReader):
                 self._log("Book not in calibre db: {0}, {1}".format(title, book['filename']))
                 continue
 
-            for bookmarkid in annotation_ids_cursor.execute(annotation_ids_query, (book_oid,)):
-                annotation_id = bookmarkid['item_oid']
-                last_modification = bookmarkid['TimeAlt']
+            for row in annotation_data_cursor.execute(annotation_data_query, (book_oid,)):
+                TagID = row['TagID']
+                Val = row['Val']
 
-                for row in annotation_data_cursor.execute(annotation_data_query, (annotation_id,)):
-                    TagID = row['TagID']
-                    Val = row['Val']
-
-                    if TagID == 101:
-                        page, offs, cfi1 = self.location_split(Val)
-                    elif TagID == 102:
-                        atype = Val
-                    elif TagID == 104:
-                        highlight_text = Val
-                    elif TagID == 105:
-                        note_text = Val
-                    elif TagID == 106:
-                        highlight_color = Val
-                    else:
-                        self._log("_read_database_annotations - Unprocessed Tag ID {0} in ItemID {1} for {2}".format(TagID, annotation_id, title))
-
-                if atype in types:
-                    if atype == 'highlight':
-                        note_text = None
-                    elif atype == 'bookmark':
-                        note_text = None
+                if TagID == 101:
+                    finish = False
+                    note_text = None  # for highlight
+                    page, offs, cfi1 = self.location_split(Val)
+                elif TagID == 102:
+                    atype = Val
+                elif TagID == 104:
+                    highlight_text = Val
+                    if fetchbookmarks and atype == "bookmark":
                         highlight_color = None
+                        finish = True
+                elif TagID == 105:
+                    note_text = Val
+                elif TagID == 106:
+                    highlight_color = Val
+                    finish = True
+                elif TagID == 110:
+                    pass
+                    # 'draws' SVG data
+                else:
+                    self._log("_read_database_annotations - Unprocessed Tag ID {0} in ItemID {1} for {2}".format(TagID, row.get('item_oid'), title))
+
+                if finish:
+                    finish = False
+
+                    # bookmark and draws lack 106, but add nevertheless
+                    if atype not in ('highlight', 'note', 'bookmark'):
+                        continue
 
                     data = {
+                        'annotation_id': row['item_oid'],
                         'book_id': book_id,
-                        'annotation_id': annotation_id,
-                        'last_modification': last_modification,
-                        'format': None,
-                        'type': atype,
-                        'title': title,
-                        'book_oid': book_oid,
+                        'last_modification': row.get('TimeAlt', 0),
+                        #'format': book['mimetype'],
+                        #'type': atype,
+                        #'title': title,
+                        #'book_oid': book_oid,
                         'epubcfi': cfi1,
-                        'page': page,
-                        'offs': offs,
-                        'location_sort': page * 10000 + (offs or 0),
                         'highlight_text': highlight_text,
                         'note_text': note_text,
-                        'highlight_color': highlight_color or 'yellow'
+                        'highlight_color': highlight_color or 'yellow',
+                        'location': page,
+                        'page': page,
+                        # 'offs': offs,
+                        'location_sort': page * 10000 + (offs or 0),
                     }
 
                     # self._log(self.active_annotations[annotation_id])
-                    self.active_annotations[annotation_id] = data
+                    self.active_annotations[row['item_oid']] = data
 
     def row_factory(self, cursor, row):
         return {k[0]: row[i] for i, k in enumerate(cursor.getdescription())}
