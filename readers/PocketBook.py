@@ -239,9 +239,9 @@ class PocketBookFetchingApp(USBReader):
 
         books_metadata_query = (
             '''
-            SELECT DISTINCT b.OID book_oid, i.Val mimetype, Title, Authors, f.Name filename FROM Books b
-            LEFT JOIN Files f ON b.OID = f.BookID
-            LEFT JOIN (SELECT ItemID, Val FROM Tags WHERE TagID = 37) i ON b.OID = i.ItemID
+            SELECT b.OID book_oid, mimetype, Title, Authors, filename FROM Books b
+            LEFT JOIN (SELECT MAX(OID), BookID, Name AS filename FROM Files GROUP BY BookID) f ON b.OID = f.BookID
+            LEFT JOIN (SELECT ItemID, Val AS mimetype FROM Tags WHERE TagID = 37) i ON b.OID = i.ItemID
             WHERE
                 b.OID IN (SELECT DISTINCT ParentID FROM Items WHERE TypeID = 4)
             GROUP BY b.OID
