@@ -368,15 +368,16 @@ class PocketBookFetchingApp(USBReader):
         annotation_ids_cursor = connection.cursor()
         annotation_data_cursor = connection.cursor()
 
+        regex_worddocfix = re.compile('(?<=.[doc|docx])\.html$')  # '.' unescaped: lookbehind needs fixed length
+
         for book in metadata_cursor.execute(books_metadata_query):
             title = book['Title']
             book_oid = book['book_oid']
 
             # Get calibre ID using filename
             filename = book['filename']
-            if '.doc' in filename:
-                filename = re.sub('(?<=.[doc|docx])\.html$', '', filename) # can't escape lookbehind '.'
-
+            if book['mimetype'] == 'text/html':
+                filename = re.sub(regex_worddocfix, '', filename)
             book_id = path_map.get(filename, None)
             if not book_id:
                 self._log("Book not in calibre db: {0}, {1}".format(title, book['filename']))
