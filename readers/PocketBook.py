@@ -260,38 +260,6 @@ class PocketBookFetchingApp(USBReader):
             '''
         )
 
-        # Borrowed Kobo reader functions -> create pathmap
-        '''
-        def _convert_calibre_ids_to_books(db, ids):
-            books = []
-            for book_id in ids:
-                book = self._convert_calibre_id_to_book(db, book_id)
-                books.append(book)
-            return books
-
-        def _convert_calibre_id_to_book(db, book_id):
-            mi = db.get_metadata(book_id, index_is_id=True, get_cover=True)
-            book = Book('', 'lpath', title=mi.title, other=mi)
-            book.calibre_id  = mi.id
-            return book
-
-        # Generate a path_map from selected ids
-        def get_ids_from_selected_rows():
-            rows = self.gui.library_view.selectionModel().selectedRows()
-            if not rows or len(rows) < 1:
-                rows = range(self.gui.library_view.model().rowCount(QModelIndex()))
-            ids = list(map(self.gui.library_view.model().id, rows))
-            return ids
-
-        def get_formats(_id):
-            formats = db.formats(_id, index_is_id=True)
-            fmts = []
-            if formats:
-                for format in formats.split(','):
-                    fmts.append(format.lower())
-            return fmts
-        '''
-
         def get_device_path_from_id(id_):
             paths = []
             for x in ('memory', 'card_a', 'card_b'):
@@ -319,6 +287,7 @@ class PocketBookFetchingApp(USBReader):
                 meta_map[(title, authors)] = id
             return meta_map
         '''
+
         # Get DB location (only stock or default profile)
         self._log("Getting DB location")
         db_location = ''
