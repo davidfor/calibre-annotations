@@ -8,7 +8,7 @@ __license__ = 'GPL v3'
 __copyright__ = '2021 William Ouwehand <> with parts by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
-import os, re
+import os, re, json
 
 from calibre_plugins.annotations.reader_app_support import USBReader
 from calibre_plugins.annotations.common_utils import (AnnotationStruct, BookStruct)
@@ -253,14 +253,7 @@ class PocketBookFetchingApp(USBReader):
         # as notes edited in the PB notes app loose their Begin/End JSON fields.
         annotation_data_query = (
             '''
-            SELECT i.OID AS item_oid, i.TimeAlt, t.TagID,
-                CASE
-                    WHEN TagID = 101 THEN json_extract(Val, '$.anchor')
-                    WHEN TagID = 104 THEN json_extract(Val, '$.text')
-                    WHEN TagID = 105 THEN json_extract(Val, '$.text')
-                    ELSE Val
-                END AS Val
-            FROM Items i
+            SELECT i.OID AS item_oid, i.TimeAlt, t.TagID, t.Val FROM Items i
             LEFT JOIN Tags t ON i.OID=t.ItemID
             WHERE ParentID = ? AND State = 0
             ORDER BY i.OID, t.TagID
@@ -391,16 +384,16 @@ class PocketBookFetchingApp(USBReader):
                 if TagID == 101:
                     finish = False
                     note_text = None  # for highlight
-                    page, offs, cfi1 = self.location_split(Val)
+                    page, offs, cfi1 = self.location_split(json.loads(Val).get('anchor', ""))
                 elif TagID == 102:
                     atype = Val
                 elif TagID == 104:
-                    highlight_text = Val
+                    highlight_text = json.loads(Val).get('text', None)
                     if fetchbookmarks and atype == "bookmark":
                         highlight_color = None
                         finish = True
                 elif TagID == 105:
-                    note_text = Val
+                    note_text = json.loads(Val).get('text', None)
                 elif TagID == 106:
                     highlight_color = Val
                     finish = True
