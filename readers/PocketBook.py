@@ -170,8 +170,8 @@ class PocketBookFetchingApp(USBReader):
             for i, author in enumerate(mi.authors):
 #                self._log_location("author=%s, author.__class__=%s" % (author, author.__class__))
                 this_author = author.split(', ')
-                this_author.reverse()
-                book_mi.author += ' '.join(this_author)
+                #this_author.reverse()
+                book_mi.author += ', '.join(this_author)
                 if i < len(mi.authors) - 1:
                     book_mi.author += ' & '
 
