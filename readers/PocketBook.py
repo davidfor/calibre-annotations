@@ -211,8 +211,8 @@ class PocketBookFetchingApp(USBReader):
         '''Returns page (int), offset (int) and cfi (string, with either epubcfi or pdfloc) tuple
         from PB location string.'''
 
-        page = re.findall(r'(?<=page\=)\d*', string) or None
-        offs = re.findall(r'(?<=offs\=)\d*', string) or None
+        page = re.findall(r'(?<=page=)\d*', string) or None
+        offs = re.findall(r'(?<=offs=)\d*', string) or None
         cfi = re.findall(r'(?<=#).*', string) or None
 
         if page:
