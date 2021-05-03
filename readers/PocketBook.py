@@ -279,10 +279,14 @@ class PocketBookFetchingApp(USBReader):
                     pbmainroot = "/mnt/ext1/"
                     pbcardroot = "/mnt/ext2/"
 
-                if self.device._card_a_prefix in fullpath:
-                    path_map[os.path.join(pbcardroot, os.path.relpath(fullpath, start=self.device._card_a_prefix))] = {'id': id, 'fullpath': fullpath}
-                elif self.device._main_prefix in fullpath:
+                if self.device._main_prefix in fullpath:
                     path_map[os.path.join(pbmainroot, os.path.relpath(fullpath, start=self.device._main_prefix))] = {'id': id, 'fullpath': fullpath}
+                elif self.device._card_a_prefix in fullpath:
+                    path_map[os.path.join(pbcardroot, os.path.relpath(fullpath, start=self.device._card_a_prefix))] = {'id': id, 'fullpath': fullpath}
+                elif '/var/tmp/' in fullpath:
+                    continue
+                else:
+                    self._log("Path not matched: %s" % (fullpath))
 
             return path_map
 
