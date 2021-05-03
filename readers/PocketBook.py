@@ -242,8 +242,8 @@ class PocketBookFetchingApp(USBReader):
             SELECT b.OID book_oid, mimetype, Title, Authors, p.Path, filename FROM Books b
             LEFT JOIN (SELECT MAX(OID), BookID, PathID, Name AS filename FROM Files GROUP BY BookID) f ON b.OID = f.BookID
             LEFT JOIN (SELECT ItemID, Val AS mimetype FROM Tags WHERE TagID = 37) i ON b.OID = i.ItemID
-            WHERE
-                b.OID IN (SELECT DISTINCT ParentID FROM Items WHERE TypeID = 4)
+            LEFT JOIN Paths p ON p.OID = PathID
+            WHERE b.OID IN (SELECT DISTINCT ParentID FROM Items WHERE TypeID = 4)
             GROUP BY b.OID
             ORDER BY b.OID
             '''
