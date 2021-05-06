@@ -269,7 +269,7 @@ class AnnotationsDB(Logger):
             try:
                 pels = ua.findAll('p', 'highlight')
                 self._log_location(book_id, "highlight pels={0}".format(pels))
-                this_ua.highlight_text = '\n'.join([p.string for p in pels])
+                this_ua.highlight_text = '\n'.join([p.string or '' for p in pels])
                 self._log_location(book_id, "highlight - this_ua.highlight_text={0}".format(this_ua.highlight_text))
             except:
                 pass
@@ -277,7 +277,7 @@ class AnnotationsDB(Logger):
             try:
                 nels = ua.findAll('p', 'note')
                 self._log_location(book_id, "note nels={0}".format(nels))
-                this_ua.note_text = '\n'.join([n.string for n in nels])
+                this_ua.note_text = '\n'.join([n.string or '' for n in nels])
                 self._log_location(book_id, "highlight - this_ua.note_text={0}".format(this_ua.note_text))
             except:
                 pass
