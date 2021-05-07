@@ -230,20 +230,18 @@ class PocketBookFetchingApp(USBReader):
 
         count_bookmark_query = (
             '''
-            SELECT COUNT(*) num_bookmarks FROM Tags t
-            WHERE
-                TagID = 102 
-                AND ItemID IN (SELECT OID from Items WHERE State = 0)
+            SELECT COUNT(*) AS num_bookmarks FROM Tags t
+            WHERE TagID = 102 AND ItemID IN (SELECT OID from Items WHERE State = 0)
             '''
         )
 
         books_metadata_query = (
             '''
-            SELECT b.OID book_oid, mimetype, Title, Authors, p.Path, filename FROM Books b
+            SELECT b.OID book_oid, i.format, p.Path, f.filename, Title, Authors FROM Books b
             LEFT JOIN (SELECT MAX(OID), BookID, PathID, Name AS filename FROM Files GROUP BY BookID) f ON b.OID = f.BookID
-            LEFT JOIN (SELECT ItemID, Val AS mimetype FROM Tags WHERE TagID = 37) i ON b.OID = i.ItemID
+            LEFT JOIN (SELECT ItemID, Val AS format FROM Tags WHERE TagID = 17) i ON b.OID = i.ItemID
             LEFT JOIN Paths p ON p.OID = PathID
-            WHERE b.OID IN (SELECT DISTINCT ParentID FROM Items WHERE TypeID = 4)
+            WHERE b.OID IN (SELECT DISTINCT ParentID FROM Items WHERE TypeID = 4 ORDER BY ParentID)
             GROUP BY b.OID
             ORDER BY b.OID
             '''
@@ -280,10 +278,10 @@ class PocketBookFetchingApp(USBReader):
                     pbcardroot = "/mnt/ext2/"
 
                 if self.device._main_prefix in fullpath:
-                    path_map[os.path.join(pbmainroot, os.path.relpath(fullpath, start=self.device._main_prefix))] = {'id': id, 'fullpath': fullpath}
+                    path_map[os.path.join(pbmainroot, os.path.relpath(fullpath, start=self.device._main_prefix))] = id
                 elif self.device._card_a_prefix in fullpath:
-                    path_map[os.path.join(pbcardroot, os.path.relpath(fullpath, start=self.device._card_a_prefix))] = {'id': id, 'fullpath': fullpath}
-                elif '/var/tmp/' in fullpath:
+                    path_map[os.path.join(pbcardroot, os.path.relpath(fullpath, start=self.device._card_a_prefix))] = id
+                elif fullpath.startswith(('/var/', '/tmp/')):
                     continue
                 else:
                     self._log("Path not matched: %s" % (fullpath))
@@ -305,14 +303,12 @@ class PocketBookFetchingApp(USBReader):
 
         # Get DB location (only stock or default profile)
         self._log("Getting DB location")
-        db_location = ''
-        vol = self.device._main_prefix
-        locations = [os.path.join(vol, 'system/config/books.db'), os.path.join(vol, 'system/profiles/default/config/books.db')]
-        for path in locations:
-            if os.path.exists(path):
-                db_location = USBMS.normalize_path(path)
-
-        if not db_location:
+        locations = [os.path.join(self.device._main_prefix, 'system/config/books.db'),
+                     os.path.join(self.device._main_prefix, 'system/profiles/default/config/books.db')]
+        paths = [path for path in locations if os.path.exists(path)]
+        if paths:
+            db_location = USBMS.normalize_path(paths[0])
+        else:
             self._log("No DB found. Currently only supports default profiles, with DB based notes. Stopping")
             return
 
