@@ -231,7 +231,8 @@ class PocketBookFetchingApp(USBReader):
         count_bookmark_query = (
             '''
             SELECT COUNT(*) AS num_bookmarks FROM Tags t
-            WHERE TagID = 102 AND ItemID IN (SELECT OID from Items WHERE State = 0)
+            WHERE TagID = 102 AND VAL IS NOT 'bookmark'
+            AND ItemID IN (SELECT OID from Items WHERE State = 0)
             '''
         )
 
@@ -357,8 +358,8 @@ class PocketBookFetchingApp(USBReader):
         match_path, match_authtitle, match_title, match_fail, match_failauth = 0, 0, 0, 0, 0
 
         for book in metadata_cursor.execute(books_metadata_query):
-            title = book['Title']
             book_oid = book['book_oid']
+            title = book['Title']
             filepath = os.path.join(book['Path'], book['filename'])
 
             book_id = path_map.get(filepath, None)
@@ -420,7 +421,7 @@ class PocketBookFetchingApp(USBReader):
                         'annotation_id': row['item_oid'],
                         'book_id': book_id,
                         'last_modification': row.get('TimeAlt', 0),
-                        #'format': book['mimetype'],
+                        #'format': book['format'],
                         #'type': atype,
                         #'title': title,
                         #'book_oid': book_oid,
