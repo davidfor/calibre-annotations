@@ -170,8 +170,8 @@ class PocketBookFetchingApp(USBReader):
             for i, author in enumerate(mi.authors):
 #                self._log_location("author=%s, author.__class__=%s" % (author, author.__class__))
                 this_author = author.split(', ')
-                #this_author.reverse()
-                book_mi.author += ', '.join(this_author)
+                this_author.reverse()
+                book_mi.author += ' '.join(this_author)
                 if i < len(mi.authors) - 1:
                     book_mi.author += ' & '
 
@@ -194,7 +194,7 @@ class PocketBookFetchingApp(USBReader):
             self.add_to_books_db(self.books_db, book_mi)
 
             # Add book to indexed_books
-            self.installed_books_by_title[mi.title] = {'book_id': book_id, 'author_sorted': mi.author_sort, 'authors_fixed': book_mi.author}
+            self.installed_books_by_title[mi.title] = {'book_id': book_id, 'author_sorted': mi.author_sort}
 
             # Increment the progress bar
             self.opts.pb.increment()
@@ -230,20 +230,19 @@ class PocketBookFetchingApp(USBReader):
 
         count_bookmark_query = (
             '''
-            SELECT COUNT(*) num_bookmarks FROM Tags t
-            WHERE
-                TagID = 102 
-                AND ItemID IN (SELECT OID from Items WHERE State = 0)
+            SELECT COUNT(*) AS num_bookmarks FROM Tags t
+            WHERE TagID = 102 AND VAL IS NOT 'bookmark'
+            AND ItemID IN (SELECT OID from Items WHERE State = 0)
             '''
         )
 
         books_metadata_query = (
             '''
-            SELECT b.OID book_oid, mimetype, Title, Authors, p.Path, filename FROM Books b
+            SELECT b.OID book_oid, i.format, p.Path, f.filename, Title, Authors FROM Books b
             LEFT JOIN (SELECT MAX(OID), BookID, PathID, Name AS filename FROM Files GROUP BY BookID) f ON b.OID = f.BookID
-            LEFT JOIN (SELECT ItemID, Val AS mimetype FROM Tags WHERE TagID = 37) i ON b.OID = i.ItemID
+            LEFT JOIN (SELECT ItemID, Val AS format FROM Tags WHERE TagID = 17) i ON b.OID = i.ItemID
             LEFT JOIN Paths p ON p.OID = PathID
-            WHERE b.OID IN (SELECT DISTINCT ParentID FROM Items WHERE TypeID = 4)
+            WHERE b.OID IN (SELECT DISTINCT ParentID FROM Items WHERE TypeID = 4 ORDER BY ParentID)
             GROUP BY b.OID
             ORDER BY b.OID
             '''
@@ -280,26 +279,37 @@ class PocketBookFetchingApp(USBReader):
                     pbcardroot = "/mnt/ext2/"
 
                 if self.device._main_prefix in fullpath:
-                    path_map[os.path.join(pbmainroot, os.path.relpath(fullpath, start=self.device._main_prefix))] = {'id': id, 'fullpath': fullpath}
+                    path_map[os.path.join(pbmainroot, os.path.relpath(fullpath, start=self.device._main_prefix))] = id
                 elif self.device._card_a_prefix in fullpath:
-                    path_map[os.path.join(pbcardroot, os.path.relpath(fullpath, start=self.device._card_a_prefix))] = {'id': id, 'fullpath': fullpath}
-                elif '/var/tmp/' in fullpath:
+                    path_map[os.path.join(pbcardroot, os.path.relpath(fullpath, start=self.device._card_a_prefix))] = id
+                elif fullpath.startswith(('/var/', '/tmp/')):
                     continue
                 else:
                     self._log("Path not matched: %s" % (fullpath))
 
             return path_map
 
+        def generate_title_map(ids, db):
+            title_map = {}
+            for id in ids:
+                title = db.get_metadata(id, index_is_id=True).title
+                if title:
+                    title_map[title] = {}
+                    title_map[title]['book_id'] = id
+                    title_map[title]['authors'] = db.get_metadata(id, index_is_id=True).format_authors()
+                else:
+                    continue
+
+            return title_map
+
         # Get DB location (only stock or default profile)
         self._log("Getting DB location")
-        db_location = ''
-        vol = self.device._main_prefix
-        locations = [os.path.join(vol, 'system/config/books.db'), os.path.join(vol, 'system/profiles/default/config/books.db')]
-        for path in locations:
-            if os.path.exists(path):
-                db_location = USBMS.normalize_path(path)
-
-        if not db_location:
+        locations = [os.path.join(self.device._main_prefix, 'system/config/books.db'),
+                     os.path.join(self.device._main_prefix, 'system/profiles/default/config/books.db')]
+        paths = [path for path in locations if os.path.exists(path)]
+        if paths:
+            db_location = USBMS.normalize_path(paths[0])
+        else:
             self._log("No DB found. Currently only supports default profiles, with DB based notes. Stopping")
             return
 
@@ -313,6 +323,7 @@ class PocketBookFetchingApp(USBReader):
         self._log("_fetch_annotations - onDeviceIds={0}".format(self.onDeviceIds))
 
         path_map = generate_annotation_paths(self.onDeviceIds)
+        title_map = generate_title_map(self.onDeviceIds, db)
 
         # Start fetching annotations
         from contextlib import closing
@@ -331,13 +342,13 @@ class PocketBookFetchingApp(USBReader):
             self._log("_fetch_annotations - Total number of bookmarks={0}".format(count_bookmarks))
             self._log("_fetch_annotations - About to get annotations")
             self._read_database_annotations(connection, books_metadata_query,
-                                            annotation_data_query, path_map, fetchbookmarks=False)
+                                            annotation_data_query, path_map, title_map, fetchbookmarks=False)
             self._log("_fetch_annotations - Finished getting annotations")
 
         self._log_location("Finish!!!!")
 
     def _read_database_annotations(self, connection, books_metadata_query, annotation_data_query,
-                                   path_map, fetchbookmarks=False):
+                                   path_map, title_map, fetchbookmarks=False):
         self._log("_read_database_annotations - Starting fetch of bookmarks")
 
         metadata_cursor = connection.cursor()
@@ -347,30 +358,30 @@ class PocketBookFetchingApp(USBReader):
         match_path, match_authtitle, match_title, match_fail, match_failauth = 0, 0, 0, 0, 0
 
         for book in metadata_cursor.execute(books_metadata_query):
-            title = book['Title']
             book_oid = book['book_oid']
-            filename = os.path.join(book['Path'], book['filename'])
+            title = book['Title']
+            filepath = os.path.join(book['Path'], book['filename'])
 
-            book_id = path_map.get(filename, {}).get('id', None)
+            book_id = path_map.get(filepath, None)
             if book_id:
                 match_path += 1
             else:
-                authors = book['Authors']
-                if authors and title in self.installed_books_by_title:
-                    authors_fixed = re.sub(regex_authorfix, ' & ', authors)
-                    if self.installed_books_by_title.get(title, {}).get('authors_fixed', "") in [authors, authors_fixed]:
-                        book_id = self.installed_books_by_title[title]['book_id']
-                        match_authtitle += 1
+                if title in title_map:
+                    book_id = title_map[title]['book_id']
+                    authors = book['Authors']
+                    if authors:
+                        authors_fixed = re.sub(regex_authorfix, ' & ', authors)
+                        if title_map.get(title, {}).get('authors', "") in (authors, authors_fixed):
+                            match_authtitle += 1
+                        else:
+                            match_failauth += 1
+                            self._log("_read_database_annotation - AUTHOR mismatch: PB oid {0}, {1} by {2}, {3}".format(book_oid, title, authors, filepath))
+                            continue
                     else:
-                        self._log("_read_database_annotation - Author mismatch for: PB oid {0}, {1} by {2}, {3}".format(book_oid, title, authors, filename))
-                        match_failauth += 1
-                        continue
-                elif title in self.installed_books_by_title:
-                    book_id = self.installed_books_by_title[title]['book_id']
-                    match_title += 1
+                        match_title += 1
                 else:
-                    self._log("_read_database_annotation - Title not matched: PB oid {0}, {1}, {2}".format(book_oid, title, filename))
                     match_fail += 1
+                    self._log("_read_database_annotation - Title not found in Calibre: PB oid {0}, {1}, {2}".format(book_oid, title, filepath))
                     continue
 
             for row in annotation_data_cursor.execute(annotation_data_query, (book_oid,)):
@@ -410,7 +421,7 @@ class PocketBookFetchingApp(USBReader):
                         'annotation_id': row['item_oid'],
                         'book_id': book_id,
                         'last_modification': row.get('TimeAlt', 0),
-                        #'format': book['mimetype'],
+                        #'format': book['format'],
                         #'type': atype,
                         #'title': title,
                         #'book_oid': book_oid,
