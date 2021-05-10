@@ -418,7 +418,7 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
                     highlight_text = ''
                     try:
                         pels = ua.findAll('p', 'highlight')
-                        highlight_text = '\n'.join([p.string for p in pels])
+                        highlight_text = '\n'.join([p.string or '' for p in pels])
                     except:
                         pass
                     if text_to_match > '':
@@ -428,7 +428,7 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
                     note_text = ''
                     try:
                         nels = ua.findAll('p', 'note')
-                        note_text = '\n'.join([n.string for n in nels])
+                        note_text = '\n'.join([n.string or '' for n in nels])
                     except:
                         pass
                     if note_to_match > '':
