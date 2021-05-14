@@ -78,7 +78,12 @@ class PocketBookFetchingApp(USBReader):
             if 'annotation_id' in annotation:
                 ann_mi.annotation_id = annotation['annotation_id']
             if 'highlight_color' in annotation:
-                ann_mi.highlight_color = annotation['highlight_color'].capitalize()
+                if annotation['highlight_color'] == 'yellow':
+                    ann_mi.highlight_color = 'Yellow'
+                elif annotation['highlight_color'] in ('cian', 'cyan'):
+                    ann_mi.highlight_color = 'Blue'
+                else:
+                    ann_mi.highlight_color = 'Yellow'
             if 'highlight_text' in annotation:
                 highlight_text = annotation['highlight_text']
                 ann_mi.highlight_text = highlight_text
