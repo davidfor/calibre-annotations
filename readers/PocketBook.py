@@ -422,6 +422,10 @@ class PocketBookFetchingApp(USBReader):
                     if atype not in ('highlight', 'note', 'bookmark'):
                         continue
 
+                    # Fix counts starting at 0
+                    page += 1
+                    offs += 1
+
                     data = {
                         'annotation_id': row['item_oid'],
                         'book_id': book_id,
