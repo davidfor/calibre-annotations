@@ -243,7 +243,7 @@ class PocketBookFetchingApp(USBReader):
 
         books_metadata_query = (
             '''
-            SELECT b.OID book_oid, i.format, p.Path, f.filename, Title, Authors FROM Books b
+            SELECT b.OID AS book_oid, i.format, p.Path || f.filename AS filepath, Title, Authors FROM Books b
             LEFT JOIN (SELECT MAX(OID), BookID, PathID, Name AS filename FROM Files GROUP BY BookID) f ON b.OID = f.BookID
             LEFT JOIN (SELECT ItemID, Val AS format FROM Tags WHERE TagID = 17) i ON b.OID = i.ItemID
             LEFT JOIN Paths p ON p.OID = PathID
@@ -335,13 +335,13 @@ class PocketBookFetchingApp(USBReader):
         import apsw
         with closing(apsw.Connection(db_location)) as connection:
             self.opts.pb.set_label(_("Fetch annotations from database"))
-            connection.setrowtrace(self.row_factory)
+            #connection.setrowtrace(self.row_factory)
 
             cursor = connection.cursor()
             cursor.execute(count_bookmark_query)
             try:
                 result = next(cursor)
-                count_bookmarks = result['num_bookmarks']
+                count_bookmarks = result[0]
             except StopIteration:
                 count_bookmarks = 0
             self._log("_fetch_annotations - Total number of bookmarks={0}".format(count_bookmarks))
@@ -362,18 +362,14 @@ class PocketBookFetchingApp(USBReader):
         regex_authorfix = re.compile('[,]? and ')  # revert PB changes to epubs author field
         match_path, match_authtitle, match_title, match_fail, match_failauth = 0, 0, 0, 0, 0
 
-        for book in metadata_cursor.execute(books_metadata_query):
-            book_oid = book['book_oid']
-            title = book['Title']
-            filepath = os.path.join(book['Path'], book['filename'])
-
+        for book_oid, format, filepath, title, authors in metadata_cursor.execute(books_metadata_query):
+            # self._log(f'{book_oid}, {filepath}, {title}, {authors}')
             book_id = path_map.get(filepath, None)
             if book_id:
                 match_path += 1
             else:
                 if title in title_map:
                     book_id = title_map[title]['book_id']
-                    authors = book['Authors']
                     if authors:
                         authors_fixed = re.sub(regex_authorfix, ' & ', authors)
                         if title_map.get(title, {}).get('authors', "") in (authors, authors_fixed):
@@ -389,21 +385,20 @@ class PocketBookFetchingApp(USBReader):
                     self._log("_read_database_annotation - Title not found in Calibre: PB oid {0}, {1}, {2}".format(book_oid, title, filepath))
                     continue
 
-            for row in annotation_data_cursor.execute(annotation_data_query, (book_oid,)):
-                TagID = row['TagID']
-                Val = row['Val']
-
+            for itemoid, TimeAlt, TagID, Val in annotation_data_cursor.execute(annotation_data_query, (book_oid,)):
+                # self._log(f'{itemoid}, {TimeAlt}, {TagID}, {Val}')
                 if TagID == 101:
                     finish = False
-                    note_text = None  # for highlight
                     page, offs, cfi1 = self.location_split(json.loads(Val).get('anchor', ""))
                 elif TagID == 102:
                     atype = Val
-                elif TagID == 104:
-                    highlight_text = json.loads(Val).get('text', None)
-                    if fetchbookmarks and atype == "bookmark":
+                    if fetchbookmarks and atype == 'bookmark':
                         highlight_color = None
                         finish = True
+                    elif atype == 'highlight':
+                        note_text = None
+                elif TagID == 104:
+                    highlight_text = json.loads(Val).get('text', None)
                 elif TagID == 105:
                     note_text = json.loads(Val).get('text', None)
                 elif TagID == 106:
@@ -413,7 +408,7 @@ class PocketBookFetchingApp(USBReader):
                     pass
                     # 'draws' SVG data
                 else:
-                    self._log("_read_database_annotations - Unprocessed Tag ID {0} in ItemID {1} for {2}".format(TagID, row.get('item_oid'), title))
+                    self._log("_read_database_annotations - Unprocessed Tag ID {0} in ItemID {1} for {2}".format(TagID, itemoid, title))
 
                 if finish:
                     finish = False
@@ -427,9 +422,9 @@ class PocketBookFetchingApp(USBReader):
                     offs += 1
 
                     data = {
-                        'annotation_id': row['item_oid'],
+                        'annotation_id': itemoid,
                         'book_id': book_id,
-                        'last_modification': row.get('TimeAlt', 0),
+                        'last_modification': TimeAlt,
                         #'format': book['format'],
                         #'type': atype,
                         #'title': title,
@@ -445,7 +440,7 @@ class PocketBookFetchingApp(USBReader):
                     }
 
                     # self._log(self.active_annotations[annotation_id])
-                    self.active_annotations[row['item_oid']] = data
+                    self.active_annotations[itemoid] = data
 
         self._log("_fetch_annotations - Matched on path %i, title/author: %i, title: %i, "
                   "Unmatched: author: %i, title: %i" % (match_path, match_authtitle, match_title, match_failauth, match_fail))
