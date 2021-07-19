@@ -513,7 +513,8 @@ class KoboFetchingApp(USBReader):
                     'highlight_color': 'Gray',
                     'location': chapter_title,
                     'location_sort': "%08d" % (current_chapter  * 1000 + row['ChapterProgress'] * 100),
-                    'last_modification': bookmark_timestamp
+                    'last_modification': bookmark_timestamp,
+                    'confidence': 5   # All annotations are matched to a book in the library.
                     }
                 self.active_annotations[annotation_id]['highlight_text'] = row['Text']
                 self.active_annotations[annotation_id]['note_text'] = row['Annotation']

@@ -232,9 +232,13 @@ class Annotations(Annotation, Logger):
 #                 for i in range(0, len(comments_body_soup.body.contents)):
 #                     self._log_location("i=%s" % i)
 #                     self._log_location("comment_body_tag=%s" % comments_body_soup.body.contents[i])
-                while len(comments_body_soup.body.contents) > 0:
-#                     self._log_location("comment_body_tag=%s" % comments_body_soup.body.contents[0])
-                    divTag.append(comments_body_soup.body.contents[0])
+                try: # 
+                    while len(comments_body_soup.body.contents) > 0:
+                        # self._log_location("comment_body_tag=%s" % comments_body_soup.body.contents[0])
+                        divTag.append(comments_body_soup.body.contents[0])
+                except Exception as e:
+                    self._log_location("Problem with comments_body_soup - Exception=%s, comments_body='%s', content_args=%s" % (e, comments_body_soup, content_args))
+
                 divTag['class'] = "annotation"
                 divTag['genre'] = ''
                 if agroup.genre:

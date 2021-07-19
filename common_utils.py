@@ -189,7 +189,8 @@ class BookStruct(Struct):
             path=None,
             title=None,
             title_sort=None,
-            uuid=None
+            uuid=None,
+            confidence=None
             )
 
 

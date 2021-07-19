@@ -1,5 +1,11 @@
 Version history:
-1.15.0 - 04 March 2021
+1.16.0 - 19 July 2021
+• New: Add PocketBooks support - Thanks to @wold.
+• Fix: Error "TypeError: unhashable type: 'SortableTableWidgetItem'" when importing from Kindle.
+• Fix: Error rendering annotations as HTML.
+• Fix: Change some handling of confidence generation as some devices have already matched the books.
+
+1.15.0 - 04 April 2021
 • Fix: Spanish My Clippings.txt has "La" for the annotations.
 • Fix: Change method of getting books on device to use a search similar to what is used for Kobo and Tolino devices.
 • Fix: Sorting of annotations for kepubs on Kobo devices.

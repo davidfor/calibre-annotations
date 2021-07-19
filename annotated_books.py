@@ -207,6 +207,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         # Populate the table data
         self.tabledata = []
         for book_data in book_list:
+            debug_print("AnnotatedBooksDialog::__init__ book_data=%s" % (book_data))
             enabled = QCheckBox()
             enabled.setChecked(True)
 
@@ -243,10 +244,12 @@ class AnnotatedBooksDialog(SizePersistedDialog):
 
             genres = book_data['genre'].split(', ')
             if 'News' in genres and collect_news_clippings:
-                cid = get_clippings_cid(self, news_clippings_destination)
+                # cid = get_clippings_cid(self, news_clippings_destination)
                 confidence = 5
             else:
-                cid, confidence = parent.generate_confidence(book_data)
+                confidence = book_data.get('confidence', None)
+                if confidence is None:
+                    cid, confidence = parent.generate_confidence(book_data)
 
             # List order matches self.annotations_header
             this_book = [
@@ -259,7 +262,8 @@ class AnnotatedBooksDialog(SizePersistedDialog):
                 author,
                 last_annotation,
                 book_data['annotations'],
-                confidence]
+                confidence
+                ]
             self.tabledata.append(this_book)
 
         self.tv = QTableView(self)
@@ -386,7 +390,8 @@ class AnnotatedBooksDialog(SizePersistedDialog):
             book_id = self.tm.arraydata[i][self.annotations_header.index('book_id')]
             genre = self.tm.arraydata[i][self.annotations_header.index('genre')]
             title = str(self.tm.arraydata[i][self.TITLE_COL].text())
-            uuid = self.tm.arraydata[i][self.annotations_header.index('uuid')]
+            uuid = str(self.tm.arraydata[i][self.annotations_header.index('uuid')].text())
+            confidence = self.tm.arraydata[i][self.CONFIDENCE_COL]
 
             book_mi = BookStruct()
             book_mi.author = author
@@ -395,6 +400,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
             book_mi.reader_app = reader_app
             book_mi.title = title
             book_mi.uuid = uuid
+            book_mi.confidence = confidence
             self.selected_books[reader_app].append(book_mi)
 
     def getTableRowDoubleClick(self, index):

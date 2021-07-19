@@ -480,17 +480,7 @@ class AnnotationsAction(InterfaceAction, Logger):
         Output: cid, confidence_index
         '''
 
-        if self.library_scanner.isRunning():
-            self.library_scanner.wait()
-
-        title_map = self.library_scanner.title_map
-        uuid_map = self.library_scanner.uuid_map
-        confidence = 0
-        cid = None
-        
-        title = normalize(book_mi['title'])
-        self._log_location("DEBUG: book_mi=%s" % book_mi)
-        
+        # If have a book id, the book has already been matched
         try:
             book_id = int(book_mi['book_id'])
         except:
@@ -499,8 +489,23 @@ class AnnotationsAction(InterfaceAction, Logger):
         if (book_mi['book_id'] is not None and book_id > 0):
             cid = book_id
             confidence = 5
+            return cid, confidence
+
+        if self.library_scanner.isRunning():
+            self._log_location("DEBUG: Waiting for library scanner")
+            self.library_scanner.wait()
+            self._log_location("DEBUG: Library scanner has completed")
+
+        title_map = self.library_scanner.title_map
+        uuid_map = self.library_scanner.uuid_map
+        confidence = 0
+        cid = None
+
+        title = normalize(book_mi['title'])
+        self._log_location("DEBUG: book_mi=%s" % book_mi)
+        
         # Check uuid_map
-        elif (book_mi['uuid'] in uuid_map and
+        if (book_mi['uuid'] in uuid_map and
                 title == uuid_map[book_mi['uuid']]['title'] and
                 book_mi['author'] in uuid_map[book_mi['uuid']]['authors']):
             cid = uuid_map[book_mi['uuid']]['id']
@@ -625,7 +630,7 @@ class AnnotationsAction(InterfaceAction, Logger):
                 annotation_count = self.opts.db.get_annotation_count(annotations_db, book_mi['book_id'])
                 last_update = self.opts.db.get_last_update(books_db, book_mi['book_id'], as_timestamp=True)
                 if annotation_count:
-                    this_book_list.append({
+                    book_dict = {
                         'annotations': annotation_count,
                         'author': book_mi['author'],
                         'author_sort': book_mi['author_sort'] if book_mi['author_sort'] else book_mi['author'],
@@ -636,7 +641,11 @@ class AnnotationsAction(InterfaceAction, Logger):
                         'title': book_mi['title'],
                         'title_sort': book_mi['title_sort'] if book_mi['title_sort'] else book_mi['title'],
                         'uuid': book_mi['uuid'],
-                        })
+                        }
+                    confidence = book_mi.get('confidence', None)
+                    if confidence is not None:
+                        book_dict['confidence'] = confidence
+                    this_book_list.append(book_dict)
             annotated_book_list += this_book_list
 
         self.opts.pb.hide()
@@ -1070,19 +1079,20 @@ class AnnotationsAction(InterfaceAction, Logger):
 
         for book_mi in selected_books[reader_app]:
 
+            confidence = 0
+
             # Intercept News clippings
             genres = book_mi['genre'].split(', ')
             if 'News' in genres and collect_news_clippings:
                 book_mi['cid'] = get_clippings_cid(self, news_clippings_destination)
                 confidence = 5
-#             elif not book_mi.get('confidence', None):
             else:
                 book_mi['cid'], confidence = self.generate_confidence(book_mi)
 
             if confidence >= 3: # and False: # Uncomment this to force Kobo devices to go through the prompts.
                 new_annotation_string = self.add_annotations_to_calibre(book_mi, annotations_db, book_mi['cid'])
                 if new_annotation_string is not None:
-                    self._log(" '%s' (confidence: %d) annotations added automatically" % (book_mi['title'], confidence))
+                    self._log_location(" '%s' (confidence: %d) annotations added automatically" % (book_mi['title'], confidence))
                     updated_annotations += 1
                     book_ids_updated[book_mi['cid']] = new_annotation_string
             else:
