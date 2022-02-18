@@ -360,8 +360,17 @@ class AnnotationsAction(InterfaceAction, Logger):
         if self.connected_device is not None:
             self._log_location("Have device")
             self.launch_library_scanner()
-            primary_name = self.connected_device.name.split()[0]
-            self.fetch_usb_device_annotations(primary_name)
+            self.fetch_usb_device_annotations(self.get_connected_device_primary_name())
+
+    def get_connected_device_primary_name(self):
+        if self.connected_device.name == 'MTP Device Interface':
+            # the MTP driver wraps itself around device name
+            device_name = self.connected_device.get_device_information()[0]
+        else:
+            # other drivers makes device name easily accessible
+            device_name = self.connected_device.name
+
+        return device_name.split()[0]
 
     def fetch_usb_device_annotations(self, reader_app):
         """
@@ -1247,7 +1256,7 @@ class AnnotationsAction(InterfaceAction, Logger):
 
                 else:
                     usb_reader_classes = list(USBReader.get_usb_reader_classes().keys())
-                    primary_name = self.connected_device.name.split()[0]
+                    primary_name = self.get_connected_device_primary_name()
                     if primary_name in usb_reader_classes:
                         haveDevice = True
                         fetch_tootip = _('Fetch annotations from {0}').format(self.connected_device.gui_name)
