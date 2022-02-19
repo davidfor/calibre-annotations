@@ -364,10 +364,15 @@ class AnnotationsAction(InterfaceAction, Logger):
 
     def get_connected_device_primary_name(self):
         if self.connected_device.name == 'MTP Device Interface':
-            # the MTP driver wraps itself around device name
+            # get actual device name from the MTP driver (used for Android devices)
             device_name = self.connected_device.get_device_information()[0]
+
+            # group all Onyx devices under same name, because they behave the same
+            import re
+            if re.compile(r"^(Nova|Poke|Note|MAX)").match(device_name):
+                device_name = 'Boox'
         else:
-            # other drivers makes device name easily accessible
+            # non-Android devices have dedicated drivers
             device_name = self.connected_device.name
 
         return device_name.split()[0]
