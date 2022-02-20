@@ -57,6 +57,7 @@ class BooxReaderApp(USBReader):
                         rct.booksize
                 FROM bookmarks bmk
                 JOIN recent rct ON rct.filename = bmk.filename
+                WHERE bmk.num = 0
                 ORDER BY rct.id ASC, bmk.start ASC
                 '''
             )
