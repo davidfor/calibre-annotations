@@ -14,25 +14,9 @@ from calibre_plugins.annotations.reader_app_support import USBReader
 from calibre_plugins.annotations.common_utils import (AnnotationStruct, BookStruct)
 
 
-# Change the class name to <app_name>ReaderApp, e.g. 'KindleReaderApp'
 class BooxReaderApp(USBReader):
-    """
-    Sample USB implementation
-    Fetching annotations takes place in two stages:
-    1) get_installed_books():
-        add the installed books' metadata to the database
-    2) get_active_annotations():
-        add the annotations for installed books to the database
-    """
-    # The app name should be the first word from the
-    # device's name property, e.g., 'Kindle' or 'SONY'. Drivers are located in
-    # calibre.devices.<device>
-    # For example, the name declared in the Kindle class
-    # is 'Kindle 2/3/4/Touch/PaperWhite Device Interface',
-    # so app_name would be the first word, 'Kindle'
     app_name = 'Boox'
 
-    # Change this to True when developing a new class from this template
     SUPPORTS_FETCHING = True
 
     # Fetch the active annotations, add them to the annotations_db
@@ -96,6 +80,7 @@ class BooxReaderApp(USBReader):
             dict_of_anns = {}
 
             for row in rows:
+                bmk_id = row['id']
                 bmk_color = row['color']
                 bmk_date = math.floor(row['dateadd'] / 1000)
 
@@ -113,13 +98,13 @@ class BooxReaderApp(USBReader):
 
                 book_id = self.installed_books_by_path[book_filename]
 
-                dict_of_anns[bmk_date] = {
-                    'annotation_id': row['id'],
+                dict_of_anns[bmk_id] = {
+                    'annotation_id': bmk_id,
                     'book_id': book_id,
                     'highlight_color': color_map[bmk_color]['color'],
-                    'highlight_text': row['text'].replace('\r\n', '\n').split('\n'),
+                    'highlight_text': row['text'].replace('\r\n', '\n'),
                     'location': bmk_location,
-                    'location_sort': row['start'],
+                    'location_sort': "%020d" % row['start'],
                     'timestamp': bmk_date
                 }
         finally:
@@ -143,27 +128,16 @@ class BooxReaderApp(USBReader):
         self.opts.pb.set_maximum(len(dict_of_anns))
 
         # Add annotations to the database
-        for timestamp in sorted(dict_of_anns.keys()):
+        for bmk_id in sorted(dict_of_anns.keys()):
             # Populate an AnnotationStruct with available data
             ann_mi = AnnotationStruct()
-
-            # Required items
-            ann_mi.book_id = dict_of_anns[timestamp]['book_id']
-            ann_mi.last_modification = timestamp
-            ann_mi.location = dict_of_anns[timestamp]['location']
-            ann_mi.location_sort = dict_of_anns[timestamp]['location_sort']
-
-            # Optional items
-            if 'annotation_id' in dict_of_anns[timestamp]:
-                ann_mi.annotation_id = dict_of_anns[timestamp]['annotation_id']
-            if 'highlight_color' in dict_of_anns[timestamp]:
-                ann_mi.highlight_color = dict_of_anns[timestamp]['highlight_color']
-            if 'highlight_text' in dict_of_anns[timestamp]:
-                highlight_text = '\n'.join(dict_of_anns[timestamp]['highlight_text'])
-                ann_mi.highlight_text = highlight_text
-            if 'note_text' in dict_of_anns[timestamp]:
-                note_text = '\n'.join(dict_of_anns[timestamp]['note_text'])
-                ann_mi.note_text = note_text
+            ann_mi.book_id = dict_of_anns[bmk_id]['book_id']
+            ann_mi.last_modification = dict_of_anns[bmk_id]['timestamp']
+            ann_mi.location = dict_of_anns[bmk_id]['location']
+            ann_mi.location_sort = dict_of_anns[bmk_id]['location_sort']
+            ann_mi.annotation_id = dict_of_anns[bmk_id]['annotation_id']
+            ann_mi.highlight_color = dict_of_anns[bmk_id]['highlight_color']
+            ann_mi.highlight_text = dict_of_anns[bmk_id]['highlight_text']
 
             # Add annotation to annotations_db
             self.add_to_annotations_db(annotations_db, ann_mi)
@@ -172,7 +146,7 @@ class BooxReaderApp(USBReader):
             self.opts.pb.increment()
 
             # Update last_annotation in books_db
-            self.update_book_last_annotation(books_db, timestamp, ann_mi.book_id)
+            self.update_book_last_annotation(books_db, ann_mi.last_modification, ann_mi.book_id)
 
         # Update the timestamp
         self.update_timestamp(annotations_db)
