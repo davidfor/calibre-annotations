@@ -1186,17 +1186,17 @@ def restore_state(ui, restore_position=False):
                 if isinstance(CONTROL_SET[index], unicode):
                     setter_ref = getattr(control_ref, CONTROL_SET[index], None)
                     if setter_ref is not None:
-                        if isinstance(setter_ref, collections.Callable):
+                        if isinstance(setter_ref, collections.abc.Callable):
                             setter_ref(plugin_prefs.get(control, CONTROL_DEFAULT[index]))
                 elif isinstance(CONTROL_SET[index], tuple) and len(CONTROL_SET[index]) == 2:
                     # Special case for comboBox - first findText, then setCurrentIndex
                     setter_ref = getattr(control_ref, CONTROL_SET[index][0], None)
                     if setter_ref is not None:
-                        if isinstance(setter_ref, collections.Callable):
+                        if isinstance(setter_ref, collections.abc.Callable):
                             result = setter_ref(plugin_prefs.get(control, CONTROL_DEFAULT[index]))
                             setter_ref = getattr(control_ref, CONTROL_SET[index][1], None)
                             if setter_ref is not None:
-                                if isinstance(setter_ref, collections.Callable):
+                                if isinstance(setter_ref, collections.abc.Callable):
                                     setter_ref(result)
                 else:
                     print(" invalid CONTROL_SET tuple for '%s'" % control)
