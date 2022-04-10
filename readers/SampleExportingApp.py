@@ -80,10 +80,10 @@ class SampleExportingApp(ExportingReader):
             </body>
             </html>''')
 
-    initial_dialog_text = ''
+    initial_dialog_text = 'Junk'
 
     # Change this to True when developing a new class from this template
-    SUPPORTS_EXPORTING = False
+    SUPPORTS_EXPORTING = True
 
     # Sample annotations, indexed by timestamp. Note that annotations may have
     # highlight_text, note_text, or both. 'location' might reference a page number from

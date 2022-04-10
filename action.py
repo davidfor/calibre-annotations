@@ -52,7 +52,7 @@ from calibre_plugins.annotations.annotated_books import AnnotatedBooksDialog
 from calibre_plugins.annotations.annotations import merge_annotations, merge_annotations_with_comments
 from calibre_plugins.annotations.annotations_db import AnnotationsDB
 
-from calibre_plugins.annotations.common_utils import (CompileUI,
+from calibre_plugins.annotations.common_utils import (
     CoverMessageBox, HelpView, ImportAnnotationsDialog, IndexLibrary,
     Logger, ProgressBar, Struct,
     get_cc_mapping, get_clippings_cid, get_icon, get_pixmap, get_resource_files,
@@ -472,9 +472,6 @@ class AnnotationsAction(InterfaceAction, Logger):
 
         # Populate dialog resources
         self.inflate_dialog_resources()
-
-        # Compile .ui files as needed
-        CompileUI(self)
 
         # Populate the help resources
         self.inflate_help_resources()

@@ -1,4 +1,9 @@
 Version history:
+1.17.0 - 10 April 2022
+• New: Added support AlReaderX reader app on the Boox Android-based devices. Thanks to @aik099.
+• Change: Some code cleanup.
+• Fix: Handle change collections library.
+
 1.16.0 - 19 July 2021
 • New: Add PocketBooks support - Thanks to @wold.
 • Fix: Error "TypeError: unhashable type: 'SortableTableWidgetItem'" when importing from Kindle.
