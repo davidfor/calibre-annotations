@@ -79,6 +79,8 @@ class MoonReaderApp(ExportingReader):
     SUPPORTS_EXPORTING = True
 
     def parse_exported_highlights(self, raw, log_failure=True):
+        self._log("%s:parse_exported_highlight()" % self.app_name)
+
         # Create the annotations, books table as needed
         self.annotations_db = "%s_imported_annotations" % self.app_name_
         self.create_annotations_table(self.annotations_db)
@@ -152,9 +154,8 @@ class MoonReaderApp(ExportingReader):
             ann_mi.location = row[5]
             ann_mi.location_sort = row[5]
             ann_mi.annotation_id = row[1]
-            # FIXME - colors in the moon reader db are integer values reflecting RGBA. I guess I'd need to figure out
-            #   an approximation of which color is being used. For now, everything's Yellow...
-            ann_mi.highlight_color = 'Yellow'
+            # colors in the moon reader db are integer values of ARGB style colors
+            ann_mi.highlight_color = f"#{format(row[6], 'x')}"
             ann_mi.highlight_text = row[8]
             ann_mi.note_text = row[9]
             annotations.append(ann_mi)
@@ -182,5 +183,5 @@ class MoonReaderApp(ExportingReader):
         with open(os.path.join(path, app_package, "_names.list")) as file:
             for ln, line in enumerate(file, 1):
                 if db_backup_location in line:
-                    print("found db at index ", ln)
+                    self._log_location(f"found moon reader db at index #{ln}")
                     return os.path.join(path, app_package, str(ln) + ".tag")
