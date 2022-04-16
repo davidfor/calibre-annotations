@@ -221,9 +221,9 @@ class PlainTextEdit(QPlainTextEdit, Logger):
     def dropEvent(self, event):
         data = event.mimeData()
         mime = "text/uri-list"
-        url = str(data.data(mime))
-        path = urlparse(url).path.strip()
-        scheme = urlparse(url).scheme
+        url = urlparse(str(data.data(mime), encoding='utf-8').rstrip())
+        path = url.path.strip()
+        scheme = url.scheme
         path = re.sub('%20', ' ', path)
         if iswindows:
             if path.startswith('/Shared Folders'):
@@ -231,11 +231,14 @@ class PlainTextEdit(QPlainTextEdit, Logger):
             elif path.startswith('/'):
                 path = path[1:]
         extension = path.rpartition('.')[2]
-        if scheme == 'file' and extension in ['mrv', 'mrvi', 'txt']:
-            with open(path) as f:
-                raw = f.read()
-                u = unicode(raw, 'utf-8')
-            self.setPlainText(u)
+        if scheme == 'file':
+            if extension in ['mrv', 'mrvi', 'txt']:
+                with open(path) as f:
+                    raw = f.read()
+                    u = unicode(raw, 'utf-8')
+                self.setPlainText(u)
+            else:
+                self.setPlainText(path)
         else:
             self._log_location("unsupported import: %s" % path)
 
@@ -365,9 +368,6 @@ class ImportAnnotationsDialog(QDialog):
         BUTTON_ROLES = ['AcceptRole', 'RejectRole', 'DestructiveRole', 'ActionRole',
                         'HelpRole', 'YesRole', 'NoRole', 'ApplyRole', 'ResetRole']
         if self.dialogButtonBox.buttonRole(button) == QDialogButtonBox.AcceptRole:
-            # Remove initial_dialog_text if user clicks OK without dropping file
-            if self.text() == self.rac.initial_dialog_text:
-                self.pte.clear()
             self.accept()
         elif self.dialogButtonBox.buttonRole(button) == QDialogButtonBox.HelpRole:
             hv = HelpView(self, self.opts.icon, self.opts.prefs, html=self.rac.import_help_text)
