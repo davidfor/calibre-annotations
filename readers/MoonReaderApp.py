@@ -8,6 +8,7 @@ __license__ = 'GPL v3'
 __copyright__ = '2013, Greg Riker <griker@hotmail.com>, 2020 additions by David Forrester <davidfor@internode.on.net>'
 __docformat__ = 'restructuredtext en'
 
+import datetime
 import os
 import sqlite3
 
@@ -75,7 +76,7 @@ class MoonReaderApp(ExportingReader):
     app_name = 'MoonReader'
     import_fingerprint = False
     import_dialog_title = 'Path to Moon+ Reader backup'
-    initial_dialog_text = '/path/to/backup.mrpro'
+    initial_dialog_text = "/config/%s.mrpro" % datetime.date.today()
     SUPPORTS_EXPORTING = True
 
     def parse_exported_highlights(self, raw, log_failure=True):
