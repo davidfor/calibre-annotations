@@ -123,8 +123,6 @@ class Annotations(Annotation, Logger):
         '''
         Generate HTML with user-specified CSS, element order
         '''
-        htmlColorPattern = re.compile("^#(?:[0-9a-fA-F]{3,4}){1,2}$")
-        
         # Retrieve CSS prefs
         from calibre_plugins.annotations.appearance import default_elements
         stored_css = plugin_prefs.get('appearance_css', default_elements)
@@ -192,18 +190,11 @@ class Annotations(Annotation, Logger):
                 except:
                     if agroup.highlightcolor is None:
                         msg = "No highlight color specified, using Default"
-                        dt_bgcolor = COLOR_MAP['Default']['bg']
-                        dt_fgcolor = COLOR_MAP['Default']['fg']
-                    elif htmlColorPattern.match(agroup.highlightcolor):
-                        msg = "Found valid RGB(A) HTML color '%s', using" % agroup.highlightcolor
-                        dt_bgcolor = agroup.highlightcolor
-                        dt_fgcolor = COLOR_MAP['Default']['fg']
                     else:
-                        msg = "Unknown color '%s' specified, using Default" % agroup.highlightcolor
-                        dt_bgcolor = COLOR_MAP['Default']['bg']
-                        dt_fgcolor = COLOR_MAP['Default']['fg']
-
+                        msg = "Unknown color '%s' specified" % agroup.highlightcolor
                     self._log_location(msg)
+                    dt_bgcolor = COLOR_MAP['Default']['bg']
+                    dt_fgcolor = COLOR_MAP['Default']['fg']
 
                 if agroup.hash is not None:
                     # Use existing hash when re-rendering

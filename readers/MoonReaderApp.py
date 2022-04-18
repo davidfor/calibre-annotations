@@ -79,6 +79,9 @@ class MoonReaderApp(ExportingReader):
     initial_dialog_text = "/config/%s.mrpro" % datetime.date.today()
     SUPPORTS_EXPORTING = True
 
+    SUPPORTS_FILE_CHOOSER = True
+    import_file_name_filter = "Moon+ Reader Backup (*.mrpro)"
+
     def parse_exported_highlights(self, raw, log_failure=True):
         self._log("%s:parse_exported_highlight()" % self.app_name)
 
@@ -100,6 +103,7 @@ class MoonReaderApp(ExportingReader):
         tmpdir = tempfile.TemporaryDirectory()
         with zipfile.ZipFile(raw, 'r') as mrpro:
             mrpro.extractall(tmpdir.name)
+
         db = self._db_location(tmpdir.name)
         con = sqlite3.connect(os.path.join(tmpdir.name, app_package, db))
         bookmap = {}

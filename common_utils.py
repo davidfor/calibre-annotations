@@ -24,10 +24,10 @@ import collections
 try:
     from PyQt5.QtCore import pyqtSignal
     from PyQt5.Qt import (Qt, QAction, QApplication,
-                QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox, QIcon,
-                QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar, QPlainTextEdit,
-                QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread, QUrl,
-                QVBoxLayout, QHBoxLayout, QFont
+                QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox,
+                QFileDialog, QIcon, QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar,
+                QPlainTextEdit, QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread,
+                QUrl, QVBoxLayout, QHBoxLayout, QFont
                 )
     from PyQt5.Qt import QTextEdit as QWebView # Renaming to keep backwards compatibility.
     from PyQt5.uic import compileUi
@@ -35,10 +35,10 @@ except ImportError as e:
     from calibre.devices.usbms.driver import debug_print
     debug_print("Error loading QT5: ", e)
     from PyQt4.Qt import (Qt, QAction, QApplication,
-                QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox, QIcon,
-                QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar, QPlainTextEdit,
-                QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread, QUrl,
-                QVBoxLayout, QHBoxLayout, QFont,
+                QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox,
+                QFileDialog, QIcon, QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar,
+                QPlainTextEdit, QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread,
+                QUrl, QVBoxLayout, QHBoxLayout, QFont,
                 pyqtSignal)
     from PyQt4.QtWebKit import QWebView
     from PyQt4.uic import compileUi
@@ -221,9 +221,9 @@ class PlainTextEdit(QPlainTextEdit, Logger):
     def dropEvent(self, event):
         data = event.mimeData()
         mime = "text/uri-list"
-        url = urlparse(str(data.data(mime), encoding='utf-8').rstrip())
-        path = url.path.strip()
-        scheme = url.scheme
+        url = str(data.data(mime))
+        path = urlparse(url).path.strip()
+        scheme = urlparse(url).scheme
         path = re.sub('%20', ' ', path)
         if iswindows:
             if path.startswith('/Shared Folders'):
@@ -231,14 +231,11 @@ class PlainTextEdit(QPlainTextEdit, Logger):
             elif path.startswith('/'):
                 path = path[1:]
         extension = path.rpartition('.')[2]
-        if scheme == 'file':
-            if extension in ['mrv', 'mrvi', 'txt']:
-                with open(path) as f:
-                    raw = f.read()
-                    u = unicode(raw, 'utf-8')
-                self.setPlainText(u)
-            else:
-                self.setPlainText(path)
+        if scheme == 'file' and extension in ['mrv', 'mrvi', 'txt']:
+            with open(path) as f:
+                raw = f.read()
+                u = unicode(raw, 'utf-8')
+            self.setPlainText(u)
         else:
             self._log_location("unsupported import: %s" % path)
 
@@ -328,7 +325,26 @@ class UnknownAnnotationTypeException(Exception):
 
 '''     Dialogs         '''
 
-class ImportAnnotationsDialog(QDialog):
+class ImportAnnotationsFileDialog(QFileDialog, Logger):
+    """
+    Subclass enabling choosing a file
+    """
+
+    def __init__(self, parent, rac):
+        QFileDialog.__init__(self, parent.gui)
+        self.parent = parent
+        self.opts = parent.opts
+        self.setNameFilter(rac.import_file_name_filter)
+        self.files = self.getOpenFileName(
+            caption=rac.import_dialog_title,
+            filter=rac.import_file_name_filter,
+            options=QFileDialog.DontUseNativeDialog)
+
+    def text(self):
+        if len(self.files) >= 1:
+            return self.files[0]
+
+class ImportAnnotationsTextDialog(QDialog):
     def __init__(self, parent, friendly_name, rac):
         #self.dialog = QDialog(parent.gui)
         QDialog.__init__(self, parent.gui)
@@ -343,10 +359,10 @@ class ImportAnnotationsDialog(QDialog):
         l = QVBoxLayout()
         self.setLayout(l)
 
-        self.pte = PlainTextEdit(self.parent)
+        self.dialog = PlainTextEdit(self.parent)
         self.pte.setPlainText(rac.initial_dialog_text)
         self.pte.setMinimumWidth(400)
-        l.addWidget(self.pte)
+        l.addWidget(self.dialog)
 
         self.dialogButtonBox = QDialogButtonBox(QDialogButtonBox.Cancel|QDialogButtonBox.Help)
         self.import_button = self.dialogButtonBox.addButton(self.dialogButtonBox.Ok)
@@ -355,9 +371,8 @@ class ImportAnnotationsDialog(QDialog):
         l.addWidget(self.dialogButtonBox)
 
         self.rejected.connect(self.close)
-
         self.exec_()
-        self.text = str(self.pte.toPlainText())
+        self.dialogText = str(self.pte.toPlainText())
 
     def close(self):
         # Catch ESC and close button
@@ -368,6 +383,9 @@ class ImportAnnotationsDialog(QDialog):
         BUTTON_ROLES = ['AcceptRole', 'RejectRole', 'DestructiveRole', 'ActionRole',
                         'HelpRole', 'YesRole', 'NoRole', 'ApplyRole', 'ResetRole']
         if self.dialogButtonBox.buttonRole(button) == QDialogButtonBox.AcceptRole:
+            # Remove initial_dialog_text if user clicks OK without dropping file
+            if self.text() == self.rac.initial_dialog_text:
+                self.pte.clear()
             self.accept()
         elif self.dialogButtonBox.buttonRole(button) == QDialogButtonBox.HelpRole:
             hv = HelpView(self, self.opts.icon, self.opts.prefs, html=self.rac.import_help_text)
@@ -376,7 +394,7 @@ class ImportAnnotationsDialog(QDialog):
             self.close()
 
     def text(self):
-        return unicode(self.pte.toPlainText())
+        return unicode(self.dialogText)
 
 
 class CoverMessageBox(QDialog, Ui_Dialog):
