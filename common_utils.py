@@ -325,19 +325,21 @@ class UnknownAnnotationTypeException(Exception):
 
 '''     Dialogs         '''
 
-class ImportAnnotationsFileDialog(QFileDialog, Logger):
+class ImportAnnotationsFileDialog(QFileDialog):
     """
     Subclass enabling choosing a file
     """
 
     def __init__(self, parent, rac):
         QFileDialog.__init__(self, parent.gui)
-        self.parent = parent
         self.opts = parent.opts
+        self.parent = parent
         self.rac = rac
-        self.setOption(QFileDialog.DontUseNativeDialog)
         self.setFileMode(QFileDialog.ExistingFile)
         self.setNameFilter(rac.import_file_name_filter)
+        self.setOption(QFileDialog.DontUseNativeDialog)
+        self.setWindowIcon(self.opts.icon)
+        self.setWindowTitle(rac.import_dialog_title)
 
         # Add help button:
         hbl = QHBoxLayout()
@@ -345,8 +347,7 @@ class ImportAnnotationsFileDialog(QFileDialog, Logger):
         self.dialogButtonBox = QDialogButtonBox(QDialogButtonBox.Help)
         self.dialogButtonBox.clicked.connect(self.help_clicked)
         hbl.addWidget(self.dialogButtonBox)
-        totalRows = layout.rowCount()
-        layout.addLayout(hbl, totalRows, 0, 1, -1)
+        layout.addLayout(hbl, layout.rowCount(), 0, 1, -1)
 
         # Show dialog and get selected files
         self.exec_()
@@ -362,7 +363,7 @@ class ImportAnnotationsFileDialog(QFileDialog, Logger):
 
 class ImportAnnotationsTextDialog(QDialog):
     def __init__(self, parent, friendly_name, rac):
-        #self.dialog = QDialog(parent.gui)
+        #self.pte = QDialog(parent.gui)
         QDialog.__init__(self, parent.gui)
         self.parent = parent
         self.opts = parent.opts
@@ -375,20 +376,20 @@ class ImportAnnotationsTextDialog(QDialog):
         l = QVBoxLayout()
         self.setLayout(l)
 
-        self.dialog = PlainTextEdit(self.parent)
+        self.pte = PlainTextEdit(self.parent)
         self.pte.setPlainText(rac.initial_dialog_text)
         self.pte.setMinimumWidth(400)
-        l.addWidget(self.dialog)
+        l.addWidget(self.pte)
 
-        self.dialogButtonBox = QDialogButtonBox(QDialogButtonBox.Cancel|QDialogButtonBox.Help)
-        self.import_button = self.dialogButtonBox.addButton(self.dialogButtonBox.Ok)
+        self.pteButtonBox = QDialogButtonBox(QDialogButtonBox.Cancel|QDialogButtonBox.Help)
+        self.import_button = self.pteButtonBox.addButton(self.pteButtonBox.Ok)
         self.import_button.setText(_('Import'))
-        self.dialogButtonBox.clicked.connect(self.import_annotations_dialog_clicked)
-        l.addWidget(self.dialogButtonBox)
+        self.pteButtonBox.clicked.connect(self.import_annotations_dialog_clicked)
+        l.addWidget(self.pteButtonBox)
 
         self.rejected.connect(self.close)
         self.exec_()
-        self.dialogText = str(self.pte.toPlainText())
+        self.pteText = str(self.pte.toPlainText())
 
     def close(self):
         # Catch ESC and close button
@@ -398,19 +399,19 @@ class ImportAnnotationsTextDialog(QDialog):
     def import_annotations_dialog_clicked(self, button):
         BUTTON_ROLES = ['AcceptRole', 'RejectRole', 'DestructiveRole', 'ActionRole',
                         'HelpRole', 'YesRole', 'NoRole', 'ApplyRole', 'ResetRole']
-        if self.dialogButtonBox.buttonRole(button) == QDialogButtonBox.AcceptRole:
+        if self.pteButtonBox.buttonRole(button) == QDialogButtonBox.AcceptRole:
             # Remove initial_dialog_text if user clicks OK without dropping file
             if self.text() == self.rac.initial_dialog_text:
                 self.pte.clear()
             self.accept()
-        elif self.dialogButtonBox.buttonRole(button) == QDialogButtonBox.HelpRole:
+        elif self.pteButtonBox.buttonRole(button) == QDialogButtonBox.HelpRole:
             hv = HelpView(self, self.opts.icon, self.opts.prefs, html=self.rac.import_help_text)
             hv.show()
         else:
             self.close()
 
     def text(self):
-        return unicode(self.dialogText)
+        return unicode(self.pteText)
 
 
 class CoverMessageBox(QDialog, Ui_Dialog):
