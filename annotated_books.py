@@ -208,8 +208,6 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         self.tabledata = []
         for book_data in book_list:
             debug_print("AnnotatedBooksDialog::__init__ book_data=%s" % (book_data))
-            enabled = QCheckBox()
-            enabled.setChecked(True)
 
             # The UUID might not be present. And it is hidden so shouldn't need to be sorted, but...
             book_uuid = SortableTableWidgetItem(
@@ -250,6 +248,9 @@ class AnnotatedBooksDialog(SizePersistedDialog):
                 confidence = book_data.get('confidence', None)
                 if confidence is None:
                     cid, confidence = parent.generate_confidence(book_data)
+
+            enabled = QCheckBox()
+            enabled.setChecked(confidence)
 
             # List order matches self.annotations_header
             this_book = [
