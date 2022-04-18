@@ -336,6 +336,7 @@ class ImportAnnotationsFileDialog(QFileDialog, Logger):
         self.opts = parent.opts
         self.rac = rac
         self.setOption(QFileDialog.DontUseNativeDialog)
+        self.setFileMode(QFileDialog.ExistingFile)
         self.setNameFilter(rac.import_file_name_filter)
 
         # Add help button:
