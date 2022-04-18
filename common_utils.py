@@ -334,11 +334,26 @@ class ImportAnnotationsFileDialog(QFileDialog, Logger):
         QFileDialog.__init__(self, parent.gui)
         self.parent = parent
         self.opts = parent.opts
+        self.rac = rac
+        self.setOption(QFileDialog.DontUseNativeDialog)
         self.setNameFilter(rac.import_file_name_filter)
-        self.files = self.getOpenFileName(
-            caption=rac.import_dialog_title,
-            filter=rac.import_file_name_filter,
-            options=QFileDialog.DontUseNativeDialog)
+
+        # Add help button:
+        hbl = QHBoxLayout()
+        layout = self.layout()
+        self.dialogButtonBox = QDialogButtonBox(QDialogButtonBox.Help)
+        self.dialogButtonBox.clicked.connect(self.help_clicked)
+        hbl.addWidget(self.dialogButtonBox)
+        totalRows = layout.rowCount()
+        layout.addLayout(hbl, totalRows, 0, 1, -1)
+
+        # Show dialog and get selected files
+        self.exec_()
+        self.files = self.selectedFiles()
+
+    def help_clicked(self, button):
+        hv = HelpView(self, self.opts.icon, self.opts.prefs, html=self.rac.import_help_text)
+        hv.show()
 
     def text(self):
         if len(self.files) >= 1:
