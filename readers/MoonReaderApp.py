@@ -60,14 +60,17 @@ class MoonReaderApp(ExportingReader):
                 <h3>Exporting annotations from Moon+ Reader</h3>
                 <div class="steps_with_header_indent">
                   <p><i>From within Moon+ Reader, go into options and export your backup to an .mrpro file and copy it
-                  to your computer, or sync with something like Dropbox.</i></p>
+                  to your computer or sync with something like Dropbox.</i></p>
                 <hr width="80%" />
                 <h3>Importing Moon+ Reader annotations to calibre</h3>
                 <div class="steps_with_header_indent">
                   <p><i>After obtaining the backup file from your device:</i></p>
                   <ol>
-                    <li>Enter the path to the backup file to the <b>Import MoonReader annotations</b> window</li>
-                    <li>Click <b>Import</b></li>
+                    <li>Click Annotations, <b>Import annotations from...</b>, and then MoonReader</li>
+                    <li>Use the file chooser to select your .mrpro backup file, and click Open</li>
+                    <li>In the <b>Import Annotations</b> window, review the matches. Matches where we have an author
+                    and title match are automatically checked. If you would like to import unmatched annotations, ensure
+                    the book you're importing to is selected in the library prior to import.</li>
                   </ol>
                 </div>
             </body>
