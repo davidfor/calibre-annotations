@@ -74,7 +74,7 @@ class MoonReaderApp(ExportingReader):
             </html>''')
 
     app_name = 'MoonReader'
-    import_fingerprint = False
+    import_fingerprint = True
     import_dialog_title = 'Path to Moon+ Reader backup'
     initial_dialog_text = "/config/%s.mrpro" % datetime.date.today()
     SUPPORTS_EXPORTING = True
@@ -93,12 +93,6 @@ class MoonReaderApp(ExportingReader):
 
         self.annotated_book_list = []
         self.selected_books = None
-
-        # Generate the book metadata from the selected book
-        row = self.opts.gui.library_view.currentIndex()
-        book_id = self.opts.gui.library_view.model().id(row)
-        db = self.opts.gui.current_db
-        mi = db.get_metadata(book_id, index_is_id=True)
 
         tmpdir = tempfile.TemporaryDirectory()
         with zipfile.ZipFile(raw, 'r') as mrpro:
@@ -132,19 +126,14 @@ class MoonReaderApp(ExportingReader):
             # Convert ms to seconds
             timestamp = row[4] / 1000.0
 
-            if row[2] != mi.title and row[3] != mi.author:
-                continue
-
             if row[0] not in bookmap:
                 book_mi = BookStruct()
                 book_mi.active = True
-                book_mi.book_id = mi.id
                 book_mi.title = row[2]
                 book_mi.author = row[3]
                 book_mi.uuid = None
                 book_mi.last_update = time.mktime(time.localtime())
                 book_mi.reader_app = self.app_name
-                book_mi.cid = mi.id
                 book_mi.annotations = 0
                 bookmap[row[0]] = book_mi
 
@@ -153,7 +142,6 @@ class MoonReaderApp(ExportingReader):
 
             # Populate an AnnotationStruct
             ann_mi = AnnotationStruct()
-            ann_mi.book_id = mi.id
             ann_mi.last_modification = timestamp
             ann_mi.timestamp = timestamp
             ann_mi.location = row[5]

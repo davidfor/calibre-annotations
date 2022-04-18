@@ -808,11 +808,8 @@ class AnnotationsAction(InterfaceAction, Logger):
         self.selected_mi = get_selected_book_mi(self.get_options(),
                                                 msg=self.SELECT_DESTINATION_MSG,
                                                 det_msg=self.SELECT_DESTINATION_DET_MSG)
-        if not self.selected_mi:
-            return
 
         ra_confidence = reader_app_class.import_fingerprint
-
         if ra_confidence or self.selected_mi is not None:
             exporting_apps = iOSReaderApp.get_exporting_app_classes()
             reader_app = exporting_apps[reader_app_class]
