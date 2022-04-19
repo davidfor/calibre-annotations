@@ -363,7 +363,7 @@ class ImportAnnotationsFileDialog(QFileDialog):
 
 class ImportAnnotationsTextDialog(QDialog):
     def __init__(self, parent, friendly_name, rac):
-        #self.pte = QDialog(parent.gui)
+        #self.dialog = QDialog(parent.gui)
         QDialog.__init__(self, parent.gui)
         self.parent = parent
         self.opts = parent.opts
@@ -381,11 +381,11 @@ class ImportAnnotationsTextDialog(QDialog):
         self.pte.setMinimumWidth(400)
         l.addWidget(self.pte)
 
-        self.pteButtonBox = QDialogButtonBox(QDialogButtonBox.Cancel|QDialogButtonBox.Help)
-        self.import_button = self.pteButtonBox.addButton(self.pteButtonBox.Ok)
+        self.dialogButtonBox = QDialogButtonBox(QDialogButtonBox.Cancel|QDialogButtonBox.Help)
+        self.import_button = self.dialogButtonBox.addButton(self.dialogButtonBox.Ok)
         self.import_button.setText(_('Import'))
-        self.pteButtonBox.clicked.connect(self.import_annotations_dialog_clicked)
-        l.addWidget(self.pteButtonBox)
+        self.dialogButtonBox.clicked.connect(self.import_annotations_dialog_clicked)
+        l.addWidget(self.dialogButtonBox)
 
         self.rejected.connect(self.close)
         self.exec_()
@@ -399,12 +399,12 @@ class ImportAnnotationsTextDialog(QDialog):
     def import_annotations_dialog_clicked(self, button):
         BUTTON_ROLES = ['AcceptRole', 'RejectRole', 'DestructiveRole', 'ActionRole',
                         'HelpRole', 'YesRole', 'NoRole', 'ApplyRole', 'ResetRole']
-        if self.pteButtonBox.buttonRole(button) == QDialogButtonBox.AcceptRole:
+        if self.dialogButtonBox.buttonRole(button) == QDialogButtonBox.AcceptRole:
             # Remove initial_dialog_text if user clicks OK without dropping file
             if self.text() == self.rac.initial_dialog_text:
                 self.pte.clear()
             self.accept()
-        elif self.pteButtonBox.buttonRole(button) == QDialogButtonBox.HelpRole:
+        elif self.dialogButtonBox.buttonRole(button) == QDialogButtonBox.HelpRole:
             hv = HelpView(self, self.opts.icon, self.opts.prefs, html=self.rac.import_help_text)
             hv.show()
         else:
