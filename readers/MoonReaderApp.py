@@ -116,8 +116,7 @@ class MoonReaderApp(ExportingReader):
                     notes.highlightColor,
                     notes.highlightLength,
                     notes.original,
-                    notes.note,
-                    books.filename
+                    notes.note
                 FROM
                     notes
                 INNER JOIN
@@ -135,7 +134,6 @@ class MoonReaderApp(ExportingReader):
                 book_mi.active = True
                 book_mi.title = row[2]
                 book_mi.author = row[3]
-                book_mi.path = os.path.basename(row[10])
                 book_mi.uuid = None
                 book_mi.last_update = time.mktime(time.localtime())
                 book_mi.reader_app = self.app_name

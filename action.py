@@ -483,7 +483,7 @@ class AnnotationsAction(InterfaceAction, Logger):
           5: book_id
           5: uuid + title + author or book_id + title + author
           4: uuid + title
-          3: uuid or title + author + filename
+          3: uuid
           2: title + author
           1: title
           0:
@@ -514,7 +514,6 @@ class AnnotationsAction(InterfaceAction, Logger):
 
         title = normalize(book_mi['title'])
         self._log_location("DEBUG: book_mi=%s" % book_mi)
-
         # Check uuid_map
         if (book_mi['uuid'] in uuid_map and
                 title == uuid_map[book_mi['uuid']]['title'] and
@@ -530,12 +529,6 @@ class AnnotationsAction(InterfaceAction, Logger):
             confidence = 3
 
         # Check title_map
-        elif (title in title_map and
-              book_mi['author'] in title_map[title]['authors'] and
-              book_mi['path'] in title_map[title]['filenames']):
-                cid = title_map[title]['id']
-                confidence = 3
-
         elif (title in title_map and
               book_mi['author'] in title_map[title]['authors']):
                 cid = title_map[title]['id']
@@ -656,7 +649,6 @@ class AnnotationsAction(InterfaceAction, Logger):
                         'last_update': last_update,
                         'reader_app': reader_app,
                         'title': book_mi['title'],
-                        'path': book_mi['path'],
                         'title_sort': book_mi['title_sort'] if book_mi['title_sort'] else book_mi['title'],
                         'uuid': book_mi['uuid'],
                         }
