@@ -263,14 +263,15 @@ class AnnotatedBooksDialog(SizePersistedDialog):
                 author,
                 last_annotation,
                 book_data['annotations'],
-                confidence
+                confidence,
+                book_data['path'],
                 ]
             self.tabledata.append(this_book)
 
         self.tv = QTableView(self)
         self.l.addWidget(self.tv)
         self.annotations_header = ['uuid', 'book_id', 'genre', '', _('Reader App'), _('Title'),
-                                   _('Author'), _('Last Annotation'), _('Annotations'), _('Confidence')]
+                                   _('Author'), _('Last Annotation'), _('Annotations'), _('Confidence'), 'path']
         self.ENABLED_COL = 3
         self.READER_APP_COL = 4
         self.TITLE_COL = 5
@@ -299,6 +300,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         self.tv.hideColumn(self.annotations_header.index('uuid'))
         self.tv.hideColumn(self.annotations_header.index('book_id'))
         self.tv.hideColumn(self.annotations_header.index('genre'))
+        self.tv.hideColumn(self.annotations_header.index('path'))
         self.tv.hideColumn(self.CONFIDENCE_COL)
 
         # Set horizontal self.header props
@@ -393,6 +395,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
             title = str(self.tm.arraydata[i][self.TITLE_COL].text())
             uuid = str(self.tm.arraydata[i][self.annotations_header.index('uuid')].text())
             confidence = self.tm.arraydata[i][self.CONFIDENCE_COL]
+            path = self.tm.arraydata[i][self.annotations_header.index('path')]
 
             book_mi = BookStruct()
             book_mi.author = author
@@ -401,6 +404,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
             book_mi.reader_app = reader_app
             book_mi.title = title
             book_mi.uuid = uuid
+            book_mi.path = path
             book_mi.confidence = confidence
             self.selected_books[reader_app].append(book_mi)
 

@@ -652,10 +652,15 @@ class IndexLibrary(QThread):
             title = normalize(self.cdb.title(cid, index_is_id=True))
             authors = self.cdb.authors(cid, index_is_id=True)
             authors = authors.split(',') if authors else []
+            filenames = []
+            for f in self.cdb.formats(cid, index_is_id=True):
+                path = self.cdb.format_path(cid, "EPUB", index_is_id=True)
+                filenames.append(os.path.basename(path))
             by_title[title] = {
                 'authors': authors,
                 'id': cid,
-                'uuid': self.cdb.uuid(cid, index_is_id=True)
+                'uuid': self.cdb.uuid(cid, index_is_id=True),
+                'filenames': filenames
                 }
         return by_title
 
@@ -686,10 +691,15 @@ class IndexLibrary(QThread):
             uuid = self.cdb.uuid(cid, index_is_id=True)
             authors = self.cdb.authors(cid, index_is_id=True)
             authors = authors.split(',') if authors else []
+            filenames = []
+            for f in self.cdb.formats(cid, index_is_id=True):
+                path = self.cdb.format_path(cid, "EPUB", index_is_id=True)
+                filenames.append(os.path.basename(path))
             by_uuid[uuid] = {
                 'authors': authors,
                 'id': cid,
                 'title': normalize(self.cdb.title(cid, index_is_id=True)),
+                'filenames': filenames,
                 }
 
         return by_uuid
