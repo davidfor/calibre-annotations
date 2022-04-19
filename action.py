@@ -95,8 +95,8 @@ class AnnotationsAction(InterfaceAction, Logger):
 
     SELECT_DESTINATION_MSG = _("Select a book to receive annotations when annotation metadata cannot be matched with library metadata.")
     SELECT_DESTINATION_DET_MSG = _(
-        "To determine which book will receive incoming annotations, annotation metadata (Title, Author, UUID) is compared to library metadata.\n\n"
-        "Annotations whose metadata completely matches library metadata will be added automatically to the corresponding book.\n\n"
+        "To determine which book will receive incoming annotations, annotation metadata (Title, Author, UUID, Filename) is compared to library metadata.\n\n"
+        "Annotations whose metadata matches a title, author and UUID or Filename in the Library metadata will be added automatically to the corresponding book.\n\n"
         "For partial metadata matches, you will be prompted to confirm the book receiving the annotations.\n\n"
         "If no metadata matches, you will be prompted to confirm the currently selected book to receive the annotations.\n")
 
