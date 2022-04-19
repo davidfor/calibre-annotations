@@ -515,12 +515,6 @@ class AnnotationsAction(InterfaceAction, Logger):
         title = normalize(book_mi['title'])
         self._log_location("DEBUG: book_mi=%s" % book_mi)
 
-        if title in title_map:
-            print("TITLE MAP")
-            print(title_map[title]['filenames'])
-            print("BOOK")
-            print(book_mi['path'])
-
         # Check uuid_map
         if (book_mi['uuid'] in uuid_map and
                 title == uuid_map[book_mi['uuid']]['title'] and
