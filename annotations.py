@@ -206,6 +206,10 @@ class Annotations(Annotation, Logger):
                     msg = "Found match for %s in known colors" % agroup.highlightcolor
                     dt_bgcolor = COLOR_MAP[agroup.highlightcolor]['bg']
                     dt_fgcolor = COLOR_MAP[agroup.highlightcolor]['fg']
+                elif agroup.highlightcolor is None:
+                    msg = "No highlight color specified, using default"
+                    dt_bgcolor = plugin_prefs.get('appearance_highlight_bg')
+                    dt_fgcolor = plugin_prefs.get('appearance_highlight_fg')
                 else:
                     msg = "Unknown color '%s' specified, using default" % agroup.highlightcolor
                     dt_bgcolor = plugin_prefs.get('appearance_highlight_bg')
