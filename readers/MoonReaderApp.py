@@ -144,17 +144,16 @@ class MoonReaderApp(ExportingReader):
                 book_mi.annotations = 0
 
                 # FIXME: The handling of this is so weird, the book matcher later tries to match up
-                # the annotations to books in the Calibre DB, but if I don't set the ID here too
-                # things don't work.  It seems like all the exporting readers expect users to import
-                # annotations one book at a time (!)
+                #   the annotations to books in the Calibre DB, but if I don't set the ID here too
+                #   things don't work.  It seems like all the exporting readers expect users to import
+                #   annotations one book at a time? What's the point of the import dialog then? This makes
+                #   no sense.
                 existing = cdb.find_identical_books(Metadata(book_mi.title, [book_mi.author]))
                 if len(existing) > 0:
                     book_id = next(iter(existing))
-                else:
-                    book_row = self.opts.gui.library_view.currentIndex()
-                    book_id = self.opts.gui.library_view.model().id(book_row)
+                    book_mi.book_id = book_id
+                    book_mi.cid = book_id
 
-                book_mi.cid = book_id
                 bookmap[row[0]] = book_mi
                 book = book_mi
             else:
@@ -164,6 +163,7 @@ class MoonReaderApp(ExportingReader):
 
             # Populate an AnnotationStruct
             ann_mi = AnnotationStruct()
+            ann_mi.book_id = book.book_id
             ann_mi.last_modification = timestamp
             ann_mi.timestamp = timestamp
             ann_mi.location = row[5]
