@@ -1105,6 +1105,7 @@ class AnnotationsAction(InterfaceAction, Logger):
             else:
                 book_mi['cid'], confidence = self.generate_confidence(book_mi)
 
+
             if confidence >= 3: # and False: # Uncomment this to force Kobo devices to go through the prompts.
                 new_annotation_string = self.add_annotations_to_calibre(book_mi, annotations_db, book_mi['cid'])
                 if new_annotation_string is not None:

@@ -21,7 +21,7 @@ import zipfile
 
 from calibre_plugins.annotations.common_utils import (AnnotationStruct, BookStruct)
 from calibre_plugins.annotations.reader_app_support import ExportingReader
-
+from calibre.ebooks.metadata.book.base import Metadata
 
 class MoonReaderApp(ExportingReader):
     if True:
@@ -77,7 +77,7 @@ class MoonReaderApp(ExportingReader):
             </html>''')
 
     app_name = 'MoonReader'
-    import_fingerprint = True
+    import_fingerprint = False
     import_dialog_title = 'Path to Moon+ Reader backup'
     initial_dialog_text = "/config/%s.mrpro" % datetime.date.today()
     SUPPORTS_EXPORTING = True
@@ -93,7 +93,10 @@ class MoonReaderApp(ExportingReader):
         self.create_annotations_table(self.annotations_db)
         self.books_db = "%s_imported_books" % self.app_name_
         self.create_books_table(self.books_db)
-
+        #from PyQt5.QtCore import pyqtRemoveInputHook
+        #from pdb import set_trace
+        #pyqtRemoveInputHook()
+        #set_trace()
         self.annotated_book_list = []
         self.selected_books = None
 
@@ -101,6 +104,7 @@ class MoonReaderApp(ExportingReader):
         with zipfile.ZipFile(raw, 'r') as mrpro:
             mrpro.extractall(tmpdir.name)
 
+        cdb = self.opts.gui.current_db
         db = self._db_location(tmpdir.name)
         con = sqlite3.connect(os.path.join(tmpdir.name, app_package, db))
         bookmap = {}
@@ -138,9 +142,24 @@ class MoonReaderApp(ExportingReader):
                 book_mi.last_update = time.mktime(time.localtime())
                 book_mi.reader_app = self.app_name
                 book_mi.annotations = 0
-                bookmap[row[0]] = book_mi
 
-            book = bookmap[row[0]]
+                # FIXME: The handling of this is so weird, the book matcher later tries to match up
+                # the annotations to books in the Calibre DB, but if I don't set the ID here too
+                # things don't work.  It seems like all the exporting readers expect users to import
+                # annotations one book at a time (!)
+                existing = cdb.find_identical_books(Metadata(book_mi.title, [book_mi.author]))
+                if len(existing) > 0:
+                    book_id = next(iter(existing))
+                else:
+                    book_row = self.opts.gui.library_view.currentIndex()
+                    book_id = self.opts.gui.library_view.model().id(book_row)
+
+                book_mi.cid = book_id
+                bookmap[row[0]] = book_mi
+                book = book_mi
+            else:
+                book = bookmap[row[0]]
+
             book.annotations = book.annotations + 1
 
             # Populate an AnnotationStruct
