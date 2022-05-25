@@ -1,4 +1,7 @@
 Version history:
+1.17.1 - 29 April 2022
+• Fix: Use "current_friendly_name" for MTP devices
+
 1.17.0 - 10 April 2022
 • New: Added support AlReaderX reader app on the Boox Android-based devices. Thanks to @aik099.
 • Change: Some code cleanup.

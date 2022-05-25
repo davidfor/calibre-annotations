@@ -364,6 +364,7 @@ class AnnotationsAction(InterfaceAction, Logger):
 
     def get_connected_device_primary_name(self):
         if self.connected_device.name == 'MTP Device Interface':
+            self._log_location("get_connected_device_primary_name - Have MTP device - self.get_connected_device_primary_name='%s'" % self.connected_device.current_friendly_name)
             # get actual device name from the MTP driver (used for Android devices)
             device_name = self.connected_device.current_friendly_name
 
