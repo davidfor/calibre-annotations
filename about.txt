@@ -1,4 +1,7 @@
 Version history:
+1.17.2 - 10 May 2022
+• Fix: Change regex used for Kindle "Clippings.txt" to case insensitive. Kindle set to pt_BR uses lower case version of strings.
+
 1.17.0 - 10 April 2022
 • New: Added support AlReaderX reader app on the Boox Android-based devices. Thanks to @aik099.
 • Change: Some code cleanup.

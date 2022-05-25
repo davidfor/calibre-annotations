@@ -116,7 +116,8 @@ _LOCATION_REGEX = {
     'it': (r"\sPosizione\s*%s",
            r"\sposizione\s*%s",),
     'jp': (r"\s位置No.\s*%s",),
-    'pt': (r"\sPosição\s*%s",),
+    'pt': (r"\sPosição\s*%s",
+           r"\sposição\s*%s",),
     'ch': (r"\s位置\s*%s",),
 }
 
@@ -175,9 +176,9 @@ def _getLocation(status, language):
     begin = end = page = None
     for regex in _LOCATION_REGEX[language]:
         regex = regex % r"([0-9][0-9,.-]*[0-9]|[0-9])"
-        matches = re.findall(regex, status)
+        matches = re.findall(regex, status, flags=re.IGNORECASE)
         if matches and len(matches) == 1:
-            location = re.sub(r"[,.]", "", matches[0])
+            location = re.sub(r"[,.]", "", matches[0], flags=re.IGNORECASE)
             if "-" in location:
                 begin, end = re.match(r"([0-9]+)-([0-9]+)", location).groups()
                 end = begin[:-len(end)] + end # e.g. Location 1024-25 => end=1025
@@ -185,18 +186,18 @@ def _getLocation(status, language):
                 begin = end = location
             begin = int(begin)
             end = int(end)
-            status = re.sub(regex, " ", status)
+            status = re.sub(regex, " ", status, flags=re.IGNORECASE)
             break
     for regex in _PAGE_REGEX[language]:
         regex = regex % r"([0-9][0-9,.]*[0-9]|[0-9])"
-        matches = re.findall(regex, status)
+        matches = re.findall(regex, status, flags=re.IGNORECASE)
         if matches and len(matches) == 1:
-            page = int( re.sub(r"[,.]", "", matches[0]) )
-            status = re.sub(regex, " ", status)
+            page = int( re.sub(r"[,.]", "", matches[0], flags=re.IGNORECASE) )
+            status = re.sub(regex, " ", status, flags=re.IGNORECASE)
             break
     # if only one number is missing and there is only one number left in status line, use it
     if not begin and page or begin and not page:
-        numbers = re.findall(r"[0-9]+", status)
+        numbers = re.findall(r"[0-9]+", status, flags=re.IGNORECASE)
         if len(numbers) == 1:
             if not begin:
                 begin = end = int(numbers[0])
@@ -221,7 +222,7 @@ def _getDateTime(status, language):
         if match.lastindex >= 5 and match.group(5) and match.group(5).upper().replace('.', '') == 'PM' and hour < 12:
             hour += 12
         # time zone information is quite unusual in Kindle annotations; we better ignore it even if there is some
-        status = re.sub(date_time_re, ' ', status)
+        status = re.sub(date_time_re, ' ', status, flags=re.IGNORECASE)
         
     if language in ('jp', 'ch'):
         # japanese and chinese formats simply use numbers with following day/month/year character
@@ -470,14 +471,14 @@ if __name__ == '__main__':
         # empty
         print("Test: empty")
         _testParse(
-"",
-"""
+b"",
+b"""
 """)
 
         # basic English
         print("Test: basic English")
         _testParse(
-"""Kindle-Benutzerhandbuch (German Edition) (Amazon)
+b"""Kindle-Benutzerhandbuch (German Edition) (Amazon)
 - Your Highlight Location 449-449 | Added on Thursday, 25 April 13 23:45:11
 
 auszublenden. Seite aktualisieren:
@@ -499,7 +500,7 @@ The Valley of the Moon (Jack London)
 song
 ==========
 """,
-r"""
+"""
 ordernr = 0
 language = 'en'
 kind = 'highlight'
@@ -548,7 +549,7 @@ text = 'song'
         # basic German
         print("Test: basic German")
         _testParse(
-r"""Mein Clipboard  
+"""Mein Clipboard  
 - Ihre Markierung Position 14-14 | Hinzugefügt am Freitag, 26. April 2013 um 00:49:32 Uhr
 
 00:43:51
@@ -564,8 +565,8 @@ Kindle-Benutzerhandbuch (German Edition) (Amazon)
 Notiz Zeile 1
 Zeile 2
 ==========
-""",
-r"""
+""".encode(),
+"""
 ordernr = 0
 language = 'de'
 kind = 'highlight'
@@ -618,7 +619,7 @@ The Café (Hans Glück)
 
 
 ==========
-""",
+""".encode(),
 r"""
 ordernr = 0
 language = 'es'
@@ -671,7 +672,7 @@ The Café (Hans Glück & J. Garçon)
 - Votre signet sur la page 222 | Emplacement 3393 | Ajouté le lundi 17 juin 2013 à 20:19:40
 
 
-==========""",
+==========""".encode(),
 r"""
 ordernr = 0
 language = 'fr'
@@ -724,7 +725,7 @@ The Café (Hans Glück)
 - Il mio segnalibro a pagina 222 | Posizione 3393 | Aggiunto il lunedì 17 giugno 13, 20:23:54
 
 
-==========""",
+==========""".encode(),
 r"""
 ordernr = 0
 language = 'it'
@@ -778,7 +779,7 @@ Japanese
 
 
 ==========
-""",
+""".encode(),
 r"""
 ordernr = 0
 language = 'jp'
@@ -832,7 +833,7 @@ The Café (Hans Glück)
 
 
 ==========
-""",
+""".encode(),
 r"""
 ordernr = 0
 language = 'pt'
@@ -885,7 +886,7 @@ ch
 - 我的书签 位置8 | 已添加至 2013年4月26日 星期五 0:44:37
 
 
-==========""",
+==========""".encode(),
 r"""
 ordernr = 0
 language = 'ch'
@@ -939,7 +940,7 @@ L'Echappee belle  (Anna Gavalda)
 
 
 ==========
-""",
+""".encode(),
 r"""
 ordernr = 0
 language = 'en'
@@ -978,7 +979,7 @@ text = ''
         # exotic/synthetic cases, German
         print("Test: exotic/synthetic cases, German")
         _testParse(
-r"""Kindle-Benutzerhandbuch (German Edition) (Amazon)
+"""Kindle-Benutzerhandbuch (German Edition) (Amazon)
 - Ihre Markierung Position 5-6 | Hinzugefügt am Donnerstag, 25. April 2013 um 23:38:23.1 Uhr
 
 Aktionen am Bildschirm Statusanzeigen
@@ -998,7 +999,7 @@ Zeile 2
 
 Inhalte Kapitel 2
 ==========
-""",
+""".encode(),
 r"""
 ordernr = 0
 language = 'de'
