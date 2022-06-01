@@ -81,6 +81,12 @@ else:
             return [convert_qvariant(i) for i in x.toList()]
         return x.toPyObject()
 
+if sys.version_info.major == 3:
+    import collections.abc
+    Collections_Callable = collections.abc.Callable
+else:
+    Collections_Callable = collections.Callable
+
 # Stateful controls: (<class>,<list_name>,<get_method>,<default>,<set_method(s)>)
 # multiple set_methods are chained, i.e. the results of the first call are passed to the second
 # Currently a max of two chained CONTROL_SET methods are implemented, explicity for comboBox
@@ -1186,17 +1192,17 @@ def restore_state(ui, restore_position=False):
                 if isinstance(CONTROL_SET[index], unicode):
                     setter_ref = getattr(control_ref, CONTROL_SET[index], None)
                     if setter_ref is not None:
-                        if isinstance(setter_ref, collections.Callable):
+                        if isinstance(setter_ref, Collections_Callable):
                             setter_ref(plugin_prefs.get(control, CONTROL_DEFAULT[index]))
                 elif isinstance(CONTROL_SET[index], tuple) and len(CONTROL_SET[index]) == 2:
                     # Special case for comboBox - first findText, then setCurrentIndex
                     setter_ref = getattr(control_ref, CONTROL_SET[index][0], None)
                     if setter_ref is not None:
-                        if isinstance(setter_ref, collections.Callable):
+                        if isinstance(setter_ref, Collections_Callable):
                             result = setter_ref(plugin_prefs.get(control, CONTROL_DEFAULT[index]))
                             setter_ref = getattr(control_ref, CONTROL_SET[index][1], None)
                             if setter_ref is not None:
-                                if isinstance(setter_ref, collections.Callable):
+                                if isinstance(setter_ref, Collections_Callable):
                                     setter_ref(result)
                 else:
                     print(" invalid CONTROL_SET tuple for '%s'" % control)
