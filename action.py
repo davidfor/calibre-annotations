@@ -672,7 +672,7 @@ class AnnotationsAction(InterfaceAction, Logger):
         # takes some time for the device to be recognized.
         self.opts['device_name'] = None
         if self.connected_device:
-            self.opts['device_name'] = self.connected_device.get_device_information()[0]
+            self.opts['device_name'] = self.connected_device.current_friendly_name
         self.opts['mount_point'] = self.mount_point
         return self.opts
 
