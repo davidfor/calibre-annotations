@@ -360,6 +360,12 @@ class PocketBookFetchingApp(USBReader):
         for book in metadata_cursor.execute(books_metadata_query):
             book_oid = book['book_oid']
             title = book['Title']
+
+            if book['Path'] is None or book['filename'] is None:
+                match_failauth += 1
+                self._log("_read_database_annotation - PATH or FILENAME missing: PB oid {0}, {1} - path='{2}', filename='{3}'".format(book_oid, title, book['Path'], book['filename']))
+                continue
+
             filepath = os.path.join(book['Path'], book['filename'])
 
             book_id = path_map.get(filepath, None)
@@ -417,6 +423,8 @@ class PocketBookFetchingApp(USBReader):
                     if atype not in ('highlight', 'note', 'bookmark'):
                         continue
 
+                    location_sort = page * 10000 + (offs or 0) if page is not None else (offs or 0)
+
                     data = {
                         'annotation_id': row['item_oid'],
                         'book_id': book_id,
@@ -432,7 +440,7 @@ class PocketBookFetchingApp(USBReader):
                         'location': page,
                         'page': page,
                         # 'offs': offs,
-                        'location_sort': page * 10000 + (offs or 0),
+                        'location_sort': location_sort,
                     }
 
                     # self._log(self.active_annotations[annotation_id])

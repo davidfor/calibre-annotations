@@ -149,9 +149,9 @@ class MarkupTableModel(QAbstractTableModel):
         row, col = index.row(), index.column()
         if col == self.ENABLED_COL:
             if self.arraydata[row][self.ENABLED_COL].checkState():
-                self.arraydata[row][self.ENABLED_COL].setCheckState(False)
+                self.arraydata[row][self.ENABLED_COL].setCheckState(Qt.Unchecked)
             else:
-                self.arraydata[row][self.ENABLED_COL].setCheckState(True)
+                self.arraydata[row][self.ENABLED_COL].setCheckState(Qt.Checked)
 
 #        self.emit(pyqtSignal("dataChanged(QModelIndex,QModelIndex)"), index, index)
         self.dataChanged.emit(index, index)
@@ -467,11 +467,11 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         button_text = str(self.toggle_checkmarks_button.text())
         if button_text == _('Clear All'):
             for i in range(len(self.tabledata)):
-                self.tm.arraydata[i][self.ENABLED_COL].setCheckState(False)
+                self.tm.arraydata[i][self.ENABLED_COL].setCheckState(Qt.Unchecked)
             self.toggle_checkmarks_button.setText(_('Set All'))
         else:
             for i in range(len(self.tabledata)):
-                self.tm.arraydata[i][self.ENABLED_COL].setCheckState(True)
+                self.tm.arraydata[i][self.ENABLED_COL].setCheckState(Qt.Checked)
             self.toggle_checkmarks_button.setText(_('Clear All'))
         self.tm.refresh(self.show_confidence_colors)
 

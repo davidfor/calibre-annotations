@@ -364,8 +364,9 @@ class AnnotationsAction(InterfaceAction, Logger):
 
     def get_connected_device_primary_name(self):
         if self.connected_device.name == 'MTP Device Interface':
+            self._log_location("get_connected_device_primary_name - Have MTP device - self.get_connected_device_primary_name='%s'" % self.connected_device.current_friendly_name)
             # get actual device name from the MTP driver (used for Android devices)
-            device_name = self.connected_device.get_device_information()[0]
+            device_name = self.connected_device.current_friendly_name
 
             # group all Onyx devices under same name, because they behave the same
             import re
@@ -671,7 +672,7 @@ class AnnotationsAction(InterfaceAction, Logger):
         # takes some time for the device to be recognized.
         self.opts['device_name'] = None
         if self.connected_device:
-            self.opts['device_name'] = self.connected_device.get_device_information()[0]
+            self.opts['device_name'] = self.get_connected_device_primary_name()
         self.opts['mount_point'] = self.mount_point
         return self.opts
 

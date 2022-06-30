@@ -1,4 +1,11 @@
 Version history:
+1.17.6 - 30 June 2022
+• Change: Remove Qt compileUi as no longer used and blocking calibre6/Qt6.
+• Fix: Missed a spot where need to use "current_friendly_name" for MTP devices
+• Fix: PocketBook - Workaround issues with nulls in database and links.
+• Fix: Change regex used for Kindle "Clippings.txt" to case insensitive. Kindle set to pt_BR uses lower case version of strings.
+• Fix: Threadsafe method of getting device name for MTP devices on Linux.
+
 1.17.0 - 10 April 2022
 • New: Added support AlReaderX reader app on the Boox Android-based devices. Thanks to @aik099.
 • Change: Some code cleanup.

@@ -201,7 +201,7 @@ class AnnotationElementsTable(QTableWidget):
         self.layout = parent.elements_hl.layout()
 
         # Add ourselves to the layout
-        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         #sizePolicy.setVerticalStretch(0)
         #sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
@@ -485,7 +485,7 @@ class AnnotationsAppearance(SizePersistedDialog):
         self.wv.setMinimumHeight(100)
         self.wv.setMaximumHeight(16777215)
         self.wv.setGeometry(0, 0, 200, 100)
-        self.wv.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.wv.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.preview_vl.addWidget(self.wv)
 
         # Create a group box, horizontal layout for the table
@@ -511,7 +511,7 @@ class AnnotationsAppearance(SizePersistedDialog):
         self.hr_checkbox = QCheckBox(_('Add horizontal rule between annotations'))
         self.hr_checkbox.stateChanged.connect(self.hr_checkbox_changed)
         self.hr_checkbox.setCheckState(
-            JSONConfig('plugins/annotations').get('appearance_hr_checkbox', False))
+            Qt.Checked if JSONConfig('plugins/annotations').get('appearance_hr_checkbox', False) else Qt.Unchecked)
         self.options_gl.addWidget(self.hr_checkbox, current_row, 0, 1, 4)
         current_row += 1
 
@@ -527,7 +527,7 @@ class AnnotationsAppearance(SizePersistedDialog):
         self.timestamp_fmt_le.setObjectName('timestamp_fmt_le')
         self.timestamp_fmt_le.setToolTip(_('Format string for timestamp'))
         self.timestamp_fmt_le.setMaximumWidth(16777215)
-        self.timestamp_fmt_le.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.timestamp_fmt_le.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.options_gl.addWidget(self.timestamp_fmt_le, current_row, 1)
 
         self.timestamp_fmt_reset_tb = QToolButton(self)
@@ -549,11 +549,11 @@ class AnnotationsAppearance(SizePersistedDialog):
         self.l.addWidget(bb)
 
         # Spacer
-        self.spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.spacerItem = QtGui.QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         self.l.addItem(self.spacerItem)
 
         # Sizing
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        sizePolicy = QtGui.QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())

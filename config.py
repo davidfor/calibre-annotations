@@ -23,13 +23,13 @@ from six import text_type as unicode
 try:
     from PyQt5 import QtWidgets as QtGui
     from PyQt5.Qt import (Qt, QCheckBox, QComboBox, QFrame, QGridLayout,
-        QGroupBox, QIcon, QLabel, QLineEdit, QPushButton,
+        QGroupBox, QIcon, QLabel, QLineEdit, QPushButton, QSizePolicy,
         QRect, QThread, QTimer, QToolButton, QVBoxLayout, QWidget,
         pyqtSignal)
 except ImportError as e:
     from PyQt4 import QtGui
     from PyQt4.Qt import (Qt, QCheckBox, QComboBox, QFrame, QGridLayout,
-        QGroupBox, QIcon, QLabel, QLineEdit, QPushButton,
+        QGroupBox, QIcon, QLabel, QLineEdit, QPushButton, QSizePolicy,
         QRect, QThread, QTimer, QToolButton, QVBoxLayout, QWidget,
         pyqtSignal)
 
@@ -166,7 +166,7 @@ class ConfigWidget(QWidget, Logger):
         self.cfg_annotation_options_qgl.addWidget(self.cfg_annotations_appearance_pushbutton, current_row, 0)
         current_row += 1
 
-        self.spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.spacerItem = QtGui.QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         self.cfg_annotation_options_qgl.addItem(self.spacerItem, current_row, 0, 1, 1)
 
         # ~~~~~~~~ Compilations group box ~~~~~~~~
