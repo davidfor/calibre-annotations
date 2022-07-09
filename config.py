@@ -329,8 +329,10 @@ class ConfigWidget(QWidget, Logger):
         appearance_settings = {
                                 'appearance_css': default_elements,
                                 'appearance_hr_checkbox': False,
-                                'appearance_timestamp_format': default_timestamp
-                              }
+                                'appearance_timestamp_format': default_timestamp,
+                                'appearance_highlight_bg': 'transparent',
+                                'appearance_highlight_fg': '#000000'
+        }
 
         # Save, hash the original settings
         original_settings = {}

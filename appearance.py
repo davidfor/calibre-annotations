@@ -21,7 +21,7 @@ from calibre.devices.usbms.driver import debug_print
 try:
     from PyQt5 import QtCore
     from PyQt5 import QtWidgets as QtGui
-    from PyQt5.Qt import (Qt, QAbstractItemView, QCheckBox, QComboBox,
+    from PyQt5.Qt import (Qt, QAbstractItemView, QCheckBox, QColorDialog, QComboBox,
                           QDialogButtonBox,
                           QFont, QGridLayout, QGroupBox,
                           QHBoxLayout, QIcon, QLabel, QLineEdit,
@@ -31,7 +31,7 @@ try:
     from PyQt5.Qt import QTextEdit as QWebView # Renaming to keep backwards compatibility.
 except ImportError:
     from PyQt4 import QtCore, QtGui
-    from PyQt4.Qt import (Qt, QAbstractItemView, QCheckBox, QComboBox,
+    from PyQt4.Qt import (Qt, QAbstractItemView, QCheckBox, QColorDialog, QComboBox,
                           QDialogButtonBox,
                           QFont, QGridLayout, QGroupBox,
                           QHBoxLayout, QIcon, QLabel, QLineEdit,
@@ -161,9 +161,8 @@ class AnnotationElementsTable(QTableWidget):
     sample_ann_1 = {
         'text': ['Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean placerat condimentum semper. Aliquam hendrerit nisl mauris, nec laoreet orci. Donec rutrum consequat ultricies.',
                  'Curabitur sollicitudin euismod felis, vitae mollis magna vestibulum id.'],
-        'note': [_('This is a note appended to the highlight.'),
+        'note': [_('This is a note appended to the highlight. This highlight is using the default background/foreground.'),
                  _('And additional comments after a linebreak.')],
-        'highlightcolor': 'Yellow',
         'timestamp': time.mktime(time.localtime()),
         'location': 'Chapter 4',
         'location_sort': 0
@@ -500,11 +499,49 @@ class AnnotationsAppearance(SizePersistedDialog):
         self.elements_table.initialize()
 
         # Options
+
         self.options_gb = QGroupBox(self)
         self.options_gb.setTitle(_("Options"))
         self.options_gl = QGridLayout(self.options_gb)
         self.l.addWidget(self.options_gb)
         current_row = 0
+
+        # default highlight colors
+        ## background highlight
+        highlight_bg = self.prefs.get("appearance_highlight_bg")
+        self.highlight_color_bg_label = QLabel(_("Default highlight background"))
+        self.options_gl.addWidget(self.highlight_color_bg_label, current_row, 0)
+
+        self.highlight_color_bg_button = QToolButton(self)
+        self.highlight_color_bg_button.setToolTip(_("Pick a color"))
+        self.set_color(self.highlight_color_bg_button, highlight_bg)
+        self.highlight_color_bg_button.clicked.connect(lambda: self.choose_color("appearance_highlight_bg", self.highlight_color_bg_button))
+        self.options_gl.addWidget(self.highlight_color_bg_button, current_row, 1)
+
+        self.highlight_color_bg_reset = QToolButton(self)
+        self.highlight_color_bg_reset.setToolTip(_("Reset to default"))
+        self.highlight_color_bg_reset.setIcon(QIcon(I('trash.png')))
+        self.highlight_color_bg_reset.clicked.connect(lambda: self.reset_color("appearance_highlight_bg", self.highlight_color_bg_button, "transparent"))
+        self.options_gl.addWidget(self.highlight_color_bg_reset, current_row, 2)
+        current_row += 1
+
+        ## foreground highlight
+        highlight_fg = self.prefs.get("appearance_highlight_fg")
+        self.highlight_color_fg_label = QLabel(_("Default highlight foreground"))
+        self.options_gl.addWidget(self.highlight_color_fg_label, current_row, 0)
+
+        self.highlight_color_fg_button = QToolButton(self)
+        self.highlight_color_fg_button.setToolTip(_("Pick a color"))
+        self.set_color(self.highlight_color_fg_button, highlight_fg)
+        self.highlight_color_fg_button.clicked.connect(lambda: self.choose_color("appearance_highlight_fg", self.highlight_color_fg_button))
+        self.options_gl.addWidget(self.highlight_color_fg_button, current_row, 1)
+
+        self.highlight_color_fg_reset = QToolButton(self)
+        self.highlight_color_fg_reset.setToolTip(_("Reset to default"))
+        self.highlight_color_fg_reset.setIcon(QIcon(I('trash.png')))
+        self.highlight_color_fg_reset.clicked.connect(lambda: self.reset_color("appearance_highlight_fg", self.highlight_color_fg_button, "#000000"))
+        self.options_gl.addWidget(self.highlight_color_fg_reset, current_row, 2)
+        current_row += 1
 
         # <hr/> separator
         # addWidget(widget, row, col, rowspan, colspan)
@@ -581,6 +618,23 @@ class AnnotationsAppearance(SizePersistedDialog):
         hv = HelpView(self, self.icon, self.prefs,
             html=help_html, title=_("Timestamp formats"))
         hv.show()
+
+    def set_color(self, button, color):
+        if color == "transparent":
+            button.setStyleSheet("")
+        else:
+            button.setStyleSheet("background-color: %s;" % color)
+
+    def choose_color(self, pref, button):
+        color = QColorDialog.getColor()
+        self.prefs.set(pref, str(color.name()))
+        self.set_color(button, color.name())
+        self.elements_table.preview_css()
+
+    def reset_color(self, pref, button, color):
+        self.prefs.set(pref, color)
+        self.set_color(button, color)
+        self.elements_table.preview_css()
 
     def sizeHint(self):
         return QtCore.QSize(600, 200)

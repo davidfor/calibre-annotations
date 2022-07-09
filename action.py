@@ -95,8 +95,8 @@ class AnnotationsAction(InterfaceAction, Logger):
 
     SELECT_DESTINATION_MSG = _("Select a book to receive annotations when annotation metadata cannot be matched with library metadata.")
     SELECT_DESTINATION_DET_MSG = _(
-        "To determine which book will receive incoming annotations, annotation metadata (Title, Author, UUID) is compared to library metadata.\n\n"
-        "Annotations whose metadata completely matches library metadata will be added automatically to the corresponding book.\n\n"
+        "To determine which book will receive incoming annotations, annotation metadata (Title, Author, UUID, Filename) is compared to library metadata.\n\n"
+        "Annotations whose metadata matches a title, author and UUID or Filename in the Library metadata will be added automatically to the corresponding book.\n\n"
         "For partial metadata matches, you will be prompted to confirm the book receiving the annotations.\n\n"
         "If no metadata matches, you will be prompted to confirm the currently selected book to receive the annotations.\n")
 
@@ -515,7 +515,6 @@ class AnnotationsAction(InterfaceAction, Logger):
 
         title = normalize(book_mi['title'])
         self._log_location("DEBUG: book_mi=%s" % book_mi)
-        
         # Check uuid_map
         if (book_mi['uuid'] in uuid_map and
                 title == uuid_map[book_mi['uuid']]['title'] and
@@ -809,11 +808,8 @@ class AnnotationsAction(InterfaceAction, Logger):
         self.selected_mi = get_selected_book_mi(self.get_options(),
                                                 msg=self.SELECT_DESTINATION_MSG,
                                                 det_msg=self.SELECT_DESTINATION_DET_MSG)
-        if not self.selected_mi:
-            return
 
         ra_confidence = reader_app_class.import_fingerprint
-
         if ra_confidence or self.selected_mi is not None:
             exporting_apps = iOSReaderApp.get_exporting_app_classes()
             reader_app = exporting_apps[reader_app_class]
@@ -1109,6 +1105,7 @@ class AnnotationsAction(InterfaceAction, Logger):
                 confidence = 5
             else:
                 book_mi['cid'], confidence = self.generate_confidence(book_mi)
+
 
             if confidence >= 3: # and False: # Uncomment this to force Kobo devices to go through the prompts.
                 new_annotation_string = self.add_annotations_to_calibre(book_mi, annotations_db, book_mi['cid'])

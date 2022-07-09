@@ -22,9 +22,13 @@ from calibre.ebooks.BeautifulSoup import BeautifulSoup, Tag
 from calibre_plugins.annotations.common_utils import Logger
 from calibre_plugins.annotations.config import plugin_prefs
 
+try:
+    from PyQt5.QtGui import QColor
+except ImportError:
+    from PyQt4.QtGui import QColor
+
 COLOR_MAP = {
                   'Blue': {'bg': '#b1ccf3', 'fg': 'black'},
-               'Default': {'bg': 'transparent', 'fg': 'black'},
                   'Gray': {'bg': 'LightGray', 'fg': 'black'},
                  'Green': {'bg': '#c8eb7b', 'fg': 'black'},
                   'Pink': {'bg': '#f4b0d2', 'fg': 'black'},
@@ -158,6 +162,7 @@ class Annotations(Annotation, Logger):
 #         self._log_location("comments_body='%s'" % comments_body)
 
         if self.annotations:
+            html_color_pattern = re.compile("^#(?:[0-9a-fA-F]{3,4}){1,2}$")
             soup = BeautifulSoup(ANNOTATIONS_HEADER)
             dtc = 0
 
@@ -184,17 +189,33 @@ class Annotations(Annotation, Logger):
 #                         self._log_location("agn='%s'" % agn)
                         note += '<p class="note" style="{0}">{1}</p>'.format(note_style, agn)
 
-                try:
+                if agroup.highlightcolor and html_color_pattern.match(agroup.highlightcolor):
+                   msg = "Found valid HTML color '%s', using" % agroup.highlightcolor
+                   dt_bgcolor = agroup.highlightcolor
+
+                   # Currently annotations only store the foreground color. If it's not a known color, then
+                   # we should pick the background color as black or white based on the overall lightness of
+                   # the color.
+                   color = QColor(dt_bgcolor)
+                   if color.lightness() >= 128:
+                       dt_fgcolor = "#000000"
+                   else:
+                       dt_fgcolor = "#FFFFFF"
+                   self._log_location(f"HTML color lightness is {color.lightness()}, using {dt_bgcolor}")
+                elif agroup.highlightcolor in COLOR_MAP:
+                    msg = "Found match for %s in known colors" % agroup.highlightcolor
                     dt_bgcolor = COLOR_MAP[agroup.highlightcolor]['bg']
                     dt_fgcolor = COLOR_MAP[agroup.highlightcolor]['fg']
-                except:
-                    if agroup.highlightcolor is None:
-                        msg = "No highlight color specified, using Default"
-                    else:
-                        msg = "Unknown color '%s' specified" % agroup.highlightcolor
-                    self._log_location(msg)
-                    dt_bgcolor = COLOR_MAP['Default']['bg']
-                    dt_fgcolor = COLOR_MAP['Default']['fg']
+                elif agroup.highlightcolor is None:
+                    msg = "No highlight color specified, using default"
+                    dt_bgcolor = plugin_prefs.get('appearance_highlight_bg')
+                    dt_fgcolor = plugin_prefs.get('appearance_highlight_fg')
+                else:
+                    msg = "Unknown color '%s' specified, using default" % agroup.highlightcolor
+                    dt_bgcolor = plugin_prefs.get('appearance_highlight_bg')
+                    dt_fgcolor = plugin_prefs.get('appearance_highlight_fg')
+
+                self._log_location(msg)
 
                 if agroup.hash is not None:
                     # Use existing hash when re-rendering
@@ -232,7 +253,7 @@ class Annotations(Annotation, Logger):
 #                 for i in range(0, len(comments_body_soup.body.contents)):
 #                     self._log_location("i=%s" % i)
 #                     self._log_location("comment_body_tag=%s" % comments_body_soup.body.contents[i])
-                try: # 
+                try: #
                     while len(comments_body_soup.body.contents) > 0:
                         # self._log_location("comment_body_tag=%s" % comments_body_soup.body.contents[0])
                         divTag.append(comments_body_soup.body.contents[0])

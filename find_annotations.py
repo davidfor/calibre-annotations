@@ -147,7 +147,6 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
 
         self.find_annotations_color_comboBox.addItem(self.GENERIC_STYLE)
         all_colors = list(COLOR_MAP.keys())
-        all_colors.remove('Default')
         for color in sorted(all_colors):
             self.find_annotations_color_comboBox.addItem(color)
         self.scgl.addWidget(self.find_annotations_color_comboBox, row, 1, 1, 4)
