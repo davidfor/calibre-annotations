@@ -21,8 +21,7 @@ class SampleExportingApp(ExportingReader):
 
     # app_name should be the same as the class name
     app_name = 'SampleExportingApp'
-    import_fingerprint = False
-    import_dialog_title = "Import {0} annotations".format(app_name)
+
     if True:
         import_help_text = ('''
             <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -81,9 +80,16 @@ class SampleExportingApp(ExportingReader):
             </html>''')
 
     initial_dialog_text = 'Junk'
+    import_fingerprint = False
+    import_dialog_title = "Import {0} annotations".format(app_name)
 
     # Change this to True when developing a new class from this template
     SUPPORTS_EXPORTING = True
+
+    # Change this to True to use a file chooser instead of text input box for import
+    SUPPORTS_FILE_CHOOSER = False
+    import_file_name_filter = "All files (*)"
+
 
     # Sample annotations, indexed by timestamp. Note that annotations may have
     # highlight_text, note_text, or both. 'location' might reference a page number from

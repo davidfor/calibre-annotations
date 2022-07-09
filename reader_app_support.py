@@ -68,6 +68,7 @@ class ReaderApp(object):
     reader_app_classes = None
     MAX_ELEMENT_DEPTH = 6
     SUPPORTS_EXPORTING = False
+    SUPPORTS_FILE_CHOOSER = False
     SUPPORTS_FETCHING = False
 
     NSTimeIntervalSince1970 = 978307200.0

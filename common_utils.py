@@ -24,20 +24,20 @@ import collections
 try:
     from PyQt5.QtCore import pyqtSignal
     from PyQt5.Qt import (Qt, QAction, QApplication,
-                QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox, QIcon,
-                QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar, QPlainTextEdit,
-                QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread, QUrl,
-                QVBoxLayout, QHBoxLayout, QFont
+                QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox,
+                QFileDialog, QIcon, QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar,
+                QPlainTextEdit, QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread,
+                QUrl, QVBoxLayout, QHBoxLayout, QFont
                 )
     from PyQt5.Qt import QTextEdit as QWebView # Renaming to keep backwards compatibility.
 except ImportError as e:
     from calibre.devices.usbms.driver import debug_print
     debug_print("Error loading QT5: ", e)
     from PyQt4.Qt import (Qt, QAction, QApplication,
-                QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox, QIcon,
-                QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar, QPlainTextEdit,
-                QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread, QUrl,
-                QVBoxLayout, QHBoxLayout, QFont,
+                QCheckBox, QComboBox, QDial, QDialog, QDialogButtonBox, QDoubleSpinBox,
+                QFileDialog, QIcon, QKeySequence, QLabel, QLineEdit, QPixmap, QProgressBar,
+                QPlainTextEdit, QRadioButton, QSize, QSizePolicy, QSlider, QSpinBox, QThread,
+                QUrl, QVBoxLayout, QHBoxLayout, QFont,
                 pyqtSignal)
     from PyQt4.QtWebKit import QWebView
 
@@ -328,7 +328,43 @@ class UnknownAnnotationTypeException(Exception):
 
 '''     Dialogs         '''
 
-class ImportAnnotationsDialog(QDialog):
+class ImportAnnotationsFileDialog(QFileDialog):
+    """
+    Subclass enabling choosing a file
+    """
+
+    def __init__(self, parent, rac):
+        QFileDialog.__init__(self, parent.gui)
+        self.opts = parent.opts
+        self.parent = parent
+        self.rac = rac
+        self.setFileMode(QFileDialog.ExistingFile)
+        self.setNameFilter(rac.import_file_name_filter)
+        self.setOption(QFileDialog.DontUseNativeDialog)
+        self.setWindowIcon(self.opts.icon)
+        self.setWindowTitle(rac.import_dialog_title)
+
+        # Add help button:
+        hbl = QHBoxLayout()
+        layout = self.layout()
+        self.dialogButtonBox = QDialogButtonBox(QDialogButtonBox.Help)
+        self.dialogButtonBox.clicked.connect(self.help_clicked)
+        hbl.addWidget(self.dialogButtonBox)
+        layout.addLayout(hbl, layout.rowCount(), 0, 1, -1)
+
+        # Show dialog and get selected files
+        self.exec_()
+        self.files = self.selectedFiles()
+
+    def help_clicked(self, button):
+        hv = HelpView(self, self.opts.icon, self.opts.prefs, html=self.rac.import_help_text)
+        hv.show()
+
+    def text(self):
+        if len(self.files) >= 1:
+            return self.files[0]
+
+class ImportAnnotationsTextDialog(QDialog):
     def __init__(self, parent, friendly_name, rac):
         #self.dialog = QDialog(parent.gui)
         QDialog.__init__(self, parent.gui)
@@ -355,9 +391,8 @@ class ImportAnnotationsDialog(QDialog):
         l.addWidget(self.dialogButtonBox)
 
         self.rejected.connect(self.close)
-
         self.exec_()
-        self.text = str(self.pte.toPlainText())
+        self.pteText = str(self.pte.toPlainText())
 
     def close(self):
         # Catch ESC and close button
@@ -379,7 +414,7 @@ class ImportAnnotationsDialog(QDialog):
             self.close()
 
     def text(self):
-        return unicode(self.pte.toPlainText())
+        return unicode(self.pteText)
 
 
 class CoverMessageBox(QDialog, Ui_Dialog):

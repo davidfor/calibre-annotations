@@ -23,11 +23,11 @@ from zipfile import ZipFile
 from calibre.devices.usbms.driver import debug_print
 
 try:
-    from PyQt5.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QPixmap,
+    from PyQt5.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QMessageBox, QPixmap,
                           QTimer, QToolButton, QUrl)
 except ImportError as e:
     debug_print("Error loading QT5: ", e)
-    from PyQt4.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QPixmap,
+    from PyQt4.Qt import (pyqtSignal, Qt, QApplication, QIcon, QMenu, QMessageBox, QPixmap,
                           QTimer, QToolButton, QUrl)
 
 from calibre.constants import DEBUG, isosx, iswindows
@@ -53,7 +53,7 @@ from calibre_plugins.annotations.annotations import merge_annotations, merge_ann
 from calibre_plugins.annotations.annotations_db import AnnotationsDB
 
 from calibre_plugins.annotations.common_utils import (
-    CoverMessageBox, HelpView, ImportAnnotationsDialog, IndexLibrary,
+    CoverMessageBox, HelpView, ImportAnnotationsTextDialog, ImportAnnotationsFileDialog, IndexLibrary,
     Logger, ProgressBar, Struct,
     get_cc_mapping, get_clippings_cid, get_icon, get_pixmap, get_resource_files,
     get_selected_book_mi, plugin_tmpdir,
@@ -819,13 +819,22 @@ class AnnotationsAction(InterfaceAction, Logger):
             reader_app = exporting_apps[reader_app_class]
 
             # Open the Import Annotations dialog
-            raw_xml = ImportAnnotationsDialog(self, reader_app, reader_app_class).text
-            if(raw_xml):
+            if reader_app_class.SUPPORTS_FILE_CHOOSER:
+                raw_data = ImportAnnotationsFileDialog(self, reader_app_class).text()
+            else:
+                raw_data = ImportAnnotationsTextDialog(self, reader_app, reader_app_class).text()
+            if(raw_data):
                 # Instantiate reader_app_class
                 rac = reader_app_class(self)
-                success = rac.parse_exported_highlights(raw_xml)
+                success = rac.parse_exported_highlights(raw_data)
                 if not success:
-                    self._log("errors parsing raw_xml")
+                    self._log("errors parsing data for import")
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Critical)
+                    msg.setText("Import Error")
+                    msg.setInformativeText('Error parsing data.')
+                    msg.setWindowTitle("Import Error")
+                    msg.exec_()
 
                 # Present the imported books, get a list of books to add to calibre
                 if rac.annotated_book_list:
