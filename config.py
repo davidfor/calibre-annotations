@@ -23,15 +23,17 @@ from six import text_type as unicode
 try:
     from PyQt5 import QtWidgets as QtGui
     from PyQt5.Qt import (Qt, QCheckBox, QComboBox, QFrame, QGridLayout,
-        QGroupBox, QIcon, QLabel, QLineEdit, QPushButton, QSizePolicy,
+        QGroupBox, QIcon, QLabel, QLineEdit, QPushButton,
         QRect, QThread, QTimer, QToolButton, QVBoxLayout, QWidget,
         pyqtSignal)
+    from PyQt5.QtWidgets import QSizePolicy
 except ImportError as e:
     from PyQt4 import QtGui
     from PyQt4.Qt import (Qt, QCheckBox, QComboBox, QFrame, QGridLayout,
-        QGroupBox, QIcon, QLabel, QLineEdit, QPushButton, QSizePolicy,
+        QGroupBox, QIcon, QLabel, QLineEdit, QPushButton,
         QRect, QThread, QTimer, QToolButton, QVBoxLayout, QWidget,
         pyqtSignal)
+    from PyQt4.QtGui import QSizePolicy
 
 from calibre.ebooks.BeautifulSoup import BeautifulSoup
 from calibre.gui2.dialogs.message_box import MessageBox
@@ -52,6 +54,18 @@ try:
 except NameError:
     debug_print("Annotations::config.py - exception when loading translations")
     pass # load_translations() added in calibre 1.9
+
+# Maintain backwards compatibility with older versions of Qt and calibre.
+try:
+    qSizePolicy_Expanding = QSizePolicy.Policy.Expanding
+    qSizePolicy_Maximum   = QSizePolicy.Policy.Maximum
+    qSizePolicy_Minimum   = QSizePolicy.Policy.Minimum
+    qSizePolicy_Preferred = QSizePolicy.Policy.Preferred
+except:
+    qSizePolicy_Expanding = QSizePolicy.Expanding
+    qSizePolicy_Maximum   = QSizePolicy.Maximum
+    qSizePolicy_Minimum   = QSizePolicy.Minimum
+    qSizePolicy_Preferred = QSizePolicy.Preferred
 
 plugin_prefs = JSONConfig('plugins/annotations')
 
@@ -166,7 +180,7 @@ class ConfigWidget(QWidget, Logger):
         self.cfg_annotation_options_qgl.addWidget(self.cfg_annotations_appearance_pushbutton, current_row, 0)
         current_row += 1
 
-        self.spacerItem = QtGui.QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.spacerItem = QtGui.QSpacerItem(20, 40, qSizePolicy_Minimum, qSizePolicy_Expanding)
         self.cfg_annotation_options_qgl.addItem(self.spacerItem, current_row, 0, 1, 1)
 
         # ~~~~~~~~ Compilations group box ~~~~~~~~

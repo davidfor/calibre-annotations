@@ -24,15 +24,29 @@ try:
     from PyQt5.Qt import (Qt, QComboBox, QDateTime, QDialogButtonBox,
         QEvent, QFrame, QGridLayout, QGroupBox, QIcon, QLabel, QLineEdit, QPushButton,
         QRect, QTimer,
-        QToolButton, QVBoxLayout,
+        QToolButton, QVBoxLayout, QSpacerItem,
         pyqtSignal)
+    from PyQt5.QtWidgets import QSizePolicy
 except ImportError as e:
     from PyQt4 import QtCore, QtGui
     from PyQt4.Qt import (Qt, QComboBox, QDateTime, QDialogButtonBox,
         QEvent, QFrame, QGridLayout, QGroupBox, QIcon, QLabel, QLineEdit, QPushButton,
         QRect, QTimer,
-        QToolButton, QVBoxLayout,
+        QToolButton, QVBoxLayout, QSpacerItem,
         pyqtSignal)
+    from PyQt4.QtGui import QSizePolicy
+
+# Maintain backwards compatibility with older versions of Qt and calibre.
+try:
+    qSizePolicy_Expanding = QSizePolicy.Policy.Expanding
+    qSizePolicy_Maximum   = QSizePolicy.Policy.Maximum
+    qSizePolicy_Minimum   = QSizePolicy.Policy.Minimum
+    qSizePolicy_Preferred = QSizePolicy.Policy.Preferred
+except:
+    qSizePolicy_Expanding = QSizePolicy.Expanding
+    qSizePolicy_Maximum   = QSizePolicy.Maximum
+    qSizePolicy_Minimum   = QSizePolicy.Minimum
+    qSizePolicy_Preferred = QSizePolicy.Preferred
 
 from calibre_plugins.annotations.annotations import COLOR_MAP
 from calibre_plugins.annotations.common_utils import (Logger, SizePersistedDialog,
@@ -204,7 +218,7 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         self.result_label.setAlignment(Qt.AlignCenter)
         self.result_label.setWordWrap(False)
 
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Maximum)
+        sizePolicy = QtGui.QSizePolicy(qSizePolicy_Minimum, qSizePolicy_Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.result_label.sizePolicy().hasHeightForWidth())
@@ -230,14 +244,14 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         self.dialogButtonBox.clicked.connect(self.find_annotations_dialog_clicked)
 
         # ~~~~~~~~ Add a spacer ~~~~~~~~
-        self.spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.spacerItem = QSpacerItem(20, 40, qSizePolicy_Minimum, qSizePolicy_Expanding)
         self.l.addItem(self.spacerItem)
 
         # ~~~~~~~~ Restore previously saved settings ~~~~~~~~
         self.restore_settings()
 
         # ~~~~~~~~ Declare sizing ~~~~~~~~
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        sizePolicy = QSizePolicy(qSizePolicy_Preferred, qSizePolicy_Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
@@ -368,8 +382,12 @@ class FindAnnotationsDialog(SizePersistedDialog, Logger):
         text_to_match = str(self.find_annotations_text_lineEdit.text())
         note_to_match = str(self.find_annotations_note_lineEdit.text())
 
-        from_date = self.find_annotations_date_from_dateEdit.dateTime().toTime_t()
-        to_date = self.find_annotations_date_to_dateEdit.dateTime().toTime_t()
+        try:
+            from_date = self.find_annotations_date_from_dateEdit.dateTime().toSecsSinceEpoch()
+            to_date = self.find_annotations_date_to_dateEdit.dateTime().toSecsSinceEpoch()
+        except: # For Python/Qt backwards compatability
+            from_date = self.find_annotations_date_from_dateEdit.dateTime().toTime_t()
+            to_date = self.find_annotations_date_to_dateEdit.dateTime().toTime_t()
 
         annotation_map = self.annotated_books_scanner.annotation_map
         #field = self.prefs.get("cfg_annotations_destination_field", None)

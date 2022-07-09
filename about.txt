@@ -1,4 +1,7 @@
 Version history:
+1.17.8 - 09 July 2022
+• Fix: Qt6 compatibility - time conversions and column sort order
+
 1.17.6 - 30 June 2022
 • Change: Remove Qt compileUi as no longer used and blocking calibre6/Qt6.
 • Fix: Missed a spot where need to use "current_friendly_name" for MTP devices

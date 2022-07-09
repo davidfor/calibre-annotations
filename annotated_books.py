@@ -17,22 +17,26 @@ try:
     from PyQt5 import QtCore
     from PyQt5 import QtWidgets as QtGui
     from PyQt5.Qt import (Qt, QAbstractItemModel, QAbstractTableModel, QBrush,
-                          QCheckBox, QColor, QDialog, QDialogButtonBox, QFont, QFontMetrics,
-                          QLabel, QVariant,
-                          QTableView, QTableWidgetItem,
-                          QVBoxLayout,
-                          pyqtSignal)
+                          QCheckBox, QColor, QDialogButtonBox, QFont, QFontMetrics,
+                          QLabel, QTableView, QTableWidgetItem, QVBoxLayout
+                          )
     from PyQt5.Qt import QTextEdit as QWebView # Renaming to keep backwards compatibility.
 except ImportError as e:
     debug_print("Error loading QT5: ", e)
     from PyQt4 import QtCore, QtGui
     from PyQt4.Qt import (Qt, QAbstractItemModel, QAbstractTableModel, QBrush,
-                          QCheckBox, QColor, QDialog, QDialogButtonBox, QFont, QFontMetrics,
-                          QLabel, QVariant,
-                          QTableView, QTableWidgetItem,
-                          QVBoxLayout,
-                          pyqtSignal)
+                          QCheckBox, QColor, QDialogButtonBox, QFont, QFontMetrics,
+                          QLabel, QTableView, QTableWidgetItem, QVBoxLayout
+                          )
     from PyQt4.QtWebKit import QWebView
+
+# Maintain backwards compatibility with older versions of Qt and calibre.
+try:
+    qSortOrder_AscendingOrder = Qt.SortOrder.AscendingOrder
+    qSortOrder_DescendingOrder = Qt.SortOrder.DescendingOrder
+except:
+    qSortOrder_AscendingOrder = Qt.AscendingOrder
+    qSortOrder_DescendingOrder = Qt.DescendingOrder
 
 from calibre.constants import islinux, isosx, iswindows
 
@@ -153,19 +157,18 @@ class MarkupTableModel(QAbstractTableModel):
             else:
                 self.arraydata[row][self.ENABLED_COL].setCheckState(Qt.Checked)
 
-#        self.emit(pyqtSignal("dataChanged(QModelIndex,QModelIndex)"), index, index)
         self.dataChanged.emit(index, index)
         return True
 
-    def sort(self, Ncol, order=Qt.AscendingOrder):
+    def sort(self, Ncol, order=qSortOrder_AscendingOrder):
         """
         Sort table by given column number.
         """
         self.layoutAboutToBeChanged.emit()
         if Ncol == self.ENABLED_COL: # Don't sort on the checkbox column.
-            self.arraydata = sorted(self.arraydata, key=lambda row: row[Ncol].checkState(), reverse=(order == Qt.DescendingOrder))
+            self.arraydata = sorted(self.arraydata, key=lambda row: row[Ncol].checkState(), reverse=(order == qSortOrder_DescendingOrder))
         else:
-            self.arraydata = sorted(self.arraydata, key=operator.itemgetter(Ncol), reverse=(order == Qt.DescendingOrder))
+            self.arraydata = sorted(self.arraydata, key=operator.itemgetter(Ncol), reverse=(order == qSortOrder_DescendingOrder))
         self.layoutChanged.emit()
 
 
@@ -189,7 +192,6 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         self.show_confidence_colors = self.opts.prefs.get('annotated_books_dialog_show_confidence_as_bg_color', True)
         self.source = source
 
-#         QDialog.__init__(self, parent=self.opts.gui)
         SizePersistedDialog.__init__(self, self.opts.gui, 'Annotations plugin:import annotations dialog')
         self.setWindowTitle(_('Import Annotations'))
         self.setWindowIcon(self.opts.icon)
@@ -328,8 +330,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
 
         sort_column = self.opts.prefs.get('annotated_books_dialog_sort_column',
                                           self.CONFIDENCE_COL)
-        sort_order = self.opts.prefs.get('annotated_books_dialog_sort_order',
-                                         Qt.DescendingOrder)
+        sort_order = qSortOrder_AscendingOrder if self.opts.prefs.get('annotated_books_dialog_sort_order', 0) == 0 else qSortOrder_DescendingOrder
         self.tv.sortByColumn(sort_column, sort_order)
         self.tv.setSortingEnabled(True)
 
@@ -363,7 +364,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         self.resize_dialog()
 
     def capture_sort_column(self, sort_column):
-        sort_order = self.tv.horizontalHeader().sortIndicatorOrder()
+        sort_order = 0 if self.tv.horizontalHeader().sortIndicatorOrder() == qSortOrder_AscendingOrder else 1
         self.opts.prefs.set('annotated_books_dialog_sort_column', sort_column)
         self.opts.prefs.set('annotated_books_dialog_sort_order', sort_order)
 
@@ -481,7 +482,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         if self.show_confidence_colors:
             self.show_confidence_button.setText(_("Hide match status"))
             self.show_confidence_button.setIcon(get_icon('images/matches_hide.png'))
-            self.tv.sortByColumn(self.CONFIDENCE_COL, Qt.DescendingOrder)
+            self.tv.sortByColumn(self.CONFIDENCE_COL, qSortOrder_DescendingOrder)
             self.capture_sort_column(self.CONFIDENCE_COL)
         else:
             self.show_confidence_button.setText(_("Show match status"))
@@ -495,7 +496,6 @@ class PreviewDialog(SizePersistedDialog):
     Render a read-only preview of formatted annotations
     """
     def __init__(self, book_mi, annotations, parent=None):
-        #QDialog.__init__(self, parent)
         self.prefs = plugin_prefs
         super(PreviewDialog, self).__init__(parent, 'annotations_preview_dialog')
         self.pl = QVBoxLayout(self)
@@ -515,8 +515,6 @@ class PreviewDialog(SizePersistedDialog):
         self.buttonbox.setOrientation(Qt.Horizontal)
 #        self.buttonbox.accepted.connect(self.close)
         self.buttonbox.rejected.connect(self.close)
-#        self.connect(self.buttonbox, pyqtSignal('accepted()'), self.close)
-#        self.connect(self.buttonbox, pyqtSignal('rejected()'), self.close)
         self.pl.addWidget(self.buttonbox)
 
         # Sizing
