@@ -10,9 +10,9 @@ Support for this plugin is in the [MobileRead  Forums](https://www.mobileread.co
 
 
 
-## Developer notes##
+## Developer notes
 
-### Table of Contents###
+### Table of Contents
 1. [OVERVIEW](#1-overview)
 2. [DEVELOPING SUPPORT FOR A NEW DEVICE OR READER APP](#2-developing-support-for-a-new-device-or-reader-app)
 3. [ADDING A NEW DEVICE OR READER APP TO THE RELEASED PLUGIN](#3-adding-a-new-device-or-reader-app-to-the-released-plugin)
@@ -22,7 +22,7 @@ Support for this plugin is in the [MobileRead  Forums](https://www.mobileread.co
 
 ---
 
-#### [1. OVERVIEW](#table-of-contents)####
+#### [1. OVERVIEW](#table-of-contents)
 The Annotations plugin is designed for extensibility. Classes supporting reader apps and devices are contained in individual files loaded at runtime.
 
 The plugin architecture provides two methods of adding annotations to calibre:
@@ -48,7 +48,7 @@ Your class may declare both variables to be true if the reader is capable of bot
 
 ---
 
-#### [2. DEVELOPING SUPPORT FOR A NEW DEVICE OR READER APP](#table-of-contents)####
+#### [2. DEVELOPING SUPPORT FOR A NEW DEVICE OR READER APP](#table-of-contents)
 - Save a copy of the appropriate sample class included in the plugin, [<samp>SampleExportingApp.py</samp>](readers/SampleExportingApp.py) or [<samp>SampleFetchingClass.py</samp>](readers/SampleFetchingClass.py) to your machine. Rename the copy appropriately, e.g. <samp>MyAnnotationsClass.py</samp>.
 - After installing the Annotations plugin to your installation of calibre, go to the calibre configuration directory. From within calibre, you can open this directory from  _Preferences|Advanced|Miscellaneous|Open calibre configuration directory_.
 - Exit calibre.
@@ -73,12 +73,12 @@ Refer to [<samp>readers/Marvin.py</samp>](readers/Marvin.py) or [<samp>readers/G
 
 ---
 
-#### [3. ADDING A NEW DEVICE OR READER APP TO THE RELEASED PLUGIN](#table-of-contents)####
+#### [3. ADDING A NEW DEVICE OR READER APP TO THE RELEASED PLUGIN](#table-of-contents)
 After developing and debugging a new reader app class, generate a pull request and I will review it for inclusion with the plugin.
 
 ---
 
-#### [4. MODIFYING AN EXISTING DEVICE OR READER APP](#table-of-contents)####
+#### [4. MODIFYING AN EXISTING DEVICE OR READER APP](#table-of-contents)
 To make modifications to an existing reader app class:
 
 - Exit calibre.
@@ -92,12 +92,12 @@ instead of the built-in copy. After developing and testing your modifications, g
 
 ---
 
-#### [5. DEVELOPER MODE](#table-of-contents)####
+#### [5. DEVELOPER MODE](#table-of-contents)
 Within <samp>annotations.json</samp> is an entry `developer_mode`. Setting this variable to `true` enables an additional menu item in the plugin dropdown menu, _Remove all annotations_. This command can be useful while developing your class.
 
 ---
 
-#### [6. PROGRAM FLOW](#table-of-contents)####
+#### [6. PROGRAM FLOW](#table-of-contents)
 [<samp>action.py</samp>](action.py) contains the <samp>InterfaceAction</samp> subclass implementation.
 
 <samp>action:genesis()</samp> is called when calibre launches. <samp>genesis()</samp> sets up logging, creates an opts object which is used to access global properties throughout the plugin, instantiates the annotatations sqlite database, initializes the <samp>.json</samp> prefs file, loads any external reader classes specified in the prefs file, then inflates the help file.
@@ -134,7 +134,7 @@ Each reader class stores annotations to <samp>annotations.db</samp> using a stan
 
 Once the user approves the import list, <samp>action:process\_selected\_books()</samp> automatically adds annotations from the selected books to the associated library book if the metadata matches completely. For incomplete matches, a confirmation dialog is shown with the plugin's best guess for the receiving book in the library.
 
-#### Additional plugin functionality####
+#### Additional plugin functionality
 
 _Find annotations_ (dropdown menu): <samp>find\_annotations:FindAnnotationsDialog()</samp>
 

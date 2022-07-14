@@ -414,7 +414,7 @@ class ImportAnnotationsTextDialog(QDialog):
             self.close()
 
     def text(self):
-        return unicode(self.pteText)
+        return unicode(self.pte.toPlainText())
 
 
 class CoverMessageBox(QDialog, Ui_Dialog):
@@ -468,7 +468,7 @@ class CoverMessageBox(QDialog, Ui_Dialog):
 
         self.copy_action = QAction(self)
         self.addAction(self.copy_action)
-        self.copy_action.setShortcuts(QKeySequence.Copy)
+        self.copy_action.setShortcuts(QKeySequence.StandardKeys.Copy)
         self.copy_action.triggered.connect(self.copy_to_clipboard)
 
         self.is_question = type_ == self.QUESTION
@@ -512,12 +512,12 @@ class CoverMessageBox(QDialog, Ui_Dialog):
         if self.is_question:
             try:
                 self.bb.button(self.bb.Yes if self.default_yes else self.bb.No
-                        ).setFocus(Qt.OtherFocusReason)
+                        ).setFocus(Qt.FocuReason.OtherFocusReason)
             except:
                 # Buttons were changed
                 pass
         else:
-            self.bb.button(self.bb.Ok).setFocus(Qt.OtherFocusReason)
+            self.bb.button(self.bb.Ok).setFocus(Qt.FocuReason.OtherFocusReason)
         return ret
 
     def set_details(self, msg):
@@ -537,7 +537,6 @@ class HelpView(SizePersistedDialog):
 
     def __init__(self, parent, icon, prefs, html=None, page=None, title=''):
         self.prefs = prefs
-        #QDialog.__init__(self, parent=parent)
         super(HelpView, self).__init__(parent, 'help_dialog')
         self.setWindowTitle(title)
         self.setWindowIcon(icon)

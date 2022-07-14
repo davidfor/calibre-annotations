@@ -32,11 +32,21 @@ except ImportError as e:
 
 # Maintain backwards compatibility with older versions of Qt and calibre.
 try:
+    qAlignmentFlag_AlignHCenter = Qt.AlignmentFlag.AlignHCenter
+    qAlignmentFlag_AlignVCenter = Qt.AlignmentFlag.AlignVCenter
+    qCheckState_Checked = Qt.CheckState.Checked
+    qCheckState_Unchecked = Qt.CheckState.UnChecked
     qSortOrder_AscendingOrder = Qt.SortOrder.AscendingOrder
     qSortOrder_DescendingOrder = Qt.SortOrder.DescendingOrder
+    qItemFlag_ItemIsUserCheckable = Qt.ItemFlag.ItemIsUserCheckable
 except:
+    qAlignmentFlag_AlignHCenter = Qt.AlignHCenter
+    qAlignmentFlag_AlignVCenter = Qt.AlignVCenter
+    qCheckState_Checked = Qt.Checked
+    qCheckState_Unchecked = Qt.Unchecked
     qSortOrder_AscendingOrder = Qt.AscendingOrder
     qSortOrder_DescendingOrder = Qt.DescendingOrder
+    qItemFlag_ItemIsUserCheckable = Qt.ItemIsUserCheckable
 
 from calibre.constants import islinux, isosx, iswindows
 
@@ -100,7 +110,7 @@ class MarkupTableModel(QAbstractTableModel):
         row, col = index.row(), index.column()
         if not index.isValid():
             return ''
-        elif role == Qt.BackgroundRole and self.show_confidence_colors:
+        elif role == Qt.ItemDataRole.BackgroundRole and self.show_confidence_colors:
             confidence = self.arraydata[row][self.CONFIDENCE_COL]
             saturation = 0.40
             value = 1.0
@@ -114,35 +124,39 @@ class MarkupTableModel(QAbstractTableModel):
             else:
                 return QBrush(QColor.fromHsvF(red_hue, saturation, value))
 
-        elif role == Qt.CheckStateRole and col == self.ENABLED_COL:
-            if self.arraydata[row][self.ENABLED_COL].checkState():
-                return Qt.Checked
+        elif role == Qt.ItemDataRole.CheckStateRole and col == self.ENABLED_COL:
+            if self.arraydata[row][self.ENABLED_COL] == qCheckState_Checked:
+                return qCheckState_Checked
             else:
-                return Qt.Unchecked
-        elif role == Qt.DisplayRole and col == self.READER_APP_COL:
+                return qCheckState_Unchecked
+        elif role == Qt.ItemDataRole.DisplayRole and col == self.ENABLED_COL:
+            return ''
+        elif role == Qt.ItemDataRole.DisplayRole and col == self.READER_APP_COL:
             return unicode(self.arraydata[row][self.READER_APP_COL].text())
-        elif role == Qt.DisplayRole and col == self.TITLE_COL:
+        elif role == Qt.ItemDataRole.DisplayRole and col == self.TITLE_COL:
             return unicode(self.arraydata[row][self.TITLE_COL].text())
-        elif role == Qt.DisplayRole and col == self.AUTHOR_COL:
+        elif role == Qt.ItemDataRole.DisplayRole and col == self.AUTHOR_COL:
             return unicode(self.arraydata[row][self.AUTHOR_COL].text())
-        elif role == Qt.DisplayRole and col == self.LAST_ANNOTATION_COL:
+        elif role == Qt.ItemDataRole.DisplayRole and col == self.LAST_ANNOTATION_COL:
             return unicode(self.arraydata[row][self.LAST_ANNOTATION_COL].text())
-        elif role == Qt.TextAlignmentRole and (col in self.centered_columns):
-            return Qt.AlignHCenter
-        elif role != Qt.DisplayRole:
+        elif role == Qt.ItemDataRole.TextAlignmentRole and (col in self.centered_columns):
+            return int(qAlignmentFlag_AlignHCenter | qAlignmentFlag_AlignVCenter) # https://bugreports.qt.io/browse/PYSIDE-1974
+        elif role != Qt.ItemDataRole.DisplayRole:
             return None
         return self.arraydata[index.row()][index.column()]
 
     def flags(self, index):
         if index.column() == self.ENABLED_COL:
-            return QAbstractItemModel.flags(self, index) | Qt.ItemIsUserCheckable
+            return QAbstractItemModel.flags(self, index) | qItemFlag_ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled
         else:
             return QAbstractItemModel.flags(self, index)
 
     def refresh(self, show_confidence_colors):
         self.show_confidence_colors = show_confidence_colors
-        self.dataChanged.emit(self.createIndex(0,0),
-                              self.createIndex(self.rowCount(0), self.columnCount(0)))
+        self.beginResetModel()
+        self.endResetModel()
+        # self.dataChanged.emit(self.createIndex(0,0),
+        #                       self.createIndex(self.rowCount(0), self.columnCount(0)))
 
     def headerData(self, col, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
@@ -152,23 +166,23 @@ class MarkupTableModel(QAbstractTableModel):
     def setData(self, index, value, role):
         row, col = index.row(), index.column()
         if col == self.ENABLED_COL:
-            if self.arraydata[row][self.ENABLED_COL].checkState():
-                self.arraydata[row][self.ENABLED_COL].setCheckState(Qt.Unchecked)
+            if self.arraydata[row][self.ENABLED_COL] == qCheckState_Checked:
+                self.arraydata[row][self.ENABLED_COL] = qCheckState_Unchecked
             else:
-                self.arraydata[row][self.ENABLED_COL].setCheckState(Qt.Checked)
+                self.arraydata[row][self.ENABLED_COL]= qCheckState_Checked
 
         self.dataChanged.emit(index, index)
         return True
 
-    def sort(self, Ncol, order=qSortOrder_AscendingOrder):
+    def sort(self, col, order=qSortOrder_AscendingOrder):
         """
         Sort table by given column number.
         """
         self.layoutAboutToBeChanged.emit()
-        if Ncol == self.ENABLED_COL: # Don't sort on the checkbox column.
-            self.arraydata = sorted(self.arraydata, key=lambda row: row[Ncol].checkState(), reverse=(order == qSortOrder_DescendingOrder))
+        if col == self.ENABLED_COL: # Don't sort on the checkbox column.
+            self.arraydata = sorted(self.arraydata, key=lambda row: row[col] == qCheckState_Checked, reverse=(order == qSortOrder_DescendingOrder))
         else:
-            self.arraydata = sorted(self.arraydata, key=operator.itemgetter(Ncol), reverse=(order == qSortOrder_DescendingOrder))
+            self.arraydata = sorted(self.arraydata, key=operator.itemgetter(col), reverse=(order == qSortOrder_DescendingOrder))
         self.layoutChanged.emit()
 
 
@@ -212,6 +226,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
             debug_print("AnnotatedBooksDialog::__init__ book_data=%s" % (book_data))
             enabled = QCheckBox()
             enabled.setChecked(True)
+            enabled = qCheckState_Checked
 
             # The UUID might not be present. And it is hidden so shouldn't need to be sorted, but...
             book_uuid = SortableTableWidgetItem(
@@ -379,7 +394,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
 
         for i in range(len(self.tabledata)):
             self.tv.selectRow(i)
-            enabled = bool(self.tm.arraydata[i][self.ENABLED_COL].checkState())
+            enabled = self.tm.arraydata[i][self.ENABLED_COL] == qCheckState_Checked
             if not enabled:
                 continue
 
@@ -466,15 +481,21 @@ class AnnotatedBooksDialog(SizePersistedDialog):
 
     def toggle_checkmarks(self):
         button_text = str(self.toggle_checkmarks_button.text())
+        debug_print("toggle_checkmarks - %s" % button_text)
         if button_text == _('Clear All'):
+            debug_print("toggle_checkmarks - Clear All")
             for i in range(len(self.tabledata)):
-                self.tm.arraydata[i][self.ENABLED_COL].setCheckState(Qt.Unchecked)
+                debug_print("toggle_checkmarks - Clear All - row - %d" % i)
+                self.tm.arraydata[i][self.ENABLED_COL]= qCheckState_Unchecked
             self.toggle_checkmarks_button.setText(_('Set All'))
         else:
+            debug_print("toggle_checkmarks - Set all")
             for i in range(len(self.tabledata)):
-                self.tm.arraydata[i][self.ENABLED_COL].setCheckState(Qt.Checked)
+                debug_print("toggle_checkmarks - Set All - row - %d" % i)
+                self.tm.arraydata[i][self.ENABLED_COL] = qCheckState_Checked
             self.toggle_checkmarks_button.setText(_('Clear All'))
         self.tm.refresh(self.show_confidence_colors)
+
 
     def toggle_confidence_colors(self):
         self.show_confidence_colors = not self.show_confidence_colors
@@ -503,7 +524,7 @@ class PreviewDialog(SizePersistedDialog):
 
         self.label = QLabel()
         self.label.setText("<b>" + _("{0} annotations &middot; {1}").format(book_mi.reader_app, book_mi.title) + "</b>")
-        self.label.setAlignment(Qt.AlignHCenter)
+        self.label.setAlignment(qAlignmentFlag_AlignHCenter)
         self.pl.addWidget(self.label)
 
         self.wv = QWebView()

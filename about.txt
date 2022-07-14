@@ -1,4 +1,9 @@
 Version history:
+1.17.10 - 13 July 2022
+• Fix: Qt6 compatibility - Another enum issue.
+• New: Enable support for import file chooser - thanks to @stbenjam
+• Fix: Qt6 compatibility - Check boxes in the annotations import screen were not working.
+
 1.17.8 - 09 July 2022
 • Fix: Qt6 compatibility - time conversions and column sort order
 

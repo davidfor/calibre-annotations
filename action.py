@@ -829,12 +829,13 @@ class AnnotationsAction(InterfaceAction, Logger):
                 success = rac.parse_exported_highlights(raw_data)
                 if not success:
                     self._log("errors parsing data for import")
-                    msg = QMessageBox()
-                    msg.setIcon(QMessageBox.Critical)
-                    msg.setText("Import Error")
-                    msg.setInformativeText('Error parsing data.')
-                    msg.setWindowTitle("Import Error")
-                    msg.exec_()
+                    # Keep around for debugging.
+                    # msg = QMessageBox()
+                    # msg.setIcon(QMessageBox.Critical)
+                    # msg.setText("Import Error")
+                    # msg.setInformativeText('Error parsing data.')
+                    # msg.setWindowTitle("Import Error")
+                    # msg.exec_()
 
                 # Present the imported books, get a list of books to add to calibre
                 if rac.annotated_book_list:
