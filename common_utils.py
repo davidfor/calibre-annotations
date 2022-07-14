@@ -468,7 +468,7 @@ class CoverMessageBox(QDialog, Ui_Dialog):
 
         self.copy_action = QAction(self)
         self.addAction(self.copy_action)
-        self.copy_action.setShortcuts(QKeySequence.StandardKeys.Copy)
+        self.copy_action.setShortcuts(QKeySequence.StandardKey.Copy)
         self.copy_action.triggered.connect(self.copy_to_clipboard)
 
         self.is_question = type_ == self.QUESTION

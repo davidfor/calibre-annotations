@@ -1,4 +1,7 @@
 Version history:
+1.17.11 - 14 July 2022
+• Fix: Qt6 compatibility - Another enum issue.
+
 1.17.10 - 13 July 2022
 • Fix: Qt6 compatibility - Another enum issue.
 • New: Enable support for import file chooser - thanks to @stbenjam
