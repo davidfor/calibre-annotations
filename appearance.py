@@ -40,6 +40,32 @@ except ImportError:
                           QVBoxLayout)
     from PyQt4.QtWebKit import QWebView
 
+# Maintain backwards compatibility with older versions of Qt and calibre.
+try:
+    qCheckState_Checked = Qt.CheckState.Checked
+    qCheckState_PartiallyChecked = Qt.CheckState.PartiallyChecked
+    qCheckState_Unchecked = Qt.CheckState.Unchecked
+    qItemFlag_ItemIsEnabled = Qt.ItemFlag.ItemIsEnabled
+    qItemFlag_ItemIsSelectable = Qt.ItemFlag.ItemIsSelectable
+    qItemFlag_ItemIsTristate = Qt.ItemFlag.ItemIsAutoTristate
+    qItemFlag_ItemIsUserCheckable = Qt.ItemFlag.ItemIsUserCheckable
+    qSizePolicy_Expanding = QSizePolicy.Policy.Expanding
+    qSizePolicy_Minimum   = QSizePolicy.Policy.Minimum
+    qSizePolicy_Preferred = QSizePolicy.Policy.Preferred
+    qStyleHint_TypeWriter = QFont.StyleHint.TypeWriter
+except:
+    qCheckState_Checked = Qt.Checked
+    qCheckState_PartiallyChecked = Qt.PartiallyChecked
+    qCheckState_Unchecked = Qt.Unchecked
+    qItemFlag_ItemIsEnabled = Qt.ItemIsEnabled
+    qItemFlag_ItemIsSelectable = Qt.ItemIsSelectable
+    qItemFlag_ItemIsTristate = Qt.ItemIsTristate
+    qItemFlag_ItemIsUserCheckable = Qt.ItemIsUserCheckable
+    qSizePolicy_Expanding = QSizePolicy.Expanding
+    qSizePolicy_Minimum   = QSizePolicy.Minimum
+    qSizePolicy_Preferred = QSizePolicy.Preferred
+    qStyleHint_TypeWriter = QFont.TypeWriter
+
 from calibre.constants import islinux, isosx, iswindows
 from calibre.utils.config import JSONConfig
 
@@ -90,26 +116,26 @@ class CheckableTableWidgetItem(QTableWidgetItem):
 
     def __init__(self, checked=False, is_tristate=False):
         QTableWidgetItem.__init__(self, '')
-        self.setFlags(Qt.ItemFlags(Qt.ItemIsSelectable | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled))
+        self.setFlags(Qt.ItemFlags(qItemFlag_ItemIsSelectable | qItemFlag_ItemIsUserCheckable | qItemFlag_ItemIsEnabled))
         if is_tristate:
-            self.setFlags(self.flags() | Qt.ItemIsTristate)
+            self.setFlags(self.flags() | qItemFlag_ItemIsTristate)
         if checked:
-            self.setCheckState(Qt.Checked)
+            self.setCheckState(qCheckState_Checked)
         else:
             if is_tristate and checked is None:
-                self.setCheckState(Qt.PartiallyChecked)
+                self.setCheckState(qCheckState_PartiallyChecked)
             else:
-                self.setCheckState(Qt.Unchecked)
+                self.setCheckState(qCheckState_Unchecked)
 
     def get_boolean_value(self):
         '''
         Return a boolean value indicating whether checkbox is checked
         If this is a tristate checkbox, a partially checked value is returned as None
         '''
-        if self.checkState() == Qt.PartiallyChecked:
+        if self.checkState() == qCheckState_PartiallyChecked:
             return None
         else:
-            return self.checkState() == Qt.Checked
+            return self.checkState() == qCheckState_Checked
 
 
 class NoWheelComboBox(QComboBox):
@@ -150,7 +176,7 @@ class AnnotationElementsTable(QTableWidget):
         FONT = QFont('Lucida Console', 9)
     elif islinux:
         FONT = QFont('Monospace', 9)
-        FONT.setStyleHint(QFont.TypeWriter)
+        FONT.setStyleHint(qStyleHint_TypeWriter)
 
     COLUMNS = {
                 'ELEMENT_NAME': {'ordinal': 0, 'name': 'Element Name'},
@@ -201,7 +227,7 @@ class AnnotationElementsTable(QTableWidget):
         self.layout = parent.elements_hl.layout()
 
         # Add ourselves to the layout
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        sizePolicy = QSizePolicy(qSizePolicy_Expanding, qSizePolicy_Minimum)
         sizePolicy.setHorizontalStretch(0)
         #sizePolicy.setVerticalStretch(0)
         #sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
@@ -457,7 +483,7 @@ class AnnotationsAppearance(SizePersistedDialog):
         FONT = QFont('Lucida Console', 9)
     elif islinux:
         FONT = QFont('Monospace', 9)
-        FONT.setStyleHint(QFont.TypeWriter)
+        FONT.setStyleHint(qStyleHint_TypeWriter)
 
     def __init__(self, parent, icon, prefs):
 
@@ -485,7 +511,7 @@ class AnnotationsAppearance(SizePersistedDialog):
         self.wv.setMinimumHeight(100)
         self.wv.setMaximumHeight(16777215)
         self.wv.setGeometry(0, 0, 200, 100)
-        self.wv.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.wv.setSizePolicy(qSizePolicy_Expanding, qSizePolicy_Expanding)
         self.preview_vl.addWidget(self.wv)
 
         # Create a group box, horizontal layout for the table
@@ -511,7 +537,7 @@ class AnnotationsAppearance(SizePersistedDialog):
         self.hr_checkbox = QCheckBox(_('Add horizontal rule between annotations'))
         self.hr_checkbox.stateChanged.connect(self.hr_checkbox_changed)
         self.hr_checkbox.setCheckState(
-            Qt.Checked if JSONConfig('plugins/annotations').get('appearance_hr_checkbox', False) else Qt.Unchecked)
+            qCheckState_Checked if JSONConfig('plugins/annotations').get('appearance_hr_checkbox', False) else qCheckState_Unchecked)
         self.options_gl.addWidget(self.hr_checkbox, current_row, 0, 1, 4)
         current_row += 1
 
@@ -527,7 +553,7 @@ class AnnotationsAppearance(SizePersistedDialog):
         self.timestamp_fmt_le.setObjectName('timestamp_fmt_le')
         self.timestamp_fmt_le.setToolTip(_('Format string for timestamp'))
         self.timestamp_fmt_le.setMaximumWidth(16777215)
-        self.timestamp_fmt_le.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.timestamp_fmt_le.setSizePolicy(qSizePolicy_Expanding, qSizePolicy_Minimum)
         self.options_gl.addWidget(self.timestamp_fmt_le, current_row, 1)
 
         self.timestamp_fmt_reset_tb = QToolButton(self)
@@ -549,11 +575,11 @@ class AnnotationsAppearance(SizePersistedDialog):
         self.l.addWidget(bb)
 
         # Spacer
-        self.spacerItem = QtGui.QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.spacerItem = QtGui.QSpacerItem(20, 40, qSizePolicy_Minimum, qSizePolicy_Expanding)
         self.l.addItem(self.spacerItem)
 
         # Sizing
-        sizePolicy = QtGui.QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy = QtGui.QSizePolicy(qSizePolicy_Preferred, qSizePolicy_Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())

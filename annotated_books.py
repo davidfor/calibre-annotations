@@ -35,10 +35,12 @@ try:
     qAlignmentFlag_AlignHCenter = Qt.AlignmentFlag.AlignHCenter
     qAlignmentFlag_AlignVCenter = Qt.AlignmentFlag.AlignVCenter
     qCheckState_Checked = Qt.CheckState.Checked
-    qCheckState_Unchecked = Qt.CheckState.UnChecked
+    qCheckState_Unchecked = Qt.CheckState.Unchecked
     qSortOrder_AscendingOrder = Qt.SortOrder.AscendingOrder
     qSortOrder_DescendingOrder = Qt.SortOrder.DescendingOrder
+    qItemFlag_ItemIsEnabled = Qt.ItemFlag.ItemIsEnabled
     qItemFlag_ItemIsUserCheckable = Qt.ItemFlag.ItemIsUserCheckable
+    qStyleHint_TypeWriter = QFont.StyleHint.TypeWriter
 except:
     qAlignmentFlag_AlignHCenter = Qt.AlignHCenter
     qAlignmentFlag_AlignVCenter = Qt.AlignVCenter
@@ -46,7 +48,9 @@ except:
     qCheckState_Unchecked = Qt.Unchecked
     qSortOrder_AscendingOrder = Qt.AscendingOrder
     qSortOrder_DescendingOrder = Qt.DescendingOrder
+    qItemFlag_ItemIsEnabled = Qt.ItemIsEnabled
     qItemFlag_ItemIsUserCheckable = Qt.ItemIsUserCheckable
+    qStyleHint_TypeWriter = QFont.TypeWriter
 
 from calibre.constants import islinux, isosx, iswindows
 
@@ -147,7 +151,7 @@ class MarkupTableModel(QAbstractTableModel):
 
     def flags(self, index):
         if index.column() == self.ENABLED_COL:
-            return QAbstractItemModel.flags(self, index) | qItemFlag_ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled
+            return QAbstractItemModel.flags(self, index) | qItemFlag_ItemIsUserCheckable | qItemFlag_ItemIsEnabled
         else:
             return QAbstractItemModel.flags(self, index)
 
@@ -197,7 +201,7 @@ class AnnotatedBooksDialog(SizePersistedDialog):
         FONT = QFont('Lucida Console', 9)
     elif islinux:
         FONT = QFont('Monospace', 9)
-        FONT.setStyleHint(QFont.TypeWriter)
+        FONT.setStyleHint(qStyleHint_TypeWriter)
 
     def __init__(self, parent, book_list, get_annotations_as_HTML, source):
         self.opts = parent.opts
