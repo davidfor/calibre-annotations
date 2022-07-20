@@ -34,21 +34,31 @@ except ImportError as e:
 try:
     qAlignmentFlag_AlignHCenter = Qt.AlignmentFlag.AlignHCenter
     qAlignmentFlag_AlignVCenter = Qt.AlignmentFlag.AlignVCenter
-    qCheckState_Checked = Qt.CheckState.Checked
+    qCheckState_Checked   = Qt.CheckState.Checked
     qCheckState_Unchecked = Qt.CheckState.Unchecked
-    qSortOrder_AscendingOrder = Qt.SortOrder.AscendingOrder
-    qSortOrder_DescendingOrder = Qt.SortOrder.DescendingOrder
-    qItemFlag_ItemIsEnabled = Qt.ItemFlag.ItemIsEnabled
+    qItemDataRole_BackgroundRole    = Qt.ItemDataRole.BackgroundRole
+    qItemDataRole_CheckStateRole    = Qt.ItemDataRole.CheckStateRole
+    qItemDataRole_DisplayRole       = Qt.ItemDataRole.DisplayRole
+    qItemDataRole_TextAlignmentRole = Qt.ItemDataRole.TextAlignmentRole
+    qItemFlag_ItemIsEnabled       = Qt.ItemFlag.ItemIsEnabled
     qItemFlag_ItemIsUserCheckable = Qt.ItemFlag.ItemIsUserCheckable
+    qSortOrder_AscendingOrder  = Qt.SortOrder.AscendingOrder
+    qSortOrder_DescendingOrder = Qt.SortOrder.DescendingOrder
     qStyleHint_TypeWriter = QFont.StyleHint.TypeWriter
 except:
     qAlignmentFlag_AlignHCenter = Qt.AlignHCenter
     qAlignmentFlag_AlignVCenter = Qt.AlignVCenter
-    qCheckState_Checked = Qt.Checked
+    qCheckState_Checked   = Qt.Checked
     qCheckState_Unchecked = Qt.Unchecked
-    qSortOrder_AscendingOrder = Qt.AscendingOrder
+    qItemDataRole_BackgroundRole    = Qt.BackgroundRole
+    qItemDataRole_CheckStateRole    = Qt.CheckStateRole
+    qItemDataRole_DisplayRole       = Qt.DisplayRole
+    qItemDataRole_TextAlignmentRole = Qt.TextAlignmentRole
+    qItemFlag_ItemIsEnabled       = Qt.ItemIsEnabled
+    qItemFlag_ItemIsUserCheckable = Qt.ItemIsUserCheckable
+    qSortOrder_AscendingOrder  = Qt.AscendingOrder
     qSortOrder_DescendingOrder = Qt.DescendingOrder
-    qItemFlag_ItemIsEnabled = Qt.ItemIsEnabled
+    qItemFlag_ItemIsEnabled       = Qt.ItemIsEnabled
     qItemFlag_ItemIsUserCheckable = Qt.ItemIsUserCheckable
     qStyleHint_TypeWriter = QFont.TypeWriter
 
@@ -114,7 +124,7 @@ class MarkupTableModel(QAbstractTableModel):
         row, col = index.row(), index.column()
         if not index.isValid():
             return ''
-        elif role == Qt.ItemDataRole.BackgroundRole and self.show_confidence_colors:
+        elif role == qItemDataRole_BackgroundRole and self.show_confidence_colors:
             confidence = self.arraydata[row][self.CONFIDENCE_COL]
             saturation = 0.40
             value = 1.0
@@ -128,24 +138,24 @@ class MarkupTableModel(QAbstractTableModel):
             else:
                 return QBrush(QColor.fromHsvF(red_hue, saturation, value))
 
-        elif role == Qt.ItemDataRole.CheckStateRole and col == self.ENABLED_COL:
+        elif role == qItemDataRole_CheckStateRole and col == self.ENABLED_COL:
             if self.arraydata[row][self.ENABLED_COL] == qCheckState_Checked:
                 return qCheckState_Checked
             else:
                 return qCheckState_Unchecked
-        elif role == Qt.ItemDataRole.DisplayRole and col == self.ENABLED_COL:
+        elif role == qItemDataRole_DisplayRole and col == self.ENABLED_COL:
             return ''
-        elif role == Qt.ItemDataRole.DisplayRole and col == self.READER_APP_COL:
+        elif role == qItemDataRole_DisplayRole and col == self.READER_APP_COL:
             return unicode(self.arraydata[row][self.READER_APP_COL].text())
-        elif role == Qt.ItemDataRole.DisplayRole and col == self.TITLE_COL:
+        elif role == qItemDataRole_DisplayRole and col == self.TITLE_COL:
             return unicode(self.arraydata[row][self.TITLE_COL].text())
-        elif role == Qt.ItemDataRole.DisplayRole and col == self.AUTHOR_COL:
+        elif role == qItemDataRole_DisplayRole and col == self.AUTHOR_COL:
             return unicode(self.arraydata[row][self.AUTHOR_COL].text())
-        elif role == Qt.ItemDataRole.DisplayRole and col == self.LAST_ANNOTATION_COL:
+        elif role == qItemDataRole_DisplayRole and col == self.LAST_ANNOTATION_COL:
             return unicode(self.arraydata[row][self.LAST_ANNOTATION_COL].text())
-        elif role == Qt.ItemDataRole.TextAlignmentRole and (col in self.centered_columns):
+        elif role == qItemDataRole_TextAlignmentRole and (col in self.centered_columns):
             return int(qAlignmentFlag_AlignHCenter | qAlignmentFlag_AlignVCenter) # https://bugreports.qt.io/browse/PYSIDE-1974
-        elif role != Qt.ItemDataRole.DisplayRole:
+        elif role != qItemDataRole_DisplayRole:
             return None
         return self.arraydata[index.row()][index.column()]
 

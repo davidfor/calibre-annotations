@@ -1,4 +1,7 @@
 Version history:
+1.17.13 - 19 July 2022
+• Fix: Qt6 compatibility - Yet another enum issue.
+
 1.17.12 - 17 July 2022
 • Fix: Qt6 compatibility - Yet another enum issue.
 
