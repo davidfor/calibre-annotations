@@ -32,6 +32,8 @@ COLOR_MAP = {
                    'Red': {'bg': 'red', 'fg': 'black'},
              'Underline': {'bg': 'transparent', 'fg': 'blue'},
                 'Yellow': {'bg': '#f4e681', 'fg': 'black'},
+                  'Cyan': {'bg': '#baffe7', 'fg': 'black'},
+               'Magenta': {'bg': '#ffbcf6', 'fg': 'black'},
             }
 
 ANNOTATION_DIV_STYLE = "margin:0 0 0.5em 0"
