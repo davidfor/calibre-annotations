@@ -86,6 +86,16 @@ class SampleExportingApp(ExportingReader):
     # Change this to True when developing a new class from this template
     SUPPORTS_EXPORTING = True
 
+    # If this is set to true, a text dialog will be shown prior to calling parse_exported_highlights
+    # and the contents of the dialog will be passed in via the raw parameter
+    # If set to false, no dialog will be displayed and parse_exported_highlights will be called with raw == "-"
+    REQUIRES_TEST_INPUT = True
+
+    # If this is set to true, it means the class needs the user to select a book prior to invoking this action.
+    # If a book isn't selected, the user will receive a warning and nothing will happen
+    # If this is set to false, the user can call the class with 0 or more books selected, it's up to you to handle all scenarios
+    REQUIRES_BOOK_SELECTED = True
+
     # Change this to True to use a file chooser instead of text input box for import
     SUPPORTS_FILE_CHOOSER = False
     import_file_name_filter = "All files (*)"

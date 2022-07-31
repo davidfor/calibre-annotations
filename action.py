@@ -803,14 +803,22 @@ class AnnotationsAction(InterfaceAction, Logger):
         supported_reader_apps = ReaderApp.get_reader_app_classes()
         reader_app_class = supported_reader_apps[reader_app]
 
+        try:
+            requires_book_selected = reader_app_class.REQUIRES_BOOK_SELECTED
+        except AttributeError:
+            requires_book_selected = True
+
         # Save a reference for merge_annotations
         self.reader_app_class = reader_app_class
 
-        self.selected_mi = get_selected_book_mi(self.get_options(),
-                                                msg=self.SELECT_DESTINATION_MSG,
-                                                det_msg=self.SELECT_DESTINATION_DET_MSG)
-        if not self.selected_mi:
-            return
+        if requires_book_selected:
+            self.selected_mi = get_selected_book_mi(self.get_options(),
+                                                    msg=self.SELECT_DESTINATION_MSG,
+                                                    det_msg=self.SELECT_DESTINATION_DET_MSG)
+            if not self.selected_mi:
+                return
+        else:
+            self.selected_mi = None
 
         ra_confidence = reader_app_class.import_fingerprint
 
@@ -822,7 +830,14 @@ class AnnotationsAction(InterfaceAction, Logger):
             if reader_app_class.SUPPORTS_FILE_CHOOSER:
                 raw_data = ImportAnnotationsFileDialog(self, reader_app_class).text()
             else:
-                raw_data = ImportAnnotationsTextDialog(self, reader_app, reader_app_class).text()
+                try:
+                    if reader_app_class.REQUIRES_TEST_INPUT == True:
+                       raw_data = ImportAnnotationsTextDialog(self, reader_app, reader_app_class).text()
+                    else:
+                        raw_data = "-"
+                except AttributeError:
+                    raw_data = ImportAnnotationsTextDialog(self, reader_app, reader_app_class).text()
+                
             if(raw_data):
                 # Instantiate reader_app_class
                 rac = reader_app_class(self)
