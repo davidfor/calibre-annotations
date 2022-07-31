@@ -94,7 +94,7 @@ class SampleExportingApp(ExportingReader):
     # If this is set to true, it means the class needs the user to select a book prior to invoking this action.
     # If a book isn't selected, the user will receive a warning and nothing will happen
     # If this is set to false, the user can call the class with 0 or more books selected, it's up to you to handle all scenarios
-    REQUIRES_BOOK_SELECTED = False
+    REQUIRES_BOOK_SELECTED = True
 
     # Change this to True to use a file chooser instead of text input box for import
     SUPPORTS_FILE_CHOOSER = False
