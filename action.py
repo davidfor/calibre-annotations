@@ -822,7 +822,14 @@ class AnnotationsAction(InterfaceAction, Logger):
             if reader_app_class.SUPPORTS_FILE_CHOOSER:
                 raw_data = ImportAnnotationsFileDialog(self, reader_app_class).text()
             else:
-                raw_data = ImportAnnotationsTextDialog(self, reader_app, reader_app_class).text()
+                try:
+                    if reader_app_class.REQUIRES_TEST_INPUT == True:
+                       raw_data = ImportAnnotationsTextDialog(self, reader_app, reader_app_class).text()
+                    else:
+                        raw_data = "-"
+                except AttributeError:
+                    raw_data = ImportAnnotationsTextDialog(self, reader_app, reader_app_class).text()
+                
             if(raw_data):
                 # Instantiate reader_app_class
                 rac = reader_app_class(self)
