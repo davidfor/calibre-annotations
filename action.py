@@ -803,14 +803,22 @@ class AnnotationsAction(InterfaceAction, Logger):
         supported_reader_apps = ReaderApp.get_reader_app_classes()
         reader_app_class = supported_reader_apps[reader_app]
 
+        try:
+            requires_book_selected = reader_app_class.REQUIRES_BOOK_SELECTED
+        except AttributeError:
+            requires_book_selected = True
+
         # Save a reference for merge_annotations
         self.reader_app_class = reader_app_class
 
-        self.selected_mi = get_selected_book_mi(self.get_options(),
-                                                msg=self.SELECT_DESTINATION_MSG,
-                                                det_msg=self.SELECT_DESTINATION_DET_MSG)
-        if not self.selected_mi:
-            return
+        if requires_book_selected:
+            self.selected_mi = get_selected_book_mi(self.get_options(),
+                                                    msg=self.SELECT_DESTINATION_MSG,
+                                                    det_msg=self.SELECT_DESTINATION_DET_MSG)
+            if not self.selected_mi:
+                return
+        else:
+            self.selected_mi = None
 
         ra_confidence = reader_app_class.import_fingerprint
 
